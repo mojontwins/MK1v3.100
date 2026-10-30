@@ -1,2 +1,3 @@
 src/utils/linux/
 *.tap.part
+tests/zxrun/zxrun
