@@ -838,7 +838,7 @@ Consecuencias:
   opciones en `msc_options [0..2]` (las vacías quedan como `""`), pone en
   `msc_n_options` cuántas hay y llama a `dialog_box ()` de `extern.h`, que
   devuelve la elegida. `TEXT BOX` descodifica en `msc_text_buf` y llama a
-  `text_box ()`. Ver [§19.6](#196-extern-h-extern-text-box-y-dialog).
+  `text_box ()`. Ver [§19.6](#196-externh-extern-text-box-y-dialog).
 
 ---
 
@@ -1665,7 +1665,7 @@ script a través de `msc-config.h`:
 
 | Si el script usa… | …el motor incluye |
 |---|---|
-| `EXTERN`, `TEXT BOX`, `DIALOG` | `extern.h` (ver [§19.6](#196-extern-h-extern-text-box-y-dialog)) |
+| `EXTERN`, `TEXT BOX`, `DIALOG` | `extern.h` (ver [§19.6](#196-externh-extern-text-box-y-dialog)) |
 | `SET FIRE ZONE` | la zona de fuego (`FIRE_ZONE`) |
 | `TILE PUSHED`, `MOVED_*` | las variables del bloque empujado (`PUSHED_SCRIPTING`) |
 | `TIMER ZERO` | la llamada a la sección al llegar el temporizador a 0 (necesita `TIMER_ENABLE`) |
