@@ -777,7 +777,7 @@ título, 1 juego, 2 game over).
 
 # Capítulo 8 - El scripting (MSC4)
 
-Cuando configurar no basta, el script. Es un lenguaje de *reacción*: el motor
+Cuando configurar no basta, tenemos el script. Es un lenguaje de *reacción*: el motor
 lanza una **sección** del script cuando pasa algo (se entra en una pantalla,
 se pulsa la tecla de acción, se coge un objeto, se mata a un enemigo…) y la
 sección comprueba condiciones y ejecuta acciones:

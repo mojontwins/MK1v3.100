@@ -7,24 +7,6 @@
 referencia `games/papaya` del repositorio de MK1 v3.2) y **MK1 v3.100** (este
 repositorio: intérprete en C fijo, `src/dev/msc.h`, con `v=3_100 output=c`).
 
-> **MK1 v3.100.** El lenguaje es el mismo para los dos motores, pero la
-> integración no: en v3.100 msc4 no genera ensamblador sino `msc-config.h` y
-> `msc-scripts.h`, el intérprete es `src/dev/msc.h`, y hay secciones, comandos
-> y variables que solo existen en v3.100. Todo lo específico de v3.100 está en
-> el [§19](#19-mk1-v3100-el-intérprete-en-c) y señalado con **[v3.100]** a lo
-> largo del documento. Lo que se describe para "el motor" sin más se refiere a
-> MK1 v3.2.
-
-> Este documento describe **MSC4**, el "Mojon Script Compiler 4", tal y como está
-> realmente implementado en `msc4/msc4.bas`. No es una descripción del
-> lenguaje "msc" antiguo documentado en `docs/manual_32.md` (capítulo 7) ni de las
-> notas de diseño abandonadas de `msc4/LANGSPECS.md`. Cuando la
-> implementación y las notas de diseño no coincidan, **manda la implementación**;
-> todos esos casos se señalan en
-> [§16. Trucos y errores corregidos](#16-trucos-y-errores-corregidos).
-
----
-
 ## Índice
 
 1. [Para qué sirve MSC4](#1-para-qué-sirve-msc4)
@@ -1799,13 +1781,3 @@ El intérprete mínimo (una sección, una condición, una acción) ocupa unos
 750 bytes; con todos los opcodes, unos 4 KB. Los textos van en 5 bits por
 carácter. El bytecode, como en v3.2.
 
-### 19.8 Probarlo
-
-* `tests/script/script.spt` (con `tests/script/extern.h`): `ENTERING`, `PRESS
-  FIRE`, `DECOS`, `SET TILE`, `SUB`/`CALL` con `BREAK`, `RERUN` con `PARAM`,
-  `WARP TO`, `TEXT`, `TEXT BOX` y `DIALOG`. `tests/build.sh zx salida.bin
-  @tests/script/script.spt LINE_OF_TEXT=0 LINE_OF_TEXT_X=1 LINE_OF_TEXT_ATTR=71
-  SCRIPTING_KEY_M`.
-* `tests/script/full.spt`: el resto de secciones y comandos (sólo se
-  compila).
-* `tests/matrix.sh all script`: todas las configuraciones con scripts.
