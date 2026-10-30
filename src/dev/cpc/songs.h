@@ -1,6 +1,10 @@
 // MTE MK1 (la Churrera) v5.0
 // Copyleft 2010-2014, 2020 by the Mojon Twins
 
+// Canciones del WYZ player (comprimidas). El número que se pasa a
+// wyz_play_music es la posición en wyz_songs: 0 = título, 1 = juego,
+// 2 = game over (pantallas.h).
+
 extern unsigned char *wyz_songs [0];
 
 #asm
@@ -10,6 +14,9 @@ extern unsigned char *wyz_songs [0];
 	._01_ingame_mus_bin
 		BINARY "../ogt/01_ingame.mus.bin"
 
+	._02_gover_mus_bin
+		BINARY "../ogt/02_gover.mus.bin"
+
 	._wyz_songs
-		defw 	_00_title_mus_bin, _01_ingame_mus_bin
+		defw 	_00_title_mus_bin, _01_ingame_mus_bin, _02_gover_mus_bin
 #endasm
