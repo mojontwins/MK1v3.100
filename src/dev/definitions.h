@@ -17,25 +17,48 @@
 	#error "MAP_W * MAP_H no puede pasar de 85 pantallas"
 #endif
 
+// Los bundles de nivel (COMPRESSED_LEVELS) siempre llevan la vida de los enemigos.
+#ifdef COMPRESSED_LEVELS
+	#define FORCE_ENEMS_LIFE
+#endif
+
 // ¿Tiene la estructura MALOTE el campo life? Tiene que coincidir con la
 // condición que escribe ene2h en enems.h.
 #if ((defined PLAYER_CAN_FIRE || defined ENABLE_SWORD) && ENEMS_LIFE_GAUGE > 1) || defined FORCE_ENEMS_LIFE
 	#define MALOTE_HAS_LIFE
 #endif
 
-// Vida de los enemigos y objetos necesarios para terminar. Con niveles
-// comprimidos dependen del nivel (se rellenan en prepare_level).
+// Datos que dependen del nivel. Con niveles comprimidos se leen de la
+// cabecera del bundle, que sigue en level_data mientras dura el nivel (ver
+// levels.h); si no, de config.h.
+// El motor usa siempre estas macros: LEVEL_MAP_W en lugar de MAP_W, etc.
+// MAP_W y MAP_H pasan a ser el tamaño máximo (el de los buffers).
 #ifdef COMPRESSED_LEVELS
-	unsigned char level_max_objs, level_enems_life;
-	#define LEVEL_MAX_OBJS		level_max_objs
-	#define LEVEL_ENEMS_LIFE	level_enems_life
+	#define LEVEL_MAP_W			(level_data [0].map_w)
+	#define LEVEL_MAP_H			(level_data [0].map_h)
+	#define LEVEL_SCR_INI		(level_data [0].scr_ini)
+	#define LEVEL_INI_X			(level_data [0].ini_x)
+	#define LEVEL_INI_Y			(level_data [0].ini_y)
+	#define LEVEL_MAX_OBJS		(level_data [0].max_objs)
+	#define LEVEL_ENEMS_LIFE	(level_data [0].enems_life)
+	#define LEVEL_SCR_FIN		(level_data [0].scr_fin)
+	#define LEVEL_FIN_X			(level_data [0].fin_x)
+	#define LEVEL_FIN_Y			(level_data [0].fin_y)
 #else
+	#define LEVEL_SCR_INI		SCR_INICIO
+	#define LEVEL_INI_X			PLAYER_INI_X
+	#define LEVEL_INI_Y			PLAYER_INI_Y
+	#define LEVEL_SCR_FIN		SCR_FIN
+	#define LEVEL_MAP_W			MAP_W
+	#define LEVEL_MAP_H			MAP_H
 	#define LEVEL_MAX_OBJS		PLAYER_NUM_OBJETOS
 	#ifdef ENEMS_LIFE_GAUGE
 		#define LEVEL_ENEMS_LIFE	ENEMS_LIFE_GAUGE
 	#else
 		#define LEVEL_ENEMS_LIFE	1
 	#endif
+	#define LEVEL_FIN_X			PLAYER_FIN_X
+	#define LEVEL_FIN_Y			PLAYER_FIN_Y
 #endif
 
 // Número de flags que guardan los checkpoints (ninguno sin scripting).
@@ -265,7 +288,7 @@ unsigned char cx1, cx2, cy1, cy2, at1, at2;
 #endif
 
 #ifdef COMPRESSED_LEVELS
-	unsigned char *level_str = "LEVEL 0X";
+	unsigned char *level_str = " LEVEL 00 ";
 #endif
 
 #ifdef GET_X_MORE

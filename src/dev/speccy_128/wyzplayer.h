@@ -10,11 +10,11 @@
 // The player is, thus, compiled to $C000, and its addresses
 // are:
 
-#define WYZPLAYERINIT		0xC018	// INIT_BUFFERS		EQU 0C018H
-#define WYZPLAYERISR		0xC000	// INICIO			EQU 0C000H
-#define INICIAEFECTO		0xC46B	// INICIA_EFECTO	EQU 0C46BH
-#define CARGA_CANCION		0xC087	// CARGA_CANCION	EQU 0C087H
-#define SILENCIA_PLAYER		0xC062	// PLAYER_OFF		EQU 0C062H
+// [v3.100] Las direcciones ya no están escritas a mano: comp-zx.sh ensambla
+// speccy_128/wyz/wyzplayer.asm y genera wyz_addrs.h con WYZPLAYERINIT,
+// WYZPLAYERISR, INICIAEFECTO, CARGA_CANCION y SILENCIA_PLAYER a partir de su
+// tabla de símbolos. Si cambian el reproductor o sus datos, siguen siendo válidas.
+#include "wyz_addrs.h"
 
 // Start.
 
@@ -57,7 +57,7 @@ void __FASTCALL__ wyz_play_sound (unsigned char fx_number) {
 	#endasm
 }
 
-void __FASTCALL__wyz_play_music (unsigned char song_number) {
+void __FASTCALL__ wyz_play_music (unsigned char song_number) {
 	#asm
 		di
 		ld b, 1

@@ -90,7 +90,10 @@
 			ei
 		#endasm
 	}
-#else
+#endif
+
+// [v3.100] unpack existe siempre (en 128K también hace falta para datos que
+// están en la RAM principal); antes era 48K o 128K.
 	void unpack (unsigned char *src, unsigned char *dest) {
 		if (src != 0) {
 			address = src;
@@ -103,4 +106,3 @@
 			#endasm
 		}
 	}
-#endif

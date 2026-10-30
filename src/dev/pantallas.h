@@ -29,7 +29,7 @@ void title (void) {
 
 	#ifdef MODE_128K
 		// Resource 0 = title.bin
-		get_resource (0, 16384);
+		get_resource (RES_TITLE, 16384);		// [v3.100] antes 0 fijo
 	#else		
 		unpack_screen ((unsigned char *) (s_title));
 	#endif
@@ -56,7 +56,7 @@ void game_ending (void) {
 
 	#ifdef MODE_128K
 		// Resource 2 = ending
-		get_resource (2, 16384);
+		get_resource (RES_ENDING, 16384);	// [v3.100] antes 2 fijo
 	#else
 		unpack_screen (s_ending);
 	#endif

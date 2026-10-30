@@ -16,6 +16,12 @@ void main (void) {
 	cortina ();
 	system_init ();
 
+	// [v3.100] Ganchos (hooks): funciones opcionales que define cada juego en
+	// custom.h. Cada una se activa definiendo su HOOK_*. Ver custom.h.
+	#ifdef HOOK_GAME_INIT
+		hook_game_init ();
+	#endif
+
 	while (1) {
 		title ();
 
@@ -25,43 +31,53 @@ void main (void) {
 
 		mlplaying = 1;
 		#ifdef COMPRESSED_LEVELS
-			#ifdef ENABLE_CHECKPOINTS
-				if (sg_do_load) level = sg_level; else level = 0;
+			// Nivel inicial: el gancho puede devolver otro (menú, contraseñas...)
+			#ifdef HOOK_AFTER_TITLE
+				level = hook_after_title ();
 			#else
 				level = 0;
-			#endif				
+			#endif
+			#ifdef ENABLE_CHECKPOINTS
+				if (sg_do_load) level = sg_level;
+			#endif
 
 			#ifndef REFILL_ME
 				player.life = PLAYER_LIFE;
 			#endif
+		#elif defined HOOK_AFTER_TITLE
+			hook_after_title ();
 		#endif
 
 		while (mlplaying) {
 			#ifndef COMPRESSED_LEVELS
 				mlplaying = 0;
 			#else
-				prepare_level (level);			
-				clear_gamearea_tiles ();
+				// Presentación del nivel: la del juego o "LEVEL XX".
+				#ifdef HOOK_LEVEL_INTRO
+					hook_level_intro ();
+				#else
+					clear_gamearea_tiles ();
+					level_str [7] = '0' + (level + 1) / 10;
+					level_str [8] = '0' + (level + 1) % 10;
+					print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
+					sp_UpdateNow ();
+					PLAY_SFX (2);
+					espera_activa (100);
+				#endif
 
-				level_str [7] = 49 + level;
-				print_str (12, 12, 71, level_str);
-				sp_UpdateNow ();
-				
-				PLAY_SFX (2);
-
-				espera_activa (100);
+				prepare_level ();
 			#endif
-			
+
 			#ifndef DIRECT_TO_PLAY
 				// Clear screen and show game frame
 				cortina ();
 				sp_UpdateNow();
-				
+
 				#ifdef MODE_128K
-					// Resource 1 = marco.bin
-					get_resource (1, 16384);
-				#else			
-					unpack_screen ((unsigned int) (s_marco));
+					// [v3.100] RES_MARCO lo genera librarian (antes, un 1 fijo)
+					get_resource (RES_MARCO, 16384);
+				#else
+					unpack_screen (s_marco);
 				#endif
 			#endif
 
@@ -69,38 +85,37 @@ void main (void) {
 
 			init_player ();
 
-			#ifndef COMPRESSED_LEVELS		
+			// [v3.100] Con niveles, hotspots, cerrojos y enemigos vienen nuevos en
+			// el bundle; aun así init_malotes hace falta para fijar su vida.
+			#ifndef COMPRESSED_LEVELS
 				init_hotspots ();
-			#endif
-
-			#if !defined COMPRESSED_LEVELS 
 				#if !defined DEACTIVATE_KEYS
 					init_cerrojos ();
 				#endif
+			#endif
 
-				#if defined(PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE)
-					init_malotes ();
-				#endif
+			#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE) || defined (ENABLE_RANDOM_RESPAWN)
+				init_malotes ();
+			#endif
 
-				n_pant = SCR_INICIO;
-			#endif	
-			o_pant = 0xff;	
+			n_pant = LEVEL_SCR_INI;
+			o_pant = 0xff;
 
 			#ifdef PLAYER_CAN_FIRE
 				init_bullets ();
-			#endif	
+			#endif
 
 
-			#ifdef ACTIVATE_SCRIPTING		
+			#ifdef ACTIVATE_SCRIPTING
 				script_result = 0;
 				msc_init_all ();
-			
+
 				// Entering game
 				script = e_scripts [MAP_W * MAP_H];
 				run_script ();
 			#endif
-		
-			#ifdef PLAYER_KILLS_ENEMIES 	
+
+			#ifdef PLAYER_KILLS_ENEMIES
 				#ifdef SHOW_TOTAL
 						// Show total of enemies next to the killed amount.
 
@@ -114,8 +129,8 @@ void main (void) {
 			maincounter = 0;
 			success = 0;
 			objs_old = keys_old = life_old = killed_old = 0xff;
-			
-			#ifdef MAX_AMMO 	
+
+			#ifdef MAX_AMMO
 				ammo_old = 0xff;
 			#endif
 
@@ -123,43 +138,47 @@ void main (void) {
 				timer_old = 0;
 			#endif
 
-			#ifdef PLAYER_CHECK_MAP_BOUNDARIES		
-				#ifdef MODE_128K
-					x_pant = n_pant % level_data->map_w;
-					y_pant = n_pant / level_data->map_w;
-				#else
-					x_pant = n_pant % MAP_W; y_pant = n_pant / MAP_W;
-				#endif
-			#endif
-
 			#ifdef ENABLE_CHECKPOINTS
 				if (sg_do_load) {
 					mem_load ();
 				}
-			#endif		
+			#endif
 
+			// [FIX v3.100] x_pant / y_pant se calculaban antes de cargar el
+			// checkpoint, que cambia n_pant.
+			#ifdef PLAYER_CHECK_MAP_BOUNDARIES
+				x_pant = n_pant % LEVEL_MAP_W;
+				y_pant = n_pant / LEVEL_MAP_W;
+			#endif
+
+			// [v3.100] La música estaba comentada en 128K.
 			#ifdef MODE_128K
-				// Play music
-				#ifdef COMPRESSED_LEVELS		
-					//wyz_play_music (levels [level].music_id);
+				#ifdef COMPRESSED_LEVELS
+					wyz_play_music (levels [level].music);
 				#else
-					//wyz_play_music (1);
-				#endif		
+					wyz_play_music (1);
+				#endif
 			#endif
 			#ifdef CPC
-				wyz_play_music (1);	
+				wyz_play_music (1);
 			#endif
 
 			#ifdef MSC_MAXITEMS
 				display_items ();
 			#endif
-		
+
+			#ifdef HOOK_LEVEL_START
+				hook_level_start ();
+			#endif
 
 			playing = 1;
 			while (playing) {
 				if (o_pant != n_pant) {
 					draw_scr ();
 					o_pant = n_pant;
+					#ifdef HOOK_ENTERING_SCREEN
+						hook_entering_screen ();
+					#endif
 				}
 			
 				#ifdef TIMER_ENABLE
@@ -374,9 +393,13 @@ void main (void) {
 
 				// Change screen
 				
+				// [v3.100] Todos los cambios de pantalla usan LEVEL_MAP_W / H, que con
+				// niveles es el tamaño del mapa del nivel actual. Antes había una
+				// mezcla de MAP_W y level_data->map_w (MAP_BOTTOM_KILLS y el paso hacia
+				// arriba usaban siempre MAP_W).
 				{
-					if (gpx == 0 && player.vx < 0 
-						#ifdef PLAYER_CHECK_MAP_BOUNDARIES	
+					if (gpx == 0 && player.vx < 0
+						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 							&& x_pant > 0
 						#endif
 					) {
@@ -389,12 +412,8 @@ void main (void) {
 
 					if (
 						gpx == 224 && player.vx > 0
-						#ifdef PLAYER_CHECK_MAP_BOUNDARIES	
-							#if defined (MODE_128K) && defined (COMPRESSED_LEVELS)
-								&& x_pant < (level_data->map_w - 1)	
-							#else			
-								&& x_pant < (MAP_W - 1)	
-							#endif
+						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
+							&& x_pant < (LEVEL_MAP_W - 1)
 						#endif
 					) {
 						n_pant ++;
@@ -404,12 +423,8 @@ void main (void) {
 						player.x = 0; gpx = 0;
 					}
 
-					if (gpy == 0 && player.vy < 0 && n_pant >= MAP_W) {
-						#if defined (MODE_128K) && defined (COMPRESSED_LEVELS)
-							n_pant -= level_data->map_w;
-						#else				
-							n_pant -= MAP_W;
-						#endif
+					if (gpy == 0 && player.vy < 0 && n_pant >= LEVEL_MAP_W) {
+						n_pant -= LEVEL_MAP_W;
 						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 							y_pant --;
 						#endif
@@ -417,40 +432,32 @@ void main (void) {
 					}
 
 					if (
-						gpy == 144 && player.vy > 0 
+						gpy == 144 && player.vy > 0
 						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
-						 	#if defined (MODE_128K) && defined (COMPRESSED_LEVELS)
-								&& y_pant < (level_data->map_h - 1)
-							#else
-								&& y_pant < (MAP_H - 1)
-							#endif
+							&& y_pant < (LEVEL_MAP_H - 1)
 						#endif
 					) {
 						#ifdef MAP_BOTTOM_KILLS
-							if (n_pant >= MAP_W * MAP_H - MAP_W) {
+							if (n_pant >= LEVEL_MAP_W * LEVEL_MAP_H - LEVEL_MAP_W) {
 								player.vy = -PLAYER_MAX_VY_CAYENDO;
 								kill_player (10);
-								
-							} else 
+
+							} else
 						#endif
 						{
-							#if defined (MODE_128K) && defined (COMPRESSED_LEVELS)
-								n_pant += level_data->map_w;
-							#else			
-								n_pant += MAP_W;
-							#endif
+							n_pant += LEVEL_MAP_W;
 							#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 								y_pant ++;
 							#endif
 							player.y = 0; gpy = 0;
 							if (player.vy > 256) player.vy = 256;
-						}	
+						}
 					}
 				}
 
-				
+
 				// Win game condition
-				// [FIX v3.100] LEVEL_MAX_OBJS: con niveles comprimidos depende del nivel.
+				// [FIX v3.100] LEVEL_MAX_OBJS, LEVEL_FIN_X / Y: con niveles dependen del nivel.
 				if (player.objs == LEVEL_MAX_OBJS
 					#ifdef ACTIVATE_SCRIPTING
 						|| script_result == 1
@@ -458,13 +465,13 @@ void main (void) {
 				) {
 					if (
 						pant_final == 99 ||
-						(n_pant == pant_final && (gpx >> 4 == PLAYER_FIN_X && gpy >> 4 == PLAYER_FIN_Y))
+						(n_pant == pant_final && (gpx >> 4 == LEVEL_FIN_X && gpy >> 4 == LEVEL_FIN_Y))
 					) {
 						success = 1;
-						playing = 0;					
+						playing = 0;
 					}
 				}
-			
+
 				// Game over condition
 				if (player.life == 0
 					#ifdef ACTIVATE_SCRIPTING
@@ -474,59 +481,50 @@ void main (void) {
 						|| ctimer.zero
 					#endif
 				) {
-					playing = 0;				
+					playing = 0;
 				}
 			}
 			sp_WaitForNoKey ();
-		
-			#if defined MODE_128K || defined CPC		
+
+			#if defined MODE_128K || defined CPC
 				wyz_stop_sound ();
 			#endif
 
 			saca_a_todo_el_mundo_de_aqui ();
 			sp_UpdateNow ();
-			
+
 			if (success) {
+				#ifdef HOOK_LEVEL_END
+					hook_level_end ();
+				#endif
 				#ifdef COMPRESSED_LEVELS
-					/*
-					wyz_play_music (6);
-					print_str (10, 11, 79, spacer);
-					print_str (10, 12, 79, " ZONE CLEAR ");
-					print_str (10, 13, 79, spacer);
-					sp_UpdateNow ();
-					sp_WaitForNoKey ();
-					espera_activa (250);			
-					*/
 					level ++;
 					if (level == MAX_LEVELS) {
-						game_ending ();
 						mlplaying = 0;
 					}
-				#else
-					game_ending (); 
 				#endif
-			} else {
-				#ifdef COMPRESSED_LEVELS
-					#ifdef MODE_128K
-						//wyz_play_music (8);
-					#endif
-
-					#if defined(TIMER_ENABLE) && defined(TIMER_GAMEOVER_0) && defined(SHOW_TIMER_OVER)
-						if (ctimer.zero) time_over (); else game_over ();
+				if (mlplaying == 0) {
+					#ifdef HOOK_GAME_ENDING
+						hook_game_ending ();
 					#else
-						game_over ();
+						game_ending ();
 					#endif
-					mlplaying = 0;
-					#ifdef MODE_128K
-						wyz_stop_sound ();
-					#endif
+				}
+			} else {
+				mlplaying = 0;
+				#ifdef HOOK_GAME_OVER
+					hook_game_over ();
+				#elif defined(TIMER_ENABLE) && defined(TIMER_GAMEOVER_0) && defined(SHOW_TIMER_OVER)
+					if (ctimer.zero) time_over (); else game_over ();
 				#else
-					//wyz_play_music (8);
 					game_over ();
+				#endif
+				#if defined MODE_128K || defined CPC
+					wyz_stop_sound ();
 				#endif
 			}
 		}
-	
+
 		cortina ();
 	}
 }

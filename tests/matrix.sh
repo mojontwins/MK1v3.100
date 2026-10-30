@@ -59,6 +59,9 @@ CONFIGS=(
 	"notdirect|-DIRECT_TO_PLAY"
 	"stepsnd|$SIDE_JUMP PLAYER_STEP_SOUND"
 	"altanim|$SIDE_JUMP PLAYER_ALTERNATE_ANIMATION"
+	"128k|MODE_128K"
+	"128kfire|MODE_128K $SIDE_JUMP $FIRE"
+	"128kpause|MODE_128K PAUSE_ABORT"
 )
 
 pass=0; fail=0
@@ -66,6 +69,7 @@ for t in $targets; do
 	for c in "${CONFIGS[@]}"; do
 		name=${c%%|*}; defs=${c#*|}
 		[[ $name =~ $filter ]] || continue
+		[[ $t == cpc && $name == 128k* ]] && continue		# 128K es solo ZX
 		if "$REPO/tests/build.sh" $t "$OUT/$t-$name.bin" $defs; then
 			printf "  ok   %-4s %-12s %6d bytes\n" $t $name $(stat -c%s "$OUT/$t-$name.bin")
 			pass=$((pass+1))

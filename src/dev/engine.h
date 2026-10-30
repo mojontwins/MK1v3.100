@@ -692,9 +692,9 @@ void init_player (void) {
 	// Inicializa player con los valores iniciales
 	// (de ahí lo de inicializar).
 	
-	#ifndef COMPRESSED_LEVELS
-		set_player_at (PLAYER_INI_X << 4, PLAYER_INI_Y << 4);
-	#endif	
+	// [v3.100] Igual con y sin niveles: LEVEL_INI_X / Y salen de la cabecera
+	// del nivel o de config.h.
+	set_player_at (LEVEL_INI_X << 4, LEVEL_INI_Y << 4);
 
 	player.vy = 		0;
 	player.vx = 		0;
@@ -730,7 +730,7 @@ void init_player (void) {
 		#endif
 	#endif	
 
-	pant_final = SCR_FIN;
+	pant_final = LEVEL_SCR_FIN;
 
 	#ifdef TIMER_ENABLE
 		ctimer.count = 0;
@@ -1439,28 +1439,20 @@ void move (void) {
 #endif
 
 #ifdef COMPRESSED_LEVELS
-	#ifdef MODE_128K
-		void prepare_level (unsigned char level) {
-			get_resource (levels [level].resource, (unsigned int) (level_data));
-			//unpack_RAMn (levels [level].page, levels [level].address, (unsigned int) (level_data));
-			n_pant = level_data.scr_ini;
-			set_player_at (level_data->ini_x << 4, level_data->ini_y << 4);
-		}
-	#else
-		void prepare_level (unsigned char level) {
-			// Decompress "bundle" which is map + behs + enems/hotspots + bolts
-			unpack ((unsigned char *) levelset [level].leveldata_c, mapa);
+	// [v3.100] Carga un nivel: el bundle (datos de juego) en level_data y, si
+	// el nivel los define, su tileset y su spriteset encima de los actuales.
+	// Sustituye a las dos versiones anteriores (48K y 128K), que no
+	// funcionaban (level_data.campo frente a level_data->campo, tablas fijas
+	// de dos niveles, etiquetas repetidas...).
+	void prepare_level (void) {
+		get_resource (levels [level].bundle, (unsigned int) (level_data));
 
-			// Now the tileset
-			unpack ((unsigned char *) levelset [level].tileset_c, tileset);
-			
-			// Finally the spriteset
-			unpack ((unsigned char *) levelset [level].spriteset_c, (unsigned char *) (sprite_1_a - 16));
-			
-			n_pant = levelset [level].ini_pant;
-			set_player_at (levelset [level].ini_x << 4, levelset [level].ini_y << 4);
-		}
-	#endif
+		if (levels [level].tileset != NO_RESOURCE)
+			get_resource (levels [level].tileset, (unsigned int) (tileset));
+
+		if (levels [level].spriteset != NO_RESOURCE)
+			get_resource (levels [level].spriteset, (unsigned int) (sprite_1_a - 16));
+	}
 #endif
 
 // ---------------------------------------------------------------------------

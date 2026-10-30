@@ -27,17 +27,27 @@
 // Si, por ejemplo, tu juego además lleva 3 proyectiles, necesitarás
 // 4*10 + 3*5 = 55 bloques.
 
-// Versión para 48K
-#define STACK_SIZE 		64
-#define STACK_ADDR		61952
-#define AD_FREE 		STACK_ADDR-STACK_SIZE-(NUMBLOCKS*15)
-
-// Versión para 128K
-//#define STACK_ADDR 24399
-//#define AD_FREE 61952-(NUMBLOCKS*15)
-
-// Optimal place to compile if using COMPRESSED_LEVELS:
-// 23296 + MAP_W * MAP_H * (108) + MAX_CERROJOS * 4 + 49
+// [v3.100] Mapa de memoria según el modo (antes había que comentar/descomentar).
+#ifdef MODE_128K
+	// En 128K la pila NO puede estar entre 0xC000 y 0xFFFF: al paginar otra RAM
+	// para descomprimir un recurso se perderían las direcciones de retorno.
+	// Va justo debajo del programa (24200) y crece hacia abajo, hacia la zona
+	// libre que deja BASE_BRK_BUFF (hasta 23877).
+	// Por la misma razón todo lo que se use con otra página puesta (pila,
+	// descompresor, ISR y los destinos de get_resource: level_data, tileset y
+	// sprites) tiene que quedar por debajo de 0xC000. comp-zx.sh lo comprueba.
+	#define STACK_ADDR		24200
+	// [FIX v3.100] Los bloques de sprites (sp_AddMemory) acababan en 61952
+	// (0xF200), pisando la tabla de vectores IM2 (0xF000-0xF100) y la ISR
+	// genérica que se copia en 0xF1F1. Al mover el primer sprite se corrompía
+	// la ISR y el juego saltaba a la ROM. En 48K no pasa porque las
+	// interrupciones están deshabilitadas. Ahora terminan en 0xF000.
+	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
+#else
+	#define STACK_SIZE 		64
+	#define STACK_ADDR		61952
+	#define AD_FREE 		STACK_ADDR-STACK_SIZE-(NUMBLOCKS*15)
+#endif
 
 // Cosas del juego:
 
@@ -77,16 +87,8 @@
 // GAME ASSETS
 // ***********
 
-// [FIX v3.100] Faltaba el #endif de COMPRESSED_LEVELS (el zcpp de Windows lo
-// toleraba) y levels_128.h no existe: el archivo es speccy_128/levels128.h.
-#ifdef COMPRESSED_LEVELS
-	#ifdef MODE_128K
-		#include "speccy_128/levels128.h"
-	#else
-		#include "levels.h"
-	#endif
-#endif
-
+// Los gráficos van primero: en 128K tienen que quedar por debajo de 0xC000
+// porque los niveles pueden cargar tileset y spriteset encima.
 #ifdef CPC
 	#include "cpc/tileset.h"
 	#include "cpc/sprites.h"
@@ -99,8 +101,15 @@
 	#include "speccy/extrasprites.h"
 #endif
 
-#include "enems.h"
-#include "mapa.h"
+// [v3.100] Con COMPRESSED_LEVELS los datos de juego (mapa, enemigos, hotspots,
+// cerrojos, comportamientos) vienen en los bundles de cada nivel. Antes aquí
+// había dos sistemas (48K y 128K) que no llegaban a compilar.
+#ifdef COMPRESSED_LEVELS
+	#include "levels.h"
+#else
+	#include "enems.h"
+	#include "mapa.h"
+#endif
 
 // **********
 // HW BACKEND
@@ -138,6 +147,9 @@
 #endif
 
 #include "engine.h"
+
+// [v3.100] Código propio del juego y ganchos (hooks) del bucle principal.
+#include "custom.h"
 
 #include "mainloop.h"
 
