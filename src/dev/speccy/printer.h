@@ -169,9 +169,13 @@ void system_init (void) {
 	}
 #endif
 
+// [OPT v3.100] Sin "/ 10" ni "% 10" (dos llamadas a la rutina de división):
+// las decenas se cuentan restando. Los números del marcador son de 0 a 99.
 void print_number2 (unsigned char x, unsigned char y, unsigned char number) {
-	sp_PrintAtInv (y, x, 7, 16 + (number / 10));
-	sp_PrintAtInv (y, x + 1, 7, 16 + (number % 10));
+	pt = 16;
+	while (number >= 10) { number -= 10; pt ++; }
+	sp_PrintAtInv (y, x, 7, pt);
+	sp_PrintAtInv (y, x + 1, 7, 16 + number);
 }
 
 void print_str (unsigned char x, unsigned char y, unsigned char c, unsigned char *s) {
