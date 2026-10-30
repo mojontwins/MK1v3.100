@@ -3,7 +3,7 @@
 
 // Extrasprites.h
 // Contiene sprites extra para el modo de matar enemigos de MTE MK1
-// SÛlo se incluir· (tras los sprites) si se define PLAYER_KILLS_ENEMIES
+// S√≥lo se incluir√° (tras los sprites) si se define PLAYER_KILLS_ENEMIES
 // Copyleft 2010 The Mojon Twins
 
 // Frames extra por si se pueden eliminar los enemigos:

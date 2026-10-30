@@ -4,33 +4,33 @@
 // 128K stuff
 
 // Esto parece un scratchpad. Anoto cosas. Cuando esto funcione y tal
-// lo limpiaré. Por ahora, a joerce.
+// lo limpiarÃ©. Por ahora, a joerce.
 
 /*
-	Primera prueba de estandarización 128K de la Churrera
+	Primera prueba de estandarizaciÃ³n 128K de la Churrera
 	=====================================================
 	
-	Importante: todos los niveles tienen que tener el mismo número total
+	Importante: todos los niveles tienen que tener el mismo nÃºmero total
 	de pantallas. Da igual como se organicen, cada una puede tener sus 
-	propios map_w y map_h, pero el número total debe ser el mismo.
+	propios map_w y map_h, pero el nÃºmero total debe ser el mismo.
 	
 	Putada: los cerrojos. Voy a poner un MAX_CERROJOS = 32 y a joerce. 32
-	cerrojos por fase está muy bien. Son 4 bytes por cerrojo = 128 bytes!
+	cerrojos por fase estÃ¡ muy bien. Son 4 bytes por cerrojo = 128 bytes!
 	
-	Añadimos un #define 128K_MODE al principio del todo. También hay que
-	añadir un #define COMPRESSED_LEVELS. Hay que activar LAS DOS.
+	AÃ±adimos un #define 128K_MODE al principio del todo. TambiÃ©n hay que
+	aÃ±adir un #define COMPRESSED_LEVELS. Hay que activar LAS DOS.
 	
 	Si se define COMPRESSED_LEVELS y 128K_MODE, en lugar de levels.h se 
 	carga un librarian especial llamado 128k.h que trae espacio para todo
-	un nivel (del tamaño más grande, según manden MAP_W y MAP_H de config.h).
-	También trae la rutina prepare_level_128 y las necesarias para la pagi-
-	nación:
+	un nivel (del tamaÃ±o mÃ¡s grande, segÃºn manden MAP_W y MAP_H de config.h).
+	TambiÃ©n trae la rutina prepare_level_128 y las necesarias para la pagi-
+	naciÃ³n:
 	
 	void prepare_128k_level (unsigned char level);
 	
-	Esta función descomprimirá el nivel desde RAM alta hata el espacio en 
+	Esta funciÃ³n descomprimirÃ¡ el nivel desde RAM alta hata el espacio en 
 	RAM baja. El espacio equivale al binario del nivel generado por la nueva
-	aplicación buildlevel:
+	aplicaciÃ³n buildlevel:
 	
 	Chunk		Size
 	HEADER		16
@@ -43,7 +43,7 @@
 	HOTSPOTS	3 * MAP_W * MAP_H
 	BEHAVIOURS	48
 	
-	El espacio lo creamos definiendo arrays de esos tamaños del mismo nombre
+	El espacio lo creamos definiendo arrays de esos tamaÃ±os del mismo nombre
 	que las normales que hay en mapa.h, tileset.h, sprites.h, extrasprites.h
 	y enems.h para que se puedan usar directamente por el engine.
 */

@@ -59,12 +59,12 @@ typedef struct {
 } INERCIA;
 
 INERCIA player;
-signed int ptgmx, ptgmy; 			// Arrastre de las plataformas mÛviles
+signed int ptgmx, ptgmy; 			// Arrastre de las plataformas m√≥viles
 unsigned char gpx, gpy; 			// Coordenadas de pixel
 
 // Bicharracos
 
-unsigned char enoffs; 				// Õndice de los enemigos de la pantalla
+unsigned char enoffs; 				// √çndice de los enemigos de la pantalla
 unsigned char enoffsmasi;
 unsigned char *map_pointer;
 
@@ -126,16 +126,16 @@ unsigned char ram_page @ BASE_ARRAYS + 67 + 6 * MAX_BULLETS;
 
 // Mapa / pantallas
 
-// atributos de la pantalla: Contiene informaciÛn
-// sobre quÈ tipo de tile hay en cada casilla
+// atributos de la pantalla: Contiene informaci√≥n
+// sobre qu√© tipo de tile hay en cada casilla
 unsigned char map_attr [150] @ BASE_ROOM_BUFFERS;
 unsigned char map_buff [150] @ BASE_ROOM_BUFFERS + 150;
 
-// posiciÛn del objeto (hotspot). Para no objeto,
-// se colocan a 240,240, que est· siempre fuera de pantalla.
+// posici√≥n del objeto (hotspot). Para no objeto,
+// se colocan a 240,240, que est√° siempre fuera de pantalla.
 unsigned char hotspot_x;
 unsigned char hotspot_y;
-unsigned char orig_tile;	// Tile que habÌa originalmente bajo el objeto
+unsigned char orig_tile;	// Tile que hab√≠a originalmente bajo el objeto
 
 unsigned char pant_final;
 

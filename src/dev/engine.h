@@ -94,7 +94,7 @@ signed int addsign (signed int n, signed int value) {
 }
 
 // ---------------------------------------------------------------------------
-// Funciones para la disparasiÛn
+// Funciones para la disparasi√≥n
 // ---------------------------------------------------------------------------
 
 #ifdef PLAYER_CAN_FIRE
@@ -422,7 +422,7 @@ void draw_scr_background (void) {
 	// Inicializamos en RNG
 	seed = n_pant;
 
-	// Coordenadas de la pintasiÛn
+	// Coordenadas de la pintasi√≥n
 	rdx = rdy = 0;	
 
 	// Dibujar 150 tiles
@@ -438,7 +438,7 @@ void draw_scr_background (void) {
 				// Tiles impares del nibble menos significativo
 				rdd = rdc & 15;
 			} else {
-				// Tiles pares del nibble m·s significativo
+				// Tiles pares del nibble m√°s significativo
 				rdc = *map_pointer ++;
 				rdd = rdc >> 4;
 			}
@@ -476,7 +476,7 @@ void draw_scr_background (void) {
 	if (hotspots [n_pant].act != 1) {
 		rdt = 0;
 		#ifndef USE_HOTSPOTS_TYPE_3
-			// Vieja lÛgica: si el hotspot no est· activo y no era 0, puede aparecer una recarga.
+			// Vieja l√≥gica: si el hotspot no est√° activo y no era 0, puede aparecer una recarga.
 			if ((rand () & 3) == 2) rdt = 3;
 		#endif
 	}
@@ -515,7 +515,7 @@ void draw_scr (void) {
 
 	draw_scr_background ();
 	
-	// Movemos y cambiamos a los enemigos seg˙n el tipo que tengan
+	// Movemos y cambiamos a los enemigos seg√∫n el tipo que tengan
 
 	enoffsmasi = enoffs = n_pant * 3;
 
@@ -558,7 +558,7 @@ void draw_scr (void) {
 
 			#ifdef ENABLE_CUSTOM_TYPE_6
 				case 6:
-					// AÒade aquÌ tu cÛdigo custom. Esto es un ejemplo:
+					// A√±ade aqu√≠ tu c√≥digo custom. Esto es un ejemplo:
 					en_an_base_frame [gpit] = TYPE_6_FIXED_SPRITE << 1;
 					en_an_x [gpit] = malotes [enoffsmasi].x << 6;
 					en_an_y [gpit] = malotes [enoffsmasi].y << 6;
@@ -630,7 +630,7 @@ void set_player_at (unsigned char x, unsigned char y) {
 
 void init_player (void) {
 	// Inicializa player con los valores iniciales
-	// (de ahÌ lo de inicializar).
+	// (de ah√≠ lo de inicializar).
 	
 	#ifndef COMPRESSED_LEVELS
 		set_player_at (PLAYER_INI_X << 4, PLAYER_INI_Y << 4);
@@ -774,11 +774,11 @@ unsigned char move (void) {
 	// Vista genital
 
 	#ifdef PLAYER_MOGGY_STYLE
-		// La pulsaciÛn de las direcciones acelera. Si no se pulsa nada, se decelera.
+		// La pulsaci√≥n de las direcciones acelera. Si no se pulsa nada, se decelera.
 
 		//if ( ! ((pad0 & sp_UP) == 0 || (pad0 & sp_DOWN) == 0)) {
 		if ( (pad0 & sp_UP) && (pad & sp_DOWN) ) {
-			player.facing_v = 0xff;		// SeÒal de que no pulsamos una direcciÛn vertical
+			player.facing_v = 0xff;		// Se√±al de que no pulsamos una direcci√≥n vertical
 			if (player.vy > 0) {
 				player.vy -= PLAYER_RX;
 				if (player.vy < 0) player.vy = 0;
@@ -842,7 +842,7 @@ unsigned char move (void) {
 				PLAY_SFX (3);
 			}
 
-			// ContinuaciÛn del salto
+			// Continuaci√≥n del salto
 
 			#ifndef PLAYER_CUMULATIVE_JUMP	
 				if (
@@ -863,7 +863,7 @@ unsigned char move (void) {
 				}
 			#endif
 
-			// InterrupciÛn del salto
+			// Interrupci√≥n del salto
 
 			if (
 				#if defined PLAYER_CAN_FIRE && !defined USE_TWO_BUTTONS
@@ -903,7 +903,7 @@ unsigned char move (void) {
 		// Jetpac
 
 		#ifdef PLAYER_HAS_JETPAC
-			// Si pulsamos arriba se decrementa la velocidad hasta un lÌmite
+			// Si pulsamos arriba se decrementa la velocidad hasta un l√≠mite
 
 			if ((pad0 & sp_UP) == 0) {
 				player.vy -= PLAYER_INCR_JETPAC;
@@ -920,16 +920,16 @@ unsigned char move (void) {
 	// Convertimos a pixel
 	gpy = player.y >> 6;
 
-	// Reiniciamos las banderas de "sobre plataforma" y "colisiÛn matadora vertical"
+	// Reiniciamos las banderas de "sobre plataforma" y "colisi√≥n matadora vertical"
 	possee = 0; hit_v = 0;
 
-	// ColisiÛn vertical
+	// Colisi√≥n vertical
 
 	rds = player.vy + ptgmy;
 	if (rds) {
 		
-		// Las coordenadas de los tiles que tendremos que revisar cambian seg˙n
-		// el tipo de colisiÛn y la direcciÛn
+		// Las coordenadas de los tiles que tendremos que revisar cambian seg√∫n
+		// el tipo de colisi√≥n y la direcci√≥n
 
 		#ifdef BOUNDING_BOX_8_BOTTOM
 			cx1 = (gpx + 4) >> 4; cx2 = (gpx + 11) >> 4;
@@ -941,7 +941,7 @@ unsigned char move (void) {
 
 		if (rds < 0) { 			// Estamos ascendiendo
 
-			// Dependiendo del tipo de colisiÛn, las comprobaciones son diferentes:
+			// Dependiendo del tipo de colisi√≥n, las comprobaciones son diferentes:
 			#ifdef BOUNDING_BOX_8_BOTTOM
 				cy1 = cy2 = (gpy + 8) >> 4;
 			#elif defined BOUNDING_BOX_8_CENTERED
@@ -950,10 +950,10 @@ unsigned char move (void) {
 				cy1 = cy2 = gpy >> 4;
 			#endif
 
-			// Calculamos la colisiÛn en esos dos puntos cx1,cy1 y cx2, cy2
+			// Calculamos la colisi√≥n en esos dos puntos cx1,cy1 y cx2, cy2
 			cm_two_points ();
 
-			// Si topamos con obst·culo hay que parar y sacar al sprite del obst·culo.
+			// Si topamos con obst√°culo hay que parar y sacar al sprite del obst√°culo.
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
@@ -980,7 +980,7 @@ unsigned char move (void) {
 			}
 		} else if (rds > 0) {		// Estamos descendiendo
 
-			// Dependiendo del tipo de colisiÛn, las comprobaciones son diferentes:
+			// Dependiendo del tipo de colisi√≥n, las comprobaciones son diferentes:
 			#ifdef BOUNDING_BOX_8_BOTTOM
 				cy1 = cy2 = (gpy + 15) >> 4;
 			#elif defined BOUNDING_BOX_8_CENTERED
@@ -989,10 +989,10 @@ unsigned char move (void) {
 				cy1 = cy2 = (gpy + 15) >> 4;
 			#endif
 
-			// Calculamos la colisiÛn en esos dos puntos cx1,cy1 y cx2, cy2
+			// Calculamos la colisi√≥n en esos dos puntos cx1,cy1 y cx2, cy2
 			cm_two_points ();
 
-			// Si topamos con obst·culo hay que parar y sacar al sprite del obst·culo.
+			// Si topamos con obst√°culo hay que parar y sacar al sprite del obst√°culo.
 			if (
 				#if defined PLAYER_MOGGY_STYLE || defined SIMPLE_PLATFORMS
 					(at1 & 12) || (at2 & 12)
@@ -1035,8 +1035,8 @@ unsigned char move (void) {
 			hit_v = 1;
 		}
 
-		// Cuando la gravedad es menor de 64, habr· un frame en el que no hay colisiÛn,
-		// por lo que hay que detectar que estamos posados de forma explÌcita
+		// Cuando la gravedad es menor de 64, habr√° un frame en el que no hay colisi√≥n,
+		// por lo que hay que detectar que estamos posados de forma expl√≠cita
 		#if !defined PLAYER_MOGGY_STYLE && PLAYER_G < 64
 			cy1 = cy2 = (gpy + 16) >> 4;
 			cm_two_points ();
@@ -1097,7 +1097,7 @@ unsigned char move (void) {
 	// Convertimos a pixel
 	gpx = player.x >> 6;
 
-	// ColisiÛn
+	// Colisi√≥n
 
 	hit_h = 0;
 	rds = player.vx + ptgmx;
@@ -1113,7 +1113,7 @@ unsigned char move (void) {
 
 		if (rds < 0) {			// Hacia la izquierda
 
-			// Dependiendo del tipo de colisiÛn, las comprobaciones son diferentes
+			// Dependiendo del tipo de colisi√≥n, las comprobaciones son diferentes
 			#ifdef BOUNDING_BOX_8_BOTTOM
 				cx1 = cx2 = (gpx + 4) >> 4;
 			#elif defined BOUNDING_BOX_8_CENTERED
@@ -1122,10 +1122,10 @@ unsigned char move (void) {
 				cx1 = cx2 = gpx >> 4;
 			#endif
 
-			// Calculamos la colisiÛn en esos dos puntos cx1,cy1 y cx2, cy2
+			// Calculamos la colisi√≥n en esos dos puntos cx1,cy1 y cx2, cy2
 			cm_two_points ();
 
-			// Si topamos con obst·culo hay que parar y sacar al sprite del obst·culo.
+			// Si topamos con obst√°culo hay que parar y sacar al sprite del obst√°culo.
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
@@ -1153,8 +1153,8 @@ unsigned char move (void) {
 
 		} else if (rds > 0) { 	// Hacia la derecha
 
-			// Dependiendo del tipo de colisiÛn, las comprobaciones son diferentes
-			// NÛtese que detectamos un pixel antes de tiempo. Esto es necesario por cÛmo
+			// Dependiendo del tipo de colisi√≥n, las comprobaciones son diferentes
+			// N√≥tese que detectamos un pixel antes de tiempo. Esto es necesario por c√≥mo
 			// funciona el punto fijo.
 			#ifdef BOUNDING_BOX_8_BOTTOM
 				cx1 = cx2 = (gpx + 12) >> 4;
@@ -1164,10 +1164,10 @@ unsigned char move (void) {
 				cx1 = cx2 = gpx >> 4;
 			#endif
 
-			// Calculamos la colisiÛn en esos dos puntos cx1,cy1 y cx2, cy2
+			// Calculamos la colisi√≥n en esos dos puntos cx1,cy1 y cx2, cy2
 			cm_two_points ();
 
-			// Si topamos con obst·culo hay que parar y sacar al sprite del obst·culo.
+			// Si topamos con obst√°culo hay que parar y sacar al sprite del obst√°culo.
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
@@ -1202,7 +1202,7 @@ unsigned char move (void) {
 	}
 
 	// En vista genital hay una prioridad entre vertical y horizontal
-	// para decidir adÛnde mira el muÒeco
+	// para decidir ad√≥nde mira el mu√±eco
 
 	#ifdef PLAYER_MOGGY_STYLE
 		#ifdef TOP_OVER_SIDE
@@ -1220,7 +1220,7 @@ unsigned char move (void) {
 		#endif	
 	#endif
 
-	// Establecemos este flag que dice si se empujÛ algo.
+	// Establecemos este flag que dice si se empuj√≥ algo.
 	// Es necesario si hay que pulsar FIRE para emujar, para que
 	// el jugador no dispare en ese supuesto.
 
@@ -1388,7 +1388,7 @@ unsigned char move (void) {
 #endif
 
 // ---------------------------------------------------------------------------
-// IntegraciÛn con msc
+// Integraci√≥n con msc
 // ---------------------------------------------------------------------------
 
 #ifdef ACTIVATE_SCRIPTING
@@ -1711,7 +1711,7 @@ void mueve_bicharracos (void) {
 			
 			// Collide with player
 			
-			// Plataformas mÛviles
+			// Plataformas m√≥viles
 			#ifndef PLAYER_MOGGY_STYLE
 				if (_en_t == 4) {
 					// If (horizontally) within range...
@@ -1743,7 +1743,7 @@ void mueve_bicharracos (void) {
 				// In genital, _en_t = any; in lateral, _en_t != 4
 				if (!tocado && collide (gpx, gpy, gpen_cx, gpen_cy) && player.estado == EST_NORMAL) {
 
-					// ColisiÛn especial: pisar enemigo
+					// Colisi√≥n especial: pisar enemigo
 
 					#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_STOMPS_ON_ENEMIES
 						if (
@@ -1783,7 +1783,7 @@ void mueve_bicharracos (void) {
 						} else
 					#endif
 
-					// ColisiÛn normal
+					// Colisi√≥n normal
 					{
 						tocado = 1;
 

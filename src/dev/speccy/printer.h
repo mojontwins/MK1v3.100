@@ -291,7 +291,7 @@ void cortina (void) {
 		.clearb2
 		
 			ld	a, (de)				// Nos traemos un atributo
-			and	199					// Le hacemos la m·scara 11000111 y dejamos PAPER a 0
+			and	199					// Le hacemos la m√°scara 11000111 y dejamos PAPER a 0
 			ld	(de), a				// Y lo volvemos a poner
 			
 			inc de					// Siguiente atributo
@@ -301,7 +301,7 @@ void cortina (void) {
 			pop bc
 			djnz clearb1
 			
-			//// Y ahora el cÛdigo original que escribÌ para UWOL:	
+			//// Y ahora el c√≥digo original que escrib√≠ para UWOL:	
 		
 			ld	a,	8
 		

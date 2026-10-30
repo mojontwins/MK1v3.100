@@ -1,6 +1,6 @@
 @echo off
 
-rem Cambia "%game%" por el nombre de tu güego.
+rem Cambia "%game%" por el nombre de tu gÃ¼ego.
 set game=bootee
 
 if [%1]==[justcompile] goto :compile
@@ -25,7 +25,7 @@ del ending.bin  > nul 2> nul
 
 :compile
 echo ### COMPILANDO SCRIPT ###
-rem no olvides cambiar NPANT por el nº de pantallas
+rem no olvides cambiar NPANT por el nÂº de pantallas
 rem ..\utils\msc ..\script\script.spt msc.h 30
 
 echo ### COMPILANDO GUEGO ###

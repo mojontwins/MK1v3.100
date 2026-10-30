@@ -285,12 +285,12 @@ void wyz_stop_sound (void) {
 		JP ROUT
 
 	;CARGA UNA CANCION
-	;.IN(A)=Nº DE CANCION
+	;.IN(A)=NÂº DE CANCION
 	.CARGA_CANCION
 		LD HL,INTERR ;CARGA CANCION 
 		SET 1,(HL) ;REPRODUCE CANCION
 		LD HL,SONG
-		LD (HL),A ;Nº A
+		LD (HL),A ;NÂº A
 
 	;DECODIFICAR
 	;IN-> INTERR 0 ON
@@ -338,7 +338,7 @@ void wyz_stop_sound (void) {
 		INC HL
 
 	;BUSCA Y GUARDA INICIO DE LOS CANALES EN EL MODULO MUS (OPTIMIZAR****************)
-	;AÑADE OFFSET DEL LOOP
+	;AÃ‘ADE OFFSET DEL LOOP
 
 		PUSH HL ;IX INICIO OFFSETS LOOP POR CANAL
 		POP IX
@@ -468,7 +468,7 @@ void wyz_stop_sound (void) {
 		LD (DE),A
 		INC HL
 		INC DE
-		LDI ;Nº DE INSTRUMENTO
+		LDI ;NÂº DE INSTRUMENTO
 		; LD A,(HL)
 		; LD (DE),A
 		; INC DE
@@ -554,7 +554,7 @@ void wyz_stop_sound (void) {
 		
 	;INTERPRETA 
 		; Lee una nueva linea. Yo voy a incrementar dos contadores:
-		; uno de lineas. Otro se incrementará cada 4 lineas. Éste lo "reflejaré" en low ram.
+		; uno de lineas. Otro se incrementarÃ¡ cada 4 lineas. Ã‰ste lo "reflejarÃ©" en low ram.
 		ld  a, (LINE_COUNTER)
 		inc a
 		cp  4
@@ -626,7 +626,7 @@ nonewblack:
 		JR Z,COM_EFECTO
 
 		INC HL
-		LD A,(HL) ;Nº DE PAUTA
+		LD A,(HL) ;NÂº DE PAUTA
 		INC HL
 		LD E,(HL) 
 		
@@ -840,7 +840,7 @@ nonewblack:
 		
 		BIT 7,A ;LOOP / EL RESTO DE BITS NO AFECTAN
 		JR Z,PCAJP0
-		AND 00011111B ;MÁXIMO LOOP PAUTA (0,32)X2!!!-> PARA ORNAMENTOS
+		AND 00011111B ;MÃXIMO LOOP PAUTA (0,32)X2!!!-> PARA ORNAMENTOS
 		RLCA ;X2
 		LD D,0
 		LD E,A
@@ -1076,7 +1076,7 @@ nonewblack:
 	
 	;MUSICA **** EL ORDEN DE LAS VARIABLES ES FIJO ******
 
-	.SONG 			defb 0	;DBNº DE CANCION
+	.SONG 			defb 0	;DBNÂº DE CANCION
 	.TEMPO 			defb 0	;DB TEMPO
 	.TTEMPO 		defb 0	;DB CONTADOR TEMPO
 

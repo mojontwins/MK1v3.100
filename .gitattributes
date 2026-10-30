@@ -1,0 +1,13 @@
+* text=auto
+*.bat text eol=crlf
+*.h text eol=lf
+*.c text eol=lf
+*.asm text eol=lf
+*.bas text eol=lf
+*.sh text eol=lf
+*.png binary
+*.bin binary
+*.tap binary
+*.sna binary
+*.cdt binary
+*.exe binary

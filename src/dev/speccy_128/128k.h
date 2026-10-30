@@ -13,7 +13,7 @@ void SetRAMBank(void) {
 #endasm
 }
 /*
-// Esto lo empecé pero por ahora lo dejo aparcado :-/
+// Esto lo empecÃ© pero por ahora lo dejo aparcado :-/
 #ifdef MOVE_STUFF_TO_RAM_6
 typedef struct {
 	int x, y;

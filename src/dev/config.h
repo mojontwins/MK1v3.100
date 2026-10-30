@@ -220,11 +220,11 @@
 // IV.1. Vertical movement. Only for side-view.
 
 #define PLAYER_MAX_VY_CAYENDO	512 	// Max falling speed (512/64 = 8 pixels/frame)
-#define PLAYER_G				32		// Gravity acceleration (32/64 = 0.5 píxeles/frame^2)
+#define PLAYER_G				32		// Gravity acceleration (32/64 = 0.5 pÃ­xeles/frame^2)
 
-#define PLAYER_VY_INICIAL_SALTO 64	 	// Initial junp velocity (64/64 = 1 píxel/frame)
-#define PLAYER_MAX_VY_SALTANDO	320 	// Max jump velocity (320/64 = 5 píxels/frame)
-#define PLAYER_INCR_SALTO		48		// acceleration while JUMP is pressed (48/64 = 0.75 píxeles/frame^2)
+#define PLAYER_VY_INICIAL_SALTO 64	 	// Initial junp velocity (64/64 = 1 pÃ­xel/frame)
+#define PLAYER_MAX_VY_SALTANDO	320 	// Max jump velocity (320/64 = 5 pÃ­xels/frame)
+#define PLAYER_INCR_SALTO		48		// acceleration while JUMP is pressed (48/64 = 0.75 pÃ­xeles/frame^2)
 
 #define PLAYER_INCR_JETPAC		48		// Vertical jetpac gauge. Must by > G of course!
 #define PLAYER_MAX_VY_JETPAC	256 	// Max vertical jetpac speed
@@ -233,9 +233,9 @@
 
 // IV.2. Horizontal (side view) or general (top view) movement.
 
-#define PLAYER_MAX_VX			256 	// Max velocity (192/64 = 3 píxels/frame)
-#define PLAYER_AX				48		// Acceleration (24/64 = 0,375 píxels/frame^2)
-#define PLAYER_RX				64		// Friction (32/64 = 0,5 píxels/frame^2)
+#define PLAYER_MAX_VX			256 	// Max velocity (192/64 = 3 pÃ­xels/frame)
+#define PLAYER_AX				48		// Acceleration (24/64 = 0,375 pÃ­xels/frame^2)
+#define PLAYER_RX				64		// Friction (32/64 = 0,5 pÃ­xels/frame^2)
 
 // ============================================================================
 // V. Tile behaviour

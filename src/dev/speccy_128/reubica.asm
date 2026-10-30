@@ -7,7 +7,7 @@ org 25002
 ld a, (memoria_a_cambiar)
 ld b, a
 
-ld A, (#5B5C)   ; en 5B5C est· la p·gina de memoria actual
+ld A, (#5B5C)   ; en 5B5C est√° la p√°gina de memoria actual
 and #F8
 or b
 ld (#5B5C), A   ; hay que preservarla, o el BASIC se vuelve loco
@@ -22,7 +22,7 @@ out (C), A
 ld hl, 32768
 ld de, 49152
 ld bc, 16384   
-ldir      ; copiamos 16k desde 32768 hasta 49152 (en la p·gina correcta)
+ldir      ; copiamos 16k desde 32768 hasta 49152 (en la p√°gina correcta)
 
 ; aqui vuelves a la 0
 

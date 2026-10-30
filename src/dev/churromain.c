@@ -11,26 +11,26 @@
 	#undef MODE_128K
 #endif
 
-// NUMBLOCKS es el número de bloques necesario para mover los sprites
-// Configurar bien este número es MUY IMPORTANTE
+// NUMBLOCKS es el nÃºmero de bloques necesario para mover los sprites
+// Configurar bien este nÃºmero es MUY IMPORTANTE
 
 #define NUMBLOCKS 40
 
 // La regla es esta: cada sprite de 16x16 ocupa 10 bloques.
 // Cada proyectil ocupa 5 bloques.
 
-// Si, por ejemplo, tu juego no tiene disparos, sólo necesitas bloques
+// Si, por ejemplo, tu juego no tiene disparos, sÃ³lo necesitas bloques
 // para el sprite principal y tres enemigos, o sea, 4*10 = 40 bloques.
 
-// Si, por ejemplo, tu juego además lleva 3 proyectiles, necesitarás
+// Si, por ejemplo, tu juego ademÃ¡s lleva 3 proyectiles, necesitarÃ¡s
 // 4*10 + 3*5 = 55 bloques.
 
-// Versión para 48K
+// VersiÃ³n para 48K
 #define STACK_SIZE 		64
 #define STACK_ADDR		61952
 #define AD_FREE 		STACK_ADDR-STACK_SIZE-(NUMBLOCKS*15)
 
-// Versión para 128K
+// VersiÃ³n para 128K
 //#define STACK_ADDR 24399
 //#define AD_FREE 61952-(NUMBLOCKS*15)
 
