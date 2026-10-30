@@ -20,6 +20,8 @@
  *     -rt FRAME     trampa: para la primera vez que se ejecuta la ROM (< 0x4000)
  *                   a partir de ese frame
  *     -tr DESDE HASTA  con -t, solo comprueba cuando el PC está en ese rango
+ *     -prof F1 FICH perfil: desde el frame F1, cuenta los ciclos de reloj gastados en
+ *                   cada dirección y los guarda en FICH (65536 enteros de 32 bits)
  *     -128          emula un Spectrum 128K
  *     -page N FICH  (128K) carga FICH en el banco de RAM N, desde su inicio
  *                   (lo mismo que hace el cargador con reubica). Repetible.
@@ -100,7 +102,8 @@ static void parse_keys(const char *s) {
 }
 
 int main(int argc, char **argv) {
-	int dumps[64][2], ndumps = 0, is128 = 0, npages = 0, trap = 0;
+	int dumps[64][2], ndumps = 0, is128 = 0, npages = 0, trap = 0, proffrom = -1;
+	const char *proffile = NULL; static uint32_t prof[65536]; uint16_t curpc = 0;
 	uint16_t ring[4096]; uint16_t ringsp[4096]; int rp = 0, armed = 0, tlo = 0, thi = 0x10000, romfrom = 0;
 	int page_n[8]; const char *page_f[8];
 	const char *bin = NULL, *prefix = "shot"; int addr = 24200, frames = 500, hash = 0, watch = -1;
@@ -113,6 +116,7 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[i], "-h")) hash = 1;
 		else if (!strcmp(argv[i], "-d")) { char *c; dumps[ndumps][0] = (int)strtol(argv[++i], &c, 0); dumps[ndumps][1] = (*c == ',') ? (int)strtol(c + 1, NULL, 0) : 16; ndumps++; }
 		else if (!strcmp(argv[i], "-128")) is128 = 1;
+		else if (!strcmp(argv[i], "-prof")) { proffrom = atoi(argv[++i]); proffile = argv[++i]; }
 		else if (!strcmp(argv[i], "-t")) trap = (int)strtol(argv[++i], NULL, 0);
 		else if (!strcmp(argv[i], "-rt")) { trap = -1; romfrom = atoi(argv[++i]); }
 		else if (!strcmp(argv[i], "-tr")) { tlo = (int)strtol(argv[++i], NULL, 0); thi = (int)strtol(argv[++i], NULL, 0); }
@@ -149,7 +153,14 @@ int main(int argc, char **argv) {
 		for (int e = 0; e < nevs; e++) if (evs[e].frame == fr) {
 			if (evs[e].down) zx_key_down(&sys, evs[e].key); else zx_key_up(&sys, evs[e].key);
 		}
-		if (trap) {
+		if (proffile && fr >= proffrom) {
+			/* Perfil: cada tick se atribuye a la instrucción en curso */
+			uint32_t t = 0, ticks = clk_us_to_ticks(sys.freq_hz, 20000);
+			for (; t < ticks; t++) { sys.pins = _zx_tick(&sys, sys.pins);
+				if (z80_opdone(&sys.cpu)) curpc = sys.cpu.pc - 1;
+				prof[curpc] ++; }
+			kbd_update(&sys.kbd, 20000);
+		} else if (trap) {
 			uint32_t t = 0, ticks = clk_us_to_ticks(sys.freq_hz, 20000);
 			for (; t < ticks; t++) { sys.pins = _zx_tick(&sys, sys.pins);
 				if (z80_opdone(&sys.cpu)) {
@@ -177,6 +188,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	(void)si;
+	if (proffile) { FILE *pf = fopen(proffile, "wb"); fwrite(prof, 4, 65536, pf); fclose(pf); }
 	for (int d = 0; d < ndumps; d++) {
 		for (int a = 0; a < dumps[d][1]; a++) {
 			if ((a & 15) == 0) printf("%s%04X:", a ? "\n" : "", (dumps[d][0] + a) & 0xffff);
