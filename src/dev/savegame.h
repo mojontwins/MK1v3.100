@@ -3,14 +3,9 @@
 
 // Savegame / checkpoint routines
 
-// [FIX v3.100] Cambios en este archivo:
-//  * Se incluye antes de engine.h (kill_player usa sg_saved y sg_pool).
-//  * Funciona sin scripting: entonces no se guardan flags (SG_NFLAGS = 0).
-//  * "sg_pool [sgit] = flags [sgit ++]" lee y modifica sgit en la misma
-//    expresión: en C el orden no está definido. Ahora es un for normal.
-//  * El menú imprimía las dos opciones en la misma línea y usaba sp_GetKey,
-//    que no existe en CPC. Ahora usa 1 / 2 con sp_KeyPressed.
-//  * Fuera los stubs vacíos tape_save / tape_load.
+// Un hotspot de tipo 6 guarda el estado en sg_pool (mem_save). Al morir
+// (CP_RESET_WHEN_DYING) o al elegir "CONTINUE" en el menú del título se
+// recupera (mem_load). Sin scripting no se guardan flags.
 
 // Contenido de sg_pool:
 // [0 .. SG_NFLAGS - 1]  flags

@@ -7,10 +7,8 @@
 #define EST_PARP 		2
 #define EST_MUR 		4
 
-// [v3.100] Las constantes derivadas de config.h están en config_derived.h.
-
-// [v3.100] Sincronía de frames: la ISR cuenta interrupciones en isr_frames y
-// el bucle principal espera a que pasen GAME_FRAME_TICKS antes de seguir.
+// Sincronía de frames: la ISR cuenta interrupciones en isr_frames y el bucle
+// principal espera a que pasen GAME_FRAME_TICKS antes de seguir.
 unsigned char isr_frames;
 
 #define sgni(n)			(n < 0 ? -1 : 1)
@@ -37,9 +35,7 @@ unsigned char isr_frames;
 // Teclado
 unsigned char pad0, pad1, pad_this_frame;
 
-// [FIX v3.100] key_jump y key_fire se declaraban aquí y se volvían a definir
-// (inicializadas) en {speccy,cpc}/sysvars.h -> "Already defined". Ahora solo
-// existen en sysvars.h.
+// key_jump y key_fire (USE_TWO_BUTTONS) están en {speccy,cpc}/sysvars.h.
 
 // Player
 
@@ -83,8 +79,7 @@ unsigned char *en_an_next_frame [3] 				AT (BASE_ARRAYS + 12);
 	unsigned char en_an_morido  [3] 				AT (BASE_ARRAYS + 18);
 #endif
 
-// [FIX v3.100] Aquí se usaba RANDOM_RESPAWN pero config.h define
-// ENABLE_RANDOM_RESPAWN. Ahora todo el motor usa ENABLE_RANDOM_RESPAWN.
+// Posición y velocidad propias (x64) de fanties y enemigos de tipo 6.
 #ifdef ENEMS_HAVE_FREE_COORDS
 	signed int en_an_x [3] 							AT (BASE_ARRAYS + 21);
 	signed int en_an_y [3] 							AT (BASE_ARRAYS + 27);
@@ -114,8 +109,6 @@ signed char _en_mx, _en_my;
 #endif
 
 // Disparos
-// [FIX v3.100] bullets_my y bullets_life terminaban en ";;": un ";" suelto
-// fuera de una función es un error en sccz80. Rompía PLAYER_CAN_FIRE.
 
 #ifdef PLAYER_CAN_FIRE
 	unsigned char bullets_x [MAX_BULLETS] 			AT (BASE_ARRAYS + 63);
@@ -162,9 +155,8 @@ unsigned char maincounter;
 unsigned char objs_old, keys_old, life_old, killed_old;
 
 // Breakable walls/etc
-// [FIX v3.100] brk_buff estaba en BASE_ROOM_BUFFERS + 300, que en ZX es
-// exactamente BASE_ARRAYS: al romper muros se machacaban los arrays de
-// animación de los enemigos. Ahora cada plataforma define BASE_BRK_BUFF.
+// Golpes recibidos por cada tile de la pantalla (BASE_BRK_BUFF lo fija cada
+// plataforma en su sysvars.h).
 #ifdef BREAKABLE_WALLS
 	unsigned char brk_buff [150] AT (BASE_BRK_BUFF);
 #endif

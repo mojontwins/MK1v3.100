@@ -10,10 +10,9 @@
 // The player is, thus, compiled to $C000, and its addresses
 // are:
 
-// [v3.100] Las direcciones ya no están escritas a mano: comp-zx.sh ensambla
-// speccy_128/wyz/wyzplayer.asm y genera wyz_addrs.h con WYZPLAYERINIT,
-// WYZPLAYERISR, INICIAEFECTO, CARGA_CANCION y SILENCIA_PLAYER a partir de su
-// tabla de símbolos. Si cambian el reproductor o sus datos, siguen siendo válidas.
+// comp-zx.sh ensambla speccy_128/wyz/wyzplayer.asm y genera wyz_addrs.h con
+// WYZPLAYERINIT, WYZPLAYERISR, INICIAEFECTO, CARGA_CANCION y SILENCIA_PLAYER
+// a partir de su tabla de símbolos.
 #include "wyz_addrs.h"
 
 // Start.
@@ -24,7 +23,7 @@
 #endasm
 
 void ISR(void) {
-	isr_frames ++;		// [v3.100] Sincronía de frames
+	isr_frames ++;		// Sincronía de frames
 	#asm
 		ld b, 1
 		call SetRAMBank

@@ -4,7 +4,7 @@
 // custom.h
 // Código propio del juego y ganchos (hooks) del bucle principal.
 
-// [v3.100] Aquí va todo lo que un juego añade al motor sin tocarlo: pantallas
+// Aquí va todo lo que un juego añade al motor sin tocarlo: pantallas
 // de presentación de nivel, cinemáticas, menús, efectos... El motor llama a
 // estas funciones desde mainloop.h solo si se define su HOOK_*, así que un
 // gancho que no se usa no ocupa nada.

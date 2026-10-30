@@ -7,7 +7,6 @@ extern unsigned char *player_frames [0];
 	// left: 2 + frame
 	// up: 4 + frame
 	// down: 6 + frame
-	// [FIX v3.100] Faltaba la etiqueta ._player_frames.
 	#asm
 		._player_frames
 		defw SPRITE_00, SPRITE_01, SPRITE_02, SPRITE_03
@@ -42,7 +41,6 @@ extern unsigned char *player_frames [0];
 			defw SPRITE_04, SPRITE_05, SPRITE_06, SPRITE_05
 			defw SPRITE_03, SPRITE_07
 	#endasm
-	// [FIX v3.100] Aquí sobraba un "};" (resto del array en C de la versión ZX).
 #endif
 
 // Sprite cell arrays for the malotes

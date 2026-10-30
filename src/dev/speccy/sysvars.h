@@ -47,8 +47,8 @@
 	};
 #endif
 
-// [FIX v3.100] KEY_H, KEY_Y y KEY_Z terminaban en ";", lo que rompía
-// sp_KeyPressed (KEY_H) y PAUSE_ABORT.
+// Teclas especiales: M (acción del script), H / Y (pausa / abortar),
+// Z (cambiar objeto), 1 / 2 (menú de checkpoints).
 #define KEY_M 0x047f
 #define KEY_H 0x10bf
 #define KEY_Y 0x10df
@@ -82,5 +82,4 @@ extern struct sp_Rect spritesClip [0];
 		defb VIEWPORT_Y, VIEWPORT_X, 20, 30
 #endasm
 
-// [v3.100] MAX_BULLETS = 0 sin disparos: ver config_derived.h
 		

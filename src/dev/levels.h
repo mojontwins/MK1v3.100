@@ -4,8 +4,7 @@
 // levels.h
 // Sistema de niveles (COMPRESSED_LEVELS)
 
-// [v3.100] Sustituye al antiguo levels.h de 48K (que nunca llegó a funcionar
-// y se ha eliminado) y a speccy_128/levels128.h. Ver docs/formato-niveles.md.
+// Ver docs/formato-niveles.md.
 //
 // Cada nivel tiene:
 //  * un "bundle" con los datos de juego, independiente de la plataforma, que

@@ -92,8 +92,7 @@
 	}
 #endif
 
-// [v3.100] unpack existe siempre (en 128K también hace falta para datos que
-// están en la RAM principal); antes era 48K o 128K.
+// Descomprime de src a dest (los dos en la RAM visible).
 	void unpack (unsigned char *src, unsigned char *dest) {
 		if (src != 0) {
 			address = src;

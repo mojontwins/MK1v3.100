@@ -12,4 +12,3 @@ void SetRAMBank(void) {
 			out (C), a
 #endasm
 }
-// [v3.100] Eliminado el bloque MOVE_STUFF_TO_RAM_6, que estaba comentado y sin terminar.

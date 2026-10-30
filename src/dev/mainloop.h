@@ -16,8 +16,8 @@ void main (void) {
 	cortina ();
 	system_init ();
 
-	// [v3.100] Ganchos (hooks): funciones opcionales que define cada juego en
-	// custom.h. Cada una se activa definiendo su HOOK_*. Ver custom.h.
+	// Ganchos (hooks): funciones opcionales que define cada juego en custom.h.
+	// Cada una se activa definiendo su HOOK_*.
 	#ifdef HOOK_GAME_INIT
 		hook_game_init ();
 	#endif
@@ -74,7 +74,6 @@ void main (void) {
 				sp_UpdateNow();
 
 				#ifdef MODE_128K
-					// [v3.100] RES_MARCO lo genera librarian (antes, un 1 fijo)
 					get_resource (RES_MARCO, 16384);
 				#else
 					unpack_screen (s_marco);
@@ -85,8 +84,8 @@ void main (void) {
 
 			init_player ();
 
-			// [v3.100] Con niveles, hotspots, cerrojos y enemigos vienen nuevos en
-			// el bundle; aun así init_malotes hace falta para fijar su vida.
+			// Con niveles, hotspots, cerrojos y enemigos vienen nuevos en el
+			// bundle; init_malotes sigue haciendo falta para fijar su vida.
 			#ifndef COMPRESSED_LEVELS
 				init_hotspots ();
 				#if !defined DEACTIVATE_KEYS
@@ -144,14 +143,14 @@ void main (void) {
 				}
 			#endif
 
-			// [FIX v3.100] x_pant / y_pant se calculaban antes de cargar el
-			// checkpoint, que cambia n_pant.
+			// Coordenadas de la pantalla en el mapa (después de cargar el
+			// checkpoint, que puede cambiar n_pant).
 			#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 				x_pant = n_pant % LEVEL_MAP_W;
 				y_pant = n_pant / LEVEL_MAP_W;
 			#endif
 
-			// [v3.100] La música estaba comentada en 128K.
+			// Música del nivel
 			#ifdef MODE_128K
 				#ifdef COMPRESSED_LEVELS
 					wyz_play_music (levels [level].music);
@@ -309,7 +308,8 @@ void main (void) {
 				// Update to screen
 				sp_UpdateNow();
 
-				// [v3.100] Sincronía de frames (en CPC la hace sp_UpdateNow)
+				// Sincronía de frames: espera a que pasen GAME_FRAME_TICKS
+				// interrupciones desde el frame anterior (en CPC lo hace sp_UpdateNow).
 				#if !defined CPC && GAME_FRAME_TICKS > 0
 					while (isr_frames < GAME_FRAME_TICKS);
 					isr_frames = 0;
@@ -379,10 +379,9 @@ void main (void) {
 						#endif				
 						saca_a_todo_el_mundo_de_aqui ();
 						pause_screen ();
-						// [FIX v3.100] Ponía key_h (en minúsculas), que no existe.
 						while (!sp_KeyPressed (KEY_H));
 						sp_WaitForNoKey ();
-						redraw_scr ();		// [FIX v3.100] antes draw_scr ()
+						redraw_scr ();
 						
 						#ifdef MODE_128K
 							#ifdef COMPRESSED_LEVELS
@@ -399,10 +398,8 @@ void main (void) {
 
 				// Change screen
 				
-				// [v3.100] Todos los cambios de pantalla usan LEVEL_MAP_W / H, que con
-				// niveles es el tamaño del mapa del nivel actual. Antes había una
-				// mezcla de MAP_W y level_data->map_w (MAP_BOTTOM_KILLS y el paso hacia
-				// arriba usaban siempre MAP_W).
+				// Cambio de pantalla al salir por un borde. LEVEL_MAP_W / H es el
+				// tamaño del mapa (con niveles, el del nivel actual).
 				{
 					if (gpx == 0 && player.vx < 0
 						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
@@ -463,7 +460,7 @@ void main (void) {
 
 
 				// Win game condition
-				// [FIX v3.100] LEVEL_MAX_OBJS, LEVEL_FIN_X / Y: con niveles dependen del nivel.
+				// Todos los objetos y, si hay pantalla final, estar en su tile.
 				if (player.objs == LEVEL_MAX_OBJS
 					#ifdef ACTIVATE_SCRIPTING
 						|| script_result == 1

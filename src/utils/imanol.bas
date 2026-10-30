@@ -5,7 +5,7 @@
 
 #include "file.bi"
 
-' [FIX] En Linux el ejecutable no lleva extensión
+' Nombre del ejecutable de mkts_om (sin extensión fuera de Windows)
 #ifdef __FB_WIN32__
 	#define MKTS_OM_EXE "/mkts_om.exe"
 #else

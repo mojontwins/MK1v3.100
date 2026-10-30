@@ -4,14 +4,10 @@
 ' Reparte una lista de binarios (ya comprimidos) en páginas de RAM del
 ' Spectrum 128K y genera librarian.h con la tabla de recursos y get_resource.
 '
-' [v3.100]
-'  * Parámetros por línea de comandos (antes: list.txt y librarian.h fijos).
-'  * Genera #define RES_<NOMBRE> para cada recurso a partir del nombre del
-'    archivo (title.bin -> RES_TITLE, level1c.bin -> RES_LEVEL1C), así el
-'    código no depende del orden de la lista.
+'  * Cada recurso tiene un #define RES_<NOMBRE> sacado del nombre del archivo
+'    (title.bin -> RES_TITLE, level1c.bin -> RES_LEVEL1C).
 '  * Páginas configurables (por defecto 3, 4, 6, 7). La 1 es del WYZ player.
-'  * Avisa si un recurso no cabe en una página o se acaban las páginas.
-'  * Ignora líneas vacías y comentarios (#).
+'  * En la lista se ignoran las líneas vacías y los comentarios (#).
 '
 ' Uso: librarian list=lista.txt out=librarian.h [dir=salida] [pages=3,4,6,7]
 

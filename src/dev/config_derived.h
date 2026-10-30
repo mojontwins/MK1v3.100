@@ -2,7 +2,7 @@
 // Copyleft 2010-2014, 2026 the Mojon Twins
 
 // config_derived.h
-// [v3.100] Constantes y "banderas" derivadas de config.h.
+// Constantes y "banderas" derivadas de config.h.
 //
 // En lugar de repetir por todo el motor condiciones como
 //     #if defined PLAYER_KILLS_ENEMIES || defined PLAYER_CAN_FIRE

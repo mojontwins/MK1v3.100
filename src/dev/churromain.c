@@ -17,8 +17,8 @@
 // NUMBLOCKS es el número de bloques necesario para mover los sprites
 // Configurar bien este número es MUY IMPORTANTE
 
-// [v3.100] Se calcula solo: antes valía 40 fijo y al activar los disparos
-// splib2 se quedaba sin bloques. MAX_BULLETS vale 0 si no hay disparos.
+// Bloques de memoria que necesita splib2 para mover los sprites: 10 por cada
+// sprite de 16x16 (jugador y 3 enemigos) y 5 por cada bala.
 #define NUMBLOCKS (40 + 5 * MAX_BULLETS)
 
 // La regla es esta: cada sprite de 16x16 ocupa 10 bloques.
@@ -30,7 +30,7 @@
 // Si, por ejemplo, tu juego además lleva 3 proyectiles, necesitarás
 // 4*10 + 3*5 = 55 bloques.
 
-// [v3.100] Mapa de memoria según el modo (antes había que comentar/descomentar).
+// Mapa de memoria de la pila y los bloques de sprites, según el modo.
 #ifdef MODE_128K
 	// En 128K la pila NO puede estar entre 0xC000 y 0xFFFF: al paginar otra RAM
 	// para descomprimir un recurso se perderían las direcciones de retorno.
@@ -40,19 +40,14 @@
 	// descompresor, ISR y los destinos de get_resource: level_data, tileset y
 	// sprites) tiene que quedar por debajo de 0xC000. comp-zx.sh lo comprueba.
 	#define STACK_ADDR		24200
-	// [FIX v3.100] Los bloques de sprites (sp_AddMemory) acababan en 61952
-	// (0xF200), pisando la tabla de vectores IM2 (0xF000-0xF100) y la ISR
-	// genérica que se copia en 0xF1F1. Al mover el primer sprite se corrompía
-	// la ISR y el juego saltaba a la ROM. En 48K no pasa porque las
-	// interrupciones están deshabilitadas. Ahora terminan en 0xF000.
+	// Los bloques de sprites (sp_AddMemory) terminan en 0xF000, justo antes
+	// de la tabla de vectores IM2 (0xF000-0xF100) y de la ISR (0xF1F1).
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #else
-	// [v3.100] En 48K ahora también hay interrupciones IM2 (sincronía de
-	// frames): la tabla de vectores va en 0xF000-0xF100 y la ISR en 0xF1F1
-	// (splib2 usa 0xF200-0xFFFF para sus tablas de rotación). La pila va en el
-	// hueco libre entre ambas (0xF1F0 hacia abajo, 64 bytes) y los bloques de
-	// sprites terminan en 0xF000. Antes la pila estaba en 0xF200 y los bloques
-	// debajo, pisando esa zona.
+	// En 48K: tabla de vectores IM2 en 0xF000-0xF100 e ISR en 0xF1F1 (splib2
+	// usa 0xF200-0xFFFF para sus tablas de rotación). La pila va en el hueco
+	// libre entre ambas (de 0xF1F0 hacia abajo, 64 bytes) y los bloques de
+	// sprites terminan en 0xF000.
 	#define STACK_SIZE 		64
 	#define STACK_ADDR		0xF1F0
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
@@ -111,9 +106,8 @@
 	#include "speccy/extrasprites.h"
 #endif
 
-// [v3.100] Con COMPRESSED_LEVELS los datos de juego (mapa, enemigos, hotspots,
-// cerrojos, comportamientos) vienen en los bundles de cada nivel. Antes aquí
-// había dos sistemas (48K y 128K) que no llegaban a compilar.
+// Datos de juego: con COMPRESSED_LEVELS (mapa, enemigos, hotspots, cerrojos y
+// comportamientos) vienen en el bundle de cada nivel; si no, de mapa.h y enems.h.
 #ifdef COMPRESSED_LEVELS
 	#include "levels.h"
 #else
@@ -150,15 +144,14 @@
 	#include "tilanim.h"
 #endif
 
-// [FIX v3.100] savegame.h iba después de engine.h, pero kill_player (en
-// engine.h) usa sg_saved y sg_pool.
+// Checkpoints. Va antes de engine.h porque kill_player usa sg_saved y sg_pool.
 #ifdef ENABLE_CHECKPOINTS
 	#include "savegame.h"
 #endif
 
 #include "engine.h"
 
-// [v3.100] Código propio del juego y ganchos (hooks) del bucle principal.
+// Código propio del juego y ganchos (hooks) del bucle principal.
 #include "custom.h"
 
 #include "mainloop.h"

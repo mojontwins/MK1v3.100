@@ -9,19 +9,18 @@
 // Funciones generales
 // ---------------------------------------------------------------------------
 
-// [OPT v3.100] bufidx era una función que calculaba x + 15 * y con
-// desplazamientos en cada consulta (colisiones, tiles, hotspots): un 3,4% del
-// tiempo de juego entre bufidx, attr y cm_two_points. Ahora es una macro que
-// suma x a una tabla de 10 entradas con 15 * y.
+// Índice de la casilla (x, y) en los buffers de la pantalla (15x10 tiles):
+// x + 15 * y. El producto sale de una tabla, que es mucho más rápido que
+// multiplicar o desplazar en sccz80. Se usa en cada consulta al mapa.
 unsigned char mul15 [] = { 0, 15, 30, 45, 60, 75, 90, 105, 120, 135 };
 #define bufidx(x, y) ((x) + mul15 [(y)])
 
-// [FIX v3.100] attr y qtile se declaraban "void" pero devolvían un valor, y
-// cm_two_points se declaraba "unsigned char" sin devolver nada. sccz80 lo
-// traga; un compilador de C estándar no.
-// attr recibe coordenadas sin signo: un valor "negativo" (p.ej. x - 1 con
-// x = 0) da la vuelta a 255 y cae fuera del rango igualmente, así que basta
-// con dos comparaciones en lugar de cuatro.
+// attr: comportamiento del tile (x, y); 0 si está fuera de la pantalla.
+// Las coordenadas son sin signo: un valor "negativo" (p.ej. x - 1 con x = 0)
+// da la vuelta a 255 y queda fuera del rango, así que bastan dos comparaciones.
+// qtile: número del tile (x, y).
+// cm_two_points: comportamiento de los puntos (cx1, cy1) y (cx2, cy2) en at1
+// y at2, para las colisiones del jugador.
 
 unsigned char attr (unsigned char x, unsigned char y) {
 	if (x > 14 || y > 9) return 0;
@@ -106,8 +105,7 @@ signed int addsign (signed int n, signed int value) {
 // ---------------------------------------------------------------------------
 
 #ifdef BREAKABLE_WALLS
-	// [FIX v3.100] Prototipo: break_wall se usa en mueve_bullets antes de
-	// estar definida.
+	// break_wall se define más abajo, pero mueve_bullets ya la usa.
 	void break_wall (unsigned char x, unsigned char y);
 #endif
 
@@ -118,7 +116,6 @@ signed int addsign (signed int n, signed int value) {
 #ifdef PLAYER_CAN_FIRE
 	void init_bullets (void) {
 		// Inicializa las balas
-		// [FIX v3.100] Sobraba una "}" que cerraba la función antes de tiempo.
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
 			bullets_estado [gpit] = 0;
 	}
@@ -311,7 +308,6 @@ void do_hotspots (void) {
 					case 1:
 						#ifdef ONLY_ONE_OBJECT
 							if (player.objs == 0) {
-								// [FIX v3.100] Faltaba el ";" (sccz80 lo aceptaba en silencio).
 								player.objs = 1;
 								PLAY_SFX (7);
 							} else {
@@ -328,8 +324,7 @@ void do_hotspots (void) {
 							PLAY_SFX (7);
 
 							#ifdef GET_X_MORE
-								// [FIX v3.100] Usaba level_data.max_objs, que solo existía en
-								// 128K. LEVEL_MAX_OBJS vale para todos los modos.
+								// Cartel "GET X MORE" con los objetos que faltan.
 								if (LEVEL_MAX_OBJS > player.objs) {
 									print_str (10, 11, 79, spacer);
 									getxmore [5] = '0' + LEVEL_MAX_OBJS - player.objs;
@@ -338,7 +333,7 @@ void do_hotspots (void) {
 									sp_UpdateNow ();
 									sp_WaitForNoKey ();
 									espera_activa (100);
-									redraw_scr ();		// [FIX v3.100] antes draw_scr_background ()
+									redraw_scr ();
 								}
 							#endif	
 						#endif
@@ -354,7 +349,6 @@ void do_hotspots (void) {
 
 				#ifdef USE_HOTSPOTS_TYPE_3
 					case 3:
-						// [FIX v3.100] Faltaba cerrar la "{" del if.
 						player.life += PLAYER_REFILL;
 						if (player.life > PLAYER_LIFE) {
 							player.life = PLAYER_LIFE;
@@ -374,7 +368,7 @@ void do_hotspots (void) {
 						break;
 				#endif
 
-				// [FIX v3.100] Solo hay recargas de tiempo si se define TIMER_REFILL.
+				// Recarga de tiempo (si se define TIMER_REFILL).
 				#if defined TIMER_ENABLE && defined TIMER_REFILL
 					case 5:
 						if (99 - ctimer.t > TIMER_REFILL) {
@@ -409,7 +403,7 @@ void do_hotspots (void) {
 			// Lo quitamos de la pantalla
 			set_map_tile (rdx, rdy, 0, 0);
 
-			// [FIX v3.100] Abrir un cerrojo no gastaba la llave.
+			// Abrir un cerrojo gasta una llave.
 			player.keys --;
 
 			// Buscamos y borramos
@@ -427,28 +421,26 @@ void do_hotspots (void) {
 #endif
 
 #ifdef PLAYER_PUSH_BOXES
-	// [FIX v3.100] x0, y0, x1, y1 no estaban declaradas en ninguna parte.
+	// Origen (x0, y0) y destino (x1, y1) de la caja que se empuja.
 	unsigned char x0, y0, x1, y1;
 
 	void move_tile_with_check (void) {
 		// Moves to x0, y0 to x1, y1 if x1, y1 is walkable
-		// [FIX v3.100] El destino tiene que estar dentro de la pantalla: attr ()
-		// devuelve 0 fuera de ella y la caja se salía del mapa.
+		// El destino tiene que estar dentro de la pantalla (fuera, attr ()
+		// devuelve 0, que parecería un hueco libre).
 		if (x1 < 15 && y1 < 10 && (attr (x1, y1) & 8) == 0) {
 			#ifdef PUSHED_SCRIPTING
-				// [FIX v3.100] Los flags de ENABLE_PUSHED_SCRIPTING no se rellenaban.
+				// Para el script: el tile que tapa la caja y su nueva posición.
 				flags [MOVED_TILE_FLAG] = qtile (x1, y1);
 				flags [MOVED_X_FLAG] = x1;
 				flags [MOVED_Y_FLAG] = y1;
 				just_pushed = 1;
 			#endif
 			set_map_tile (x0, y0, 0, 0);
-			// [FIX v3.100] La caja recupera el comportamiento del tile 14 en lugar de
-			// un 8 fijo (config.h dice que debe ser 10).
+			// La caja conserva el comportamiento del tile 14 (normalmente 10).
 			set_map_tile (x1, y1, 14, comportamiento_tiles [14]);
 			#ifdef FIRE_TO_PUSH
-				// [FIX v3.100] pushed_any nunca se ponía a 1, así que empujar con
-				// FIRE también disparaba.
+				// Se ha empujado con FIRE: este frame no se dispara.
 				pushed_any = 1;
 			#endif
 			PLAY_SFX (2);
@@ -497,8 +489,7 @@ void draw_scr_background (void) {
 
 		// El tile actual es rdd y su comportamiento es rda
 
-		// [OPT v3.100] Antes set_map_tile (rdx, rdy, rdd, rda), que vuelve a
-		// calcular el índice en el buffer: aquí ya es gpit.
+		// Como set_map_tile, pero el índice en el buffer ya es gpit.
 		map_attr [gpit] = rda;
 		map_buff [gpit] = rdd;
 		draw_coloured_tile (VIEWPORT_X + (rdx << 1), VIEWPORT_Y + (rdy << 1), rdd);
@@ -509,8 +500,6 @@ void draw_scr_background (void) {
 
 		#ifdef ENABLE_TILANIMS
 			// Detect tilanims
-			// [FIX v3.100] Se llamaba con (rdx >> 1, rdy >> 1), pero rdx y rdy ya son
-			// coordenadas de tile: los tiles animados salían en la mitad de su sitio.
 			if (rdd >= ENABLE_TILANIMS) {
 				add_tilanim (rdx, rdy, rdd);
 			}
@@ -555,11 +544,10 @@ void draw_scr_background (void) {
 }
 
 #ifdef NEEDS_REDRAW_SCR
-	// [v3.100] Repinta la pantalla actual desde map_buff, sin reiniciar nada.
-	// Antes la pausa usaba draw_scr () y GET_X_MORE draw_scr_background (), que
-	// reconstruyen la pantalla desde el mapa: volvían los muros rotos y las cajas
-	// empujadas, se reiniciaban los enemigos y se repetían los scripts de entrada,
-	// y GET_X_MORE volvía a pintar el objeto recién cogido.
+	// Repinta la pantalla actual desde map_buff, sin reiniciar nada: los muros
+	// rotos, las cajas empujadas y los objetos cogidos se quedan como están, y
+	// no se vuelven a ejecutar los scripts de entrada. Lo usan la pausa y
+	// GET_X_MORE.
 	void redraw_scr (void) {
 		rdx = rdy = 0;
 		for (gpit = 0; gpit < 150; gpit ++) {
@@ -587,8 +575,7 @@ void draw_scr (void) {
 	enoffs = n_pant * 3;
 
 	for (gpit = 0; gpit < 3; gpit ++) {
-		// [FIX v3.100] enoffsmasi se incrementaba de 3 en 3 dentro de este bucle,
-		// así que RESPAWN_ON_ENTER y el tipo 6 tocaban enemigos de otras pantallas.
+		// Índice del enemigo en el array malotes.
 		enoffsmasi = enoffs + gpit;
 
 		en_an_frame [gpit] = 0;
@@ -604,7 +591,6 @@ void draw_scr (void) {
 		#ifdef RESPAWN_ON_ENTER
 			malotes [enoffsmasi].t &= ~16;
 
-			// [FIX v3.100] Solo si la estructura MALOTE tiene el campo life.
 			#ifdef MALOTE_HAS_LIFE
 				malotes [enoffsmasi].life = LEVEL_ENEMS_LIFE;
 			#endif
@@ -698,8 +684,7 @@ void init_player (void) {
 	// Inicializa player con los valores iniciales
 	// (de ahí lo de inicializar).
 	
-	// [v3.100] Igual con y sin niveles: LEVEL_INI_X / Y salen de la cabecera
-	// del nivel o de config.h.
+	// Posición inicial: de la cabecera del nivel o de config.h.
 	set_player_at (LEVEL_INI_X << 4, LEVEL_INI_Y << 4);
 
 	player.vy = 		0;
@@ -730,7 +715,7 @@ void init_player (void) {
 
 	#ifdef MAX_AMMO
 		#ifdef INITIAL_AMMO
-			player.ammo = INITIAL_AMMO;		// [FIX v3.100] Faltaba el ";"
+			player.ammo = INITIAL_AMMO;
 		#else
 			player.ammo = MAX_AMMO;
 		#endif
@@ -760,8 +745,7 @@ void kill_player (unsigned char sound) {
 	player.life --;
 	PLAY_SFX (sound);
 	#ifdef CP_RESET_WHEN_DYING
-		// [FIX v3.100] Si aún no se ha tocado ningún checkpoint, sg_pool está a
-		// cero y el jugador acababa en la pantalla 0, posición (0, 0).
+		// Vuelve al último checkpoint, si se ha tocado alguno.
 		if (sg_saved) {
 			#ifdef CP_RESET_ALSO_FLAGS
 				mem_load ();
@@ -798,8 +782,7 @@ void kill_player (unsigned char sound) {
 					x1 = x0 - 1;
 				}
 
-				// [FIX v3.100] FIRE_TO_PUSH no estaba implementado: había que
-				// comprobar que se pulsa FIRE.
+				// Con FIRE_TO_PUSH solo se empuja si se pulsa FIRE.
 				#ifdef FIRE_TO_PUSH
 					if ((pad0 & sp_FIRE) == 0)
 				#endif
@@ -842,13 +825,14 @@ void kill_player (unsigned char sound) {
 	}
 #endif
 
-// [FIX v3.100] Se declaraba "unsigned char" pero no devuelve nada.
+// Mueve al jugador: lee el mando, aplica la física y las colisiones con el
+// escenario y elige el frame de animación.
 void move (void) {
 	
 	pad_read ();			// Leemos el controlador seleccionado.
 
-	// [FIX v3.100] pushed_any se ponía a 0 *después* de las colisiones (que es
-	// donde se empuja), así que nunca valía 1 al llegar al disparo.
+	// pushed_any se pone a 1 si se empuja algo durante las colisiones; el
+	// disparo lo consulta más abajo.
 	#ifdef FIRE_TO_PUSH
 		pushed_any = 0;
 	#endif
@@ -863,7 +847,6 @@ void move (void) {
 		// La pulsación de las direcciones acelera. Si no se pulsa nada, se decelera.
 
 		//if ( ! ((pad0 & sp_UP) == 0 || (pad0 & sp_DOWN) == 0)) {
-		// [FIX v3.100] Ponía "pad" en lugar de "pad0".
 		if ( (pad0 & sp_UP) && (pad0 & sp_DOWN) ) {
 			player.facing_v = 0xff;		// Señal de que no pulsamos una dirección vertical
 			if (player.vy > 0) {
@@ -1445,11 +1428,8 @@ void move (void) {
 #endif
 
 #ifdef COMPRESSED_LEVELS
-	// [v3.100] Carga un nivel: el bundle (datos de juego) en level_data y, si
+	// Carga el nivel "level": el bundle (datos de juego) en level_data y, si
 	// el nivel los define, su tileset y su spriteset encima de los actuales.
-	// Sustituye a las dos versiones anteriores (48K y 128K), que no
-	// funcionaban (level_data.campo frente a level_data->campo, tablas fijas
-	// de dos niveles, etiquetas repetidas...).
 	void prepare_level (void) {
 		get_resource (levels [level].bundle, (unsigned int) (level_data));
 
@@ -1478,10 +1458,7 @@ void move (void) {
 // Funciones de los bicharracos
 // ---------------------------------------------------------------------------
 
-// [FIX v3.100] init_malotes:
-//  * Tocaba malotes [].life aunque la estructura no tuviera ese campo (solo
-//    existe con MALOTE_HAS_LIFE), lo que rompía PLAYER_KILLS_ENEMIES.
-//  * Ahora también se usa con niveles comprimidos (tras prepare_level).
+// Al empezar: resucita a todos los enemigos y les devuelve la vida.
 #ifdef NEEDS_INIT_MALOTES
 	void init_malotes (void) {
 		for (gpit = 0; gpit < MAP_W * MAP_H * 3; gpit ++) {
@@ -1504,8 +1481,7 @@ void move (void) {
 // Funciones auxiliares custom
 
 #ifdef WALLS_STOP_ENEMIES
-	// [FIX v3.100] Se consultaba malotes [enoffsmasi] (posición del frame
-	// anterior) en lugar de las variables de trabajo _en_*.
+	// ¿Choca el enemigo actual (_en_*) con el escenario al moverse en x / en y?
 	unsigned char mons_col_sc_x (void) {
 		gpaux = gpen_xx + (_en_mx > 0);
 		#ifdef EVERYTHING_IS_A_WALL
@@ -1551,14 +1527,14 @@ void move (void) {
 			if (player.saltando == 0)
 		#endif
 		player.vy = 0;
-		// [FIX v3.100] Ponía _en_mx: el arrastre vertical depende de _en_my.
+		// Arrastre vertical de la plataforma
 		ptgmy = _en_my << 6;
 	}
 #endif
 
-// [FIX v3.100] Un enemigo muere. Antes este código estaba repetido (con
-// diferencias) en la muerte por pisotón y por disparo, y la cuenta de
-// enemigos matados se incrementaba dos veces por disparo.
+// El enemigo actual (gpit, _en_t) muere: explosión durante 8 frames y se
+// marca como muerto (t |= 16). Los fanties desaparecen y los perseguidores
+// reaparecen al cabo de un rato. La usan el pisotón y los disparos.
 #ifdef ENEMIES_CAN_DIE
 void enemy_dies (void) {
 	en_an_next_frame [gpit] = sprite_17_a;		// Explosión
@@ -1592,8 +1568,8 @@ void mueve_bicharracos (void) {
 	// Init some flags
 	tocado = 0; player.gotten = 0;
 
-	// [FIX v3.100] El arrastre de plataformas se ponía a 0 *dentro* del bucle de
-	// enemigos, así que solo funcionaba si la plataforma era el tercer enemigo.
+	// Arrastre de plataformas: lo fija la plataforma que lleve al jugador y lo
+	// aplica move () en el frame siguiente.
 	ptgmx = ptgmy = 0;
 
 	for (gpit = 0; gpit < 3; gpit ++) {
@@ -1604,10 +1580,10 @@ void mueve_bicharracos (void) {
 		enoffsmasi = enoffs + gpit;
 
 		// Extract values from the array
-		// [FIX v3.100] Era "(unsigned char *) malotes + enoffsmasi". sccz80 aplica
-		// la suma antes del cast (multiplica por sizeof (MALOTE)), pero en C
-		// estándar el cast va primero y se suman bytes. Con paréntesis funciona
-		// igual en ambos.
+		// Se copia el enemigo a variables globales (_en_*), que en sccz80 son
+		// mucho más rápidas que acceder a la estructura, y al final se guarda.
+		// Los paréntesis importan: "(unsigned char *) malotes + n" sumaría n
+		// bytes en C estándar (sccz80 lo trata distinto).
 		allpurposepuntero = (unsigned char *) (malotes + enoffsmasi);
 		_en_x = *allpurposepuntero ++;
 		_en_y = *allpurposepuntero ++;
@@ -1615,9 +1591,8 @@ void mueve_bicharracos (void) {
 		_en_y1 = *allpurposepuntero ++;
 		_en_x2 = *allpurposepuntero ++;
 		_en_y2 = *allpurposepuntero ++;
-		// [v3.100] Sin cast: sccz80 aplica "(signed char) *p ++" al puntero (le
-		// extiende el signo al byte bajo) y lo corrompe. La asignación a un
-		// signed char ya hace la conversión, en sccz80 y en C estándar.
+		// Sin cast: sccz80 aplicaría "(signed char) *p ++" al puntero y lo
+		// corrompería. La asignación a un signed char ya convierte el valor.
 		_en_mx = *allpurposepuntero ++;
 		_en_my = *allpurposepuntero ++;
 		_en_t = *allpurposepuntero ++;
@@ -1637,9 +1612,9 @@ void mueve_bicharracos (void) {
 		}
 
 		#ifdef ENABLE_RANDOM_RESPAWN
-			// [FIX v3.100] Antes se hacía _en_t = 5 y luego se guardaba en el
-			// array, perdiendo el tipo (y el "muerto") del enemigo original.
-			// Ahora el fanty usa rdt como tipo efectivo y _en_t no se toca.
+			// rdt es el tipo con el que se comporta el enemigo: 5 si hay un fanty
+			// en su lugar. _en_t (el del enemigo original, que está muerto) no se
+			// toca.
 			rdt = en_an_fanty_activo [gpit] ? 5 : _en_t;
 		#else
 			#define rdt _en_t
@@ -1722,8 +1697,7 @@ void mueve_bicharracos (void) {
 			#ifdef ENABLE_CUSTOM_TYPE_6
 				case 6:
 					active = 1;
-					// [FIX v3.100] gpen_cx / gpen_cy se usaban en "retreating" antes de
-					// calcularlos, con el valor del enemigo anterior.
+					// Posición actual en píxeles y distancia al jugador.
 					gpen_cx = en_an_x [gpit] >> 6;
 					gpen_cy = en_an_y [gpit] >> 6;
 					rdd = distance (gpx, gpy, gpen_cx, gpen_cy);
@@ -1783,7 +1757,6 @@ void mueve_bicharracos (void) {
 								if (en_an_rawv [gpit] > 4) en_an_rawv [gpit] = 2;
 								en_an_dead_row [gpit] = 11 + (rand () & 7);
 
-								// [FIX v3.100] Solo si la estructura tiene el campo life.
 								#ifdef MALOTE_HAS_LIFE
 									_en_life = LEVEL_ENEMS_LIFE;
 								#endif
@@ -1812,9 +1785,8 @@ void mueve_bicharracos (void) {
 						case 2:
 							active = 1;
 							if (player.estado == EST_NORMAL) {
-								// [FIX v3.100] Con WALLS_STOP_ENEMIES se hacía "_en_x = _en_x"
-								// (no hacía nada) y "_en_y = _em_y" (no compilaba). Ahora se
-								// deshace el movimiento si choca.
+								// Avanza hacia el jugador en x y en y; con WALLS_STOP_ENEMIES
+								// se deshace el paso si choca con el escenario.
 								rda = _en_x;
 								_en_mx = (signed char) (addsign ((gpx & 0xFC) - _en_x, en_an_rawv [gpit]));
 								_en_x += _en_mx;
@@ -1834,7 +1806,6 @@ void mueve_bicharracos (void) {
 									if (mons_col_sc_y ()) _en_y = rda;
 								#endif
 							}
-							// [FIX v3.100] Ponía en_cx / en_cy, que no existen.
 							gpen_cx = _en_x;
 							gpen_cy = _en_y;
 					}
@@ -1872,7 +1843,7 @@ void mueve_bicharracos (void) {
 						// Horizontal
 						if (_en_mx != 0 && gpy + 16 >= _en_y && gpy + 11 <= _en_y && player.vy >= 0) {
 							platform_get_player ();
-							// [FIX v3.100] Ponía _en_x * 64 (la posición, no la velocidad).
+							// Arrastre horizontal de la plataforma
 							ptgmx = _en_mx << 6;
 						}
 					}
@@ -1885,8 +1856,8 @@ void mueve_bicharracos (void) {
 					// Colisión especial: pisar enemigo
 
 					#ifdef PLAYER_STEPS_ON_ENEMIES
-						// [FIX v3.100] Se comparaba con _en_y en lugar de gpen_cy, que es
-						// la posición real (distinta para fanties y tipo 6).
+						// El jugador cae desde arriba sobre el enemigo (gpen_cy es su
+						// posición real, también para fanties y tipo 6).
 						if (
 							gpy + 2 < gpen_cy && player.vy >= 0
 							#ifdef PLAYER_MIN_KILLABLE
@@ -1986,11 +1957,9 @@ void mueve_bicharracos (void) {
 									}
 								#endif
 
-								// [FIX v3.100] Antes cada impacto mataba al enemigo (lo ponía
-								// en GENERAL_DYING y marcaba t |= 16) antes de mirar su vida,
-								// así que ENEMS_LIFE_GAUGE no servía de nada; y el life--
-								// se hacía sobre el array y luego se machacaba con _en_life.
-								// Las plataformas (tipo 4, vista lateral) son invulnerables.
+								// Cada impacto quita una vida; el enemigo muere al
+								// llegar a 0. Las plataformas (tipo 4, vista lateral)
+								// son invulnerables.
 								#ifndef PLAYER_MOGGY_STYLE
 									if (rdt != 4)
 								#endif
@@ -2013,8 +1982,7 @@ void mueve_bicharracos (void) {
 
 		#ifdef ENABLE_RANDOM_RESPAWN
 			// Activar fanty
-			// [FIX v3.100] Esto estaba dentro de "if (active)", pero un enemigo
-			// muerto nunca está activo, así que los fanties no aparecían nunca.
+			// De vez en cuando aparece un fanty en lugar de un enemigo muerto.
 			if (_en_t > 15 && en_an_fanty_activo [gpit] == 0 && en_an_state [gpit] != GENERAL_DYING && (rand () & 31) == 1) {
 				en_an_fanty_activo [gpit] = 1;
 				if (player.y > 5120) en_an_y [gpit] = -1024; else en_an_y [gpit] = 10240;

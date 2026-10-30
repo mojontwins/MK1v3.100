@@ -26,7 +26,7 @@
 #define BASE_LUT			0xF800 + 0x600
 
 #define BLACK_PEN 1
-// [v3.100] Igual que en ZX: GAME_FRAME_TICKS de config.h
+// Sincronía de frames: interrupciones por frame de juego (GAME_FRAME_TICKS).
 #ifdef GAME_FRAME_TICKS
 	#define MIN_FAPS_PER_FRAME GAME_FRAME_TICKS
 #else
@@ -62,8 +62,6 @@ unsigned char wyz_beat_ct;
 
 // Shortcuts
 		
-// [v3.100] MAX_BULLETS = 0 sin disparos: ver config_derived.h
-
 // Sprites software: jugador, enemigos y balas.
 #define SW_SPRITES_ALL 		1 + MAX_ENEMS + MAX_BULLETS		// Sin paréntesis: se usa en #asm ("ld b, ...")
 
@@ -136,10 +134,9 @@ extern unsigned char def_keys_joy [0];
 
 // Handy defines
 
-// [v3.100] Formato: ((0x40 | línea de la matriz) << 8) | bit
+// Códigos de tecla: ((0x40 | línea de la matriz) << 8) | bit
 #ifdef USE_TWO_BUTTONS
-	// [FIX v3.100] En CPC no estaban definidas (USE_TWO_BUTTONS no compilaba).
-	// Teclas fijas: saltar = Q, disparar = ESPACIO.
+	// Con dos botones, teclas fijas: saltar = Q, disparar = ESPACIO.
 	unsigned int key_jump = 0x4808;
 	unsigned int key_fire = 0x4580;
 #endif

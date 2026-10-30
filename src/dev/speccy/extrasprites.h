@@ -167,8 +167,8 @@ extern unsigned char sprite_18_a [];
     #endasm
 #endif
 
-// [v3.100] Marca el final de los gráficos de sprites. En 128K comp-zx.sh
-// comprueba que queda por debajo de 0xC000 (los niveles cargan sprites encima).
+// Final de los gráficos de sprites. En 128K comp-zx.sh comprueba que queda
+// por debajo de 0xC000 (los niveles pueden cargar sprites encima).
 #asm
 	._sprites_end
 #endasm

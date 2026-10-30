@@ -522,7 +522,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
 
 #ifndef DEACTIVATE_OBJECTS
 	void draw_objs () {
-		// [FIX v3.100] Como en ZX: el icono y flags [OBJECT_COUNT] solo con scripting.
+		// Con un solo objeto y scripting: icono del objeto y contador en un flag.
 		#ifdef SHOW_OBJECT_ICON
 			if (player.objs) {
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X, 135, 132);
@@ -585,8 +585,8 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 	}
 	*/
 	#asm
-			; [FIX v3.100] "ld hl, BASE_SPRITES" estaba dentro del bucle, así que
-			; solo se borraba el sprite 0, SW_SPRITES_ALL veces.
+			; Recorre los SW_SPRITES_ALL sprites (16 bytes cada uno) poniendo
+			; como gráfico el sprite vacío.
 			ld  de, 15
 			ld  b, SW_SPRITES_ALL
 			ld  hl, BASE_SPRITES
@@ -609,8 +609,7 @@ void render_sprites (void) {
 	// Render enemies
 
 	for (gpit = 0; gpit < 3; gpit ++) {
-		// [FIX v3.100] Usaba RANDOM_RESPAWN (que nadie define) y miraba
-		// en_an_fanty_activo aunque solo existe con ENABLE_RANDOM_RESPAWN.
+		// Fanties y enemigos de tipo 6 tienen sus propias coordenadas (x64).
 		#ifdef ENEMS_HAVE_FREE_COORDS
 			if (
 				#ifdef ENABLE_RANDOM_RESPAWN
@@ -695,9 +694,9 @@ void unpack_screen (unsigned char *src) {
 	unpack (src, (unsigned char *)(BASE_SUPERBUFF));
 }
 
-// [v3.100] sp_KeyPressed no existía en CPC, así que SCRIPTING_KEY_M,
-// PAUSE_ABORT, MSC_MAXITEMS y los checkpoints no compilaban.
-// key = ((0x40 | línea) << 8) | bit. Devuelve distinto de 0 si está pulsada.
+// Equivalente a sp_KeyPressed de splib2 para CPC.
+// key = ((0x40 | línea de la matriz) << 8) | bit. Devuelve distinto de 0 si
+// la tecla está pulsada.
 unsigned int __FASTCALL__ sp_KeyPressed (unsigned int key) {
 	#asm
 			ld  a, h
