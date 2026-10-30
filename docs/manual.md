@@ -34,8 +34,6 @@ cómo es la v3.100 tal y como está ahora.
 | [A](#apéndice-a---qué-cambia-la-v3100) | Qué cambia la v3.100 respecto a la 3.99. |
 | [B](#apéndice-b---mapa-de-memoria) | Mapa de memoria. |
 
-Las ilustraciones (en `img/`) son del tutorial de `MK1.pdf`.
-
 Otros documentos:
 
 * [`msc4.md`](msc4.md): la especificación completa del lenguaje de scripts
@@ -93,36 +91,10 @@ escribe `z88env.sh` con las variables de entorno.
 C (`zx0`, `zx7`, `apultra`, `pasmo`, `bas2tap`, `bin2tap`, `cpc2cdt`,
 `cpctbin2sna`). Todo queda en `src/utils/linux/`.
 
-## Instalar el entorno (Windows)
-
-Cada script `.sh` tiene su `.bat` al lado, con el mismo nombre y las mismas
-opciones:
-
-```bat
-env\setup-windows.bat [directorio]  :: librerías y crt0 en z88dk, z88env.bat
-call %USERPROFILE%\mk1tools\z88env.bat
-src\utils\build-windows.bat          :: compila las utilidades en src\utils\win
-```
-
-Lo que cambia respecto a Linux:
-
-* z88dk 1.10 no se compila: se usa la versión para Windows ya compilada
-  (sourceforge, carpeta `z88dk/1.10`), descomprimida en
-  `directorio\z88dk` (tiene que quedar `z88dk\bin\zcc.exe`).
-  `setup-windows.bat` pone en ella `splib2`, `cpcrslib_mt` y el `crt0` del
-  motor (guardando los de serie como `*.stock`) y escribe `z88env.bat`.
-* Las utilidades de FreeBASIC se compilan con FreeBASIC 1.10 **de 32 bits**
-  (`libfbpng.a` es de 32 bits; las que leen PNG enlazan también con zlib, y
-  `zlib1.dll` se copia junto a los `.exe`).
-* Las externas en C (`zx0`, `zx7`, `pasmo`, `bas2tap`, `bin2tap`, `cpc2cdt`,
-  `cpctbin2sna`, `apultra`) se compilan si hay `gcc`/`g++` en el `PATH`
-  (MinGW, w64devkit...); si no, `build-windows.bat` copia los `.exe` que ya
-  trae `src/utils`.
-* Los `.exe` sueltos de `src/utils` son los de la versión anterior: no hay
-  `msc4` ni `defb2bin`, y `buildlevel` y `librarian` usan el formato viejo.
-  Los `.bat` usan siempre los de `src\utils\win`.
-* Las pruebas (`tests\*.bat`) usan PowerShell para editar `config.h`
-  (`tests\defs.ps1`), y las de niveles necesitan Python 3.
+En Windows siguen estando los `.exe` y los `comp-zx.bat` / `comp-cpc.bat`
+originales, pero el camino mantenido es el de Linux (`comp-zx.sh`,
+`comp-cpc.sh`): los `.bat` no compilan los scripts, ni los niveles, ni el
+modo 128K.
 
 ## La estructura del repositorio
 
@@ -132,8 +104,8 @@ src/                 <- el esqueleto de un güego (el ejemplo es Bootee)
     config.h         <- la configuración (capítulo 6)
     custom.h         <- tu código: ganchos del motor (capítulo 9)
     extern.h         <- tu código: EXTERN, TEXT BOX y DIALOG del script
-    comp-zx.sh/.bat  <- compila para ZX Spectrum (Linux / Windows)
-    comp-cpc.sh/.bat <- compila para Amstrad CPC (Linux / Windows)
+    comp-zx.sh       <- compila para ZX Spectrum
+    comp-cpc.sh      <- compila para Amstrad CPC
     churromain.c     <- el programa principal (incluye todo lo demás)
     engine.h         <- el motor
     mainloop.h       <- el bucle principal
@@ -148,7 +120,7 @@ src/                 <- el esqueleto de un güego (el ejemplo es Bootee)
   enems/             <- los enemigos y hotspots (enems.ene)
   ogt/               <- la música (CPC, y zx128/ para ZX 128K)
   script/            <- el script (script.spt), si lo hay
-  utils/             <- las herramientas (linux/ y win/: las compiladas)
+  utils/             <- las herramientas (linux/ las compiladas para Linux)
 msc4/                <- el compilador de scripts
 examples/            <- juegos de ejemplo (Goku Mal 128)
 tests/               <- pruebas: emuladores, matriz de configuraciones...
@@ -164,17 +136,12 @@ cd src/dev
 ./comp-cpc.sh       # bootee.sna y bootee.cdt
 ```
 
-En Windows, igual con `comp-zx.bat` y `comp-cpc.bat` (desde una consola en la
-que se haya hecho `call z88env.bat`).
-
 `comp-zx.sh` convierte los gráficos, el mapa y los enemigos, compila el
 script (si `config.h` define `ACTIVATE_SCRIPTING`), construye los niveles (si
 hay un `levels.sh`), en 128K ensambla el reproductor de música y reparte los
 recursos en las páginas de RAM, compila con `zcc` y monta la cinta. Opciones:
 `justcompile` (sólo compilar, sin convertir) y `noclean` (deja los
-intermedios). `comp-cpc.sh` hace lo mismo para CPC. Los `.bat` hacen
-exactamente lo mismo; en lo que sigue se nombran los `.sh`, pero todo vale
-igual para su `.bat`.
+intermedios). `comp-cpc.sh` hace lo mismo para CPC.
 
 ## Hacer un güego nuevo
 
@@ -186,7 +153,7 @@ igual para su `.bat`.
    y crea un `dev/game.sh` (ver más abajo).
 4. Configura `dev/config.h` (capítulo 6).
 5. Si hace falta, escribe tu código en `dev/custom.h` y `dev/extern.h`.
-6. `./comp-zx.sh` (o `comp-zx.bat`).
+6. `./comp-zx.sh`.
 
 ### `game.sh`
 
@@ -208,19 +175,7 @@ convert_assets () {
 Así un güego no tiene que tocar `comp-zx.sh`, y se puede actualizar el motor
 copiando los ficheros nuevos de `src/dev` sin perder nada. Es lo que hace el
 ejemplo de Goku Mal, que ni siquiera tiene una copia del motor: su `make.sh`
-(`make.bat`) copia `src/dev`, pone encima los ficheros del güego y compila.
-
-En Windows son dos ficheros, porque un `.bat` no puede definir funciones para
-otro: `game.bat` pone el nombre (`set game=gokumal`) y, si existe,
-`convert.bat` hace la conversión en lugar de la de Bootee. `comp-zx.bat` los
-llama con `call`; `%U%` es la carpeta de las utilidades:
-
-```bat
-"%U%\ts2bin" ..\gfx\font.png ..\gfx\work1.png ts.bin 7 > nul || exit /b 1
-"%U%\sprcnv" ..\gfx\sprites1.png speccy\sprites.h > nul || exit /b 1
-...
-exit /b 0
-```
+copia `src/dev`, pone encima los ficheros del güego y compila.
 
 ---
 
@@ -234,11 +189,6 @@ cada cuadro de 8x8). En ZX va en `gfx/speccy/work.png`; en CPC, en
 
 Para la paleta del Spectrum usa valores de R, G, B de 200 para los colores
 sin BRIGHT y de 255 para los de BRIGHT.
-
-![Paleta del Spectrum](img/paleta-zx.png)
-
-*Los colores del Spectrum para los conversores: arriba sin BRIGHT, abajo con BRIGHT.*
-
 
 ## 16 o 48 tiles
 
@@ -264,34 +214,6 @@ sin BRIGHT y de 255 para los de BRIGHT.
 | 22 | Punto de control (*hotspot* de tipo 6, `ENABLE_CHECKPOINTS`). |
 | 32-47 | Con `USE_AUTO_TILE_SHADOWS`: la versión sombreada de los tiles 0-15. |
 | 47 | Lo usa `clear_gamearea_tiles ()` para borrar la zona de juego. |
-
-Algunos tilesets de 16 tiles, con los especiales (16-19) detrás:
-
-![Tileset de Dogmole](img/tileset-dogmole.png)
-
-*Dogmole Tuppowski: no hay bloques empujables, así que el tile 14 es un mejillón.*
-
-
-![Tileset de Lala Lah](img/tileset-lala.png)
-
-*Lala Lah: fondo (0), plataformas de tipo 4, obstáculos, una bola de pinchos que mata, el cerrojo en el 15; los especiales; y en la fila de abajo, las versiones sombreadas.*
-
-
-![Tileset de D'Veel'Ng](img/tileset-dveelng.png)
-
-*D'Veel'Ng (vista genital): con caja empujable (14) y cerrojo (15), ambos de tipo 10.*
-
-
-![Tileset de Monono](img/tileset-monono.png)
-
-*Monono: sin sombras.*
-
-Y uno de 48 tiles (`UNPACKED_MAP`):
-
-![Tileset de Zombie Calavera](img/tileset-48-zombie.png)
-
-*Zombie Calavera: sin llaves ni empujables; sólo el 16 (recarga) y el 17 (objeto) son especiales.*
-
 
 El *hotspot* se pinta con el tile `16 + tipo` (salvo el de tipo 3, que es
 el 16).
@@ -327,31 +249,11 @@ no tiene sentido porque no se puede tocar; un 24 (obstáculo rompible) sí.
 
 Sólo una de las dos, y sólo con mapas *packed*.
 
-![Tileset de Cheril Perils](img/tileset-sombras-perils.png)
-
-*El tileset de Cheril Perils: en la fila de abajo, los tiles sombreados (32-47).*
-
-
-![Sombras en Cheril Perils](img/sombras-perils.png)
-
-*El resultado: los obstáculos proyectan sombra sobre el fondo.*
-
-
-![Sombras en Lala Lah](img/sombras-lala.png)
-
-*Lo mismo en Lala Lah.*
-
-
 ## La fuente y la conversión (ZX)
 
 El motor usa 256 "caracteres" de 8x8: los 64 primeros son la fuente (ASCII
 32-95) y los 192 siguientes los trozos de los 48 tiles. La fuente es un png de
-256x16 (`gfx/speccy/font.png`).
-
-![Fuente](img/fuente.png)
-
-*Una fuente: 64 caracteres, del espacio (ASCII 32) al guión bajo (95).*
- `ts2bin` junta las dos cosas en `ts.bin` (2304
+256x16 (`gfx/speccy/font.png`). `ts2bin` junta las dos cosas en `ts.bin` (2304
 bytes: 2048 de gráficos y 256 de atributos):
 
 ```sh
@@ -370,11 +272,6 @@ uno y desplaza todos los demás: en ese caso hay que convertir el mapa con
 `fixmappy` (capítulo 2). Otra opción es hacer un png aparte para Mappy con un
 tile negro delante.
 
-![Mappy añade un tile negro](img/mappy-tile-negro.png)
-
-*Si el primer tile no es negro, Mappy mete uno delante y todos se desplazan.*
-
-
 ---
 
 # Capítulo 2 - El mapa
@@ -386,16 +283,6 @@ de `MAP_W * 15` x `MAP_H * 10` tiles. Se guarda en dos formatos:
 * `.fmp`: el formato de trabajo de Mappy. Es el que se abre para editar.
 * `.map`: el formato que se convierte. Una ristra de bytes, un tile por
   byte, por filas. Guarda siempre los dos.
-
-![Nuevo mapa en Mappy](img/mappy-nuevo.png)
-
-*Un mapa nuevo en Mappy: tiles de 16x16 y el tamaño en tiles (aquí 90x50: 6x5 pantallas).*
-
-
-![Mapa en Mappy](img/mappy-mapa.png)
-
-*Haciendo el mapa.*
-
 
 Cuánto puede ocupar el mapa depende de lo que ocupe todo lo demás. Un mapa
 *packed* ocupa 75 bytes por pantalla; uno *unpacked*, 150. Con
@@ -449,16 +336,6 @@ máscara al lado (cada gráfico ocupa 32x16: el sprite y su máscara).
 | 12, 13 | Enemigo de tipo 3 |
 | 14, 15 | Plataforma móvil (tipo 4) |
 
-![Spriteset de Cheril Perils](img/spriteset-lateral-perils.png)
-
-*Cheril Perils: la jugadora a la derecha (andar y saltar), a la izquierda, tres enemigos y la plataforma. Cada gráfico lleva su máscara al lado.*
-
-
-![Spriteset de Dogmole](img/spriteset-dogmole.png)
-
-*El de Dogmole.*
-
-
 La animación de andar es 1, 2, 3, 2, 1… (con
 `PLAYER_ALTERNATE_ANIMATION`, 1, 2, 3, 1, 2, 3…). Con `PLAYER_BOOTEE` los
 frames son otros: ver `move ()` en `engine.h`.
@@ -472,16 +349,6 @@ frames son otros: ver `move ()` en `engine.h`.
 | 4, 5 | Arriba |
 | 6, 7 | Abajo |
 | 8-15 | Cuatro tipos de enemigos, dos frames cada uno |
-
-![Spriteset de El Hobbit](img/spriteset-genital-hobbit.png)
-
-*El Hobbit (vista genital): dos frames por dirección y cuatro enemigos.*
-
-
-![Spriteset de Mega Meghan](img/spriteset-genital-meghan.png)
-
-*Mega Meghan.*
-
 
 ## La conversión
 
@@ -500,16 +367,6 @@ la bala (19, de 8x8) están en `speccy/extrasprites.h`, escritos como datos
 (Goku Mal lo hace). En CPC son pngs: `gfx/cpc/sprites_extra.png` y
 `sprites_bullet.png`.
 
-![Explosión](img/sprite-explosion.png)
-
-*La explosión (16x16, con su máscara).*
-
-
-![Bala](img/sprite-bala.png)
-
-*La bala (8x8, con su máscara).*
-
-
 ---
 
 # Capítulo 4 - Las pantallas fijas
@@ -526,21 +383,6 @@ Son pngs de 256x192 que se convierten a pantallas de Spectrum (`png2scr`) y
 se comprimen (`zx0`). Con `DIRECT_TO_PLAY` el título **es** el marco: el
 juego empieza sobre la pantalla de título y no hay `marco.png`, lo que ahorra
 una pantalla comprimida. Bootee lo hace así.
-
-![Título de Lala the Magical beta](img/titulo-lala.png)
-
-*Una pantalla de título, con las opciones de control.*
-
-
-![Marco de Lala Prologue](img/marco-lala.png)
-
-*Un marco: la zona de juego y los marcadores alrededor.*
-
-
-![Título y marco de Dogmole](img/titulo-marco-dogmole.png)
-
-*Título y marco en una sola pantalla (`DIRECT_TO_PLAY`), como en Dogmole.*
-
 
 ```sh
 png2scr ../gfx/speccy/title.png title.scr
@@ -588,17 +430,7 @@ tres).
 | 7 | **Perseguidor** (`ENABLE_PURSUERS`): sale de su sitio y va a por el jugador sin atravesar el escenario; si muere, vuelve a salir al rato (`DEATH_COUNT_EXPRESSION` frames). | Al azar, o `TYPE_7_FIXED_SPRITE` |
 
 La velocidad de los lineales y las plataformas va en píxeles por frame: 1, 2 o
-4 (potencias de dos; otros valores dan problemas).
-
-![Trayectoria lineal](img/enemigo-lineal.png)
-
-*Un enemigo lineal va y viene entre el inicio y el fin.*
-
-
-![Trayectoria diagonal](img/enemigo-diagonal.png)
-
-*Si el inicio y el fin no están alineados, rebota en diagonal dentro del rectángulo.*
- Los fanties y los de tipo 6
+4 (potencias de dos; otros valores dan problemas). Los fanties y los de tipo 6
 usan `FANTY_MAX_V` y `FANTY_A` (en 1/256 de píxel por frame).
 
 Los enemigos se pueden matar pisándolos (`PLAYER_KILLS_ENEMIES`) o
@@ -647,35 +479,10 @@ ponedor.exe new out=enems.ene map=mapa.map tiles=work.png size=6,5 scrsize=15,10
 ```
 
 `scrsize=15,10` es obligatorio para MK1 (por defecto son 16x12). `adjust=1`
-si Mappy añadió un tile negro.
-
-![Ponedor: crear](img/ponedor-nuevo.png)
-
-*Crear un `.ene` nuevo desde la ventana del `ponedor`: tamaño del mapa, de la pantalla (15x10), 3 enemigos, `adjust`, tileset, mapa y salida.*
-
-
-![Ponedor: abrir](img/ponedor-abrir.png)
-
-*O abrir uno que ya existe.*
- Un clic en una casilla empieza un enemigo
+si Mappy añadió un tile negro. Un clic en una casilla empieza un enemigo
 (pide el tipo); otro clic, donde acaba su trayectoria (pide la velocidad en
 `Attr`). Para los tipos 5, 6 y 7 sólo importa la casilla de inicio. Los
-*hotspots* se ponen con el botón derecho.
-
-![Ponedor: velocidad](img/ponedor-velocidad.png)
-
-*Al marcar el final de la trayectoria se pide la velocidad (`Attr`).*
-
-
-![Ponedor: editar enemigo](img/ponedor-enemigo.png)
-
-*Un clic en el inicio de un enemigo lo edita o lo borra.*
-
-
-![Ponedor: hotspot](img/ponedor-hotspot.png)
-
-*El tipo del *hotspot*.*
- La parte de arriba de la ventana
+*hotspots* se ponen con el botón derecho. La parte de arriba de la ventana
 dice `2b` o `3b`: el formato de los *hotspots* en el `.ene` (2 o 3 bytes); la
 tecla `L` lo cambia.
 
@@ -735,11 +542,6 @@ acabarse el tiempo.
 | `BOUNDING_BOX_8_CENTERED` | Caja de 8x8 en el centro (para vista genital). |
 | *(ninguna)* | Caja de 16x16. |
 | `SMALL_COLLISION` | Colisión con enemigos de 8x8 en lugar de 12x12. |
-
-![Cajas de colisión](img/colision.png)
-
-*`BOUNDING_BOX_8_CENTERED` (izquierda) y `BOUNDING_BOX_8_BOTTOM` (derecha).*
-
 
 ### Directivas generales
 
@@ -938,12 +740,7 @@ las versiones:
 ## ZX Spectrum 48K: beeper
 
 `speccy/beeper.h` tiene los efectos (de Shiru). La música del título es de
-Beepola (`speccy/music.h`).
-
-![Beepola](img/beepola.png)
-
-*Beepola: la música del título de 48K se exporta como listado en ensamblador.*
- Mientras suena un efecto el juego se para (el
+Beepola (`speccy/music.h`). Mientras suena un efecto el juego se para (el
 beeper usa la CPU entera), así que los efectos se tocan entre `di` y `ei`.
 
 ## ZX Spectrum 128K: WYZ player
@@ -958,11 +755,6 @@ los datos del güego, que se buscan en `../ogt/zx128/` (o en `../ogt/`):
 | `canciones.asm` | `SONG_0`… (con `INCBIN` de los `.mus`) y `TABLA_SONG`. |
 | `efectos.asm` | Opcional: `EFECTO0`… y `TABLA_EFECTOS`. Si no está, los 15 efectos de MK1 de `speccy_128/wyz/efectos.asm`. |
 | `*.mus` | Las canciones exportadas de WYZTracker. |
-
-![WYZTracker](img/wyztracker.png)
-
-*WYZTracker, con el que se hacen las canciones y los instrumentos del WYZ player.*
-
 
 Las canciones se tocan con `wyz_play_music (n)` (n es su posición en
 `TABLA_SONG`): 0 en el título, 1 en el juego (con niveles, la del nivel) y 2
@@ -1198,7 +990,7 @@ Cada nivel puede tener un mapa de distinto tamaño. `MAP_W * MAP_H` de
 
 El formato está descrito en [`formato-niveles.md`](formato-niveles.md).
 
-### Construir los niveles: `levels.sh` / `levels.bat`
+### Construir los niveles: `levels.sh`
 
 Si en `dev/` hay un `levels.sh` ejecutable, `comp-zx.sh` lo llama antes de
 `librarian`. Es donde se construyen los niveles:
@@ -1213,11 +1005,6 @@ $U/zx0 ts1.bin ts1c.bin
 $U/sprcnv ../gfx/sprites1.png spr1.h && $U/defb2bin spr1.h spr1.bin
 $U/zx0 spr1.bin spr1c.bin
 ```
-
-En Windows es `levels.bat`, al que `comp-zx.bat` llama con `call` (con `%U%`
-ya apuntando a `src\utils\win`); tiene que acabar con `exit /b 0` si todo va
-bien y `exit /b 1` si algo falla. El de Goku Mal
-(`examples/Goku Mal 128/dev/levels.bat`) sirve de modelo.
 
 `behs1.txt` tiene los 48 comportamientos separados por comas. Los parámetros
 de `buildlevel` están en el capítulo 12.
@@ -1295,9 +1082,8 @@ El mismo motor compila para CPC (`comp-cpc.sh`) con la librería `cpcrslib`
 
 # Capítulo 12 - Las herramientas
 
-Todas están en `src/utils/linux/` tras `build-linux.sh`, o en
-`src/utils/win/` tras `build-windows.bat` (los `.exe` sueltos de `src/utils/`
-son los de la versión anterior; ver el capítulo 0).
+Todas están en `src/utils/linux/` tras `build-linux.sh` (y los `.exe` de
+Windows en `src/utils/`).
 
 | Herramienta | Uso |
 |---|---|
@@ -1333,26 +1119,6 @@ pantalla:
 | `tests/matrix.sh [zx\|cpc\|all] [filtro]` | Compila unas cien configuraciones distintas del motor. |
 | `tests/bench.sh` | Mide ciclos por frame y por pintado de pantalla. |
 | `tests/levels/run.sh [nivel]` | La prueba de niveles (`SCRIPTED=1` con scripts). |
-| `msc4/tests/matrix.sh msc4 salida` | Pasa msc4 por los scripts de MK1v32 con varias opciones (regresión del compilador). |
-
-Todas tienen su `.bat` para Windows (`tests\build.bat`, `tests\matrix.bat`,
-`tests\bench.bat`, `tests\levels\run.bat`, `msc4\tests\matrix.bat`), con
-estas diferencias:
-
-* En `cmd` un `=` parte los argumentos de `call`, y `&` y los paréntesis
-  son especiales: un valor con `&` o paréntesis va entre comillas
-  (`"DEATH_COUNT_EXPRESSION=20+(rand()&15)"`). `build.bat` pasa su línea de
-  comandos entera a `tests\defs.ps1`, que hace los cambios en `config.h`
-  (PowerShell).
-* Las configuraciones de `matrix.bat` son las líneas `::CFG nombre|defines`
-  del final del archivo; usan `$FIRE`, `$SIDE_JUMP`, `$TOP`, `$TEXT`,
-  `$SCRIPT` y `$REPO` como `matrix.sh` usa sus variables.
-* `tests\levels\run.bat` necesita Python 3 (`crop.py`) y lee `SCRIPTED` del
-  entorno (`set SCRIPTED=1`).
-* `bench.bat` y las pruebas en emulador necesitan `zxrun.exe` / `cpcrun.exe`,
-  compilados con gcc a partir de `zxrun.c` / `cpcrun.c`.
-* `msc4\tests\matrix.bat` toma los juegos de MK1v32 de la variable
-  `MK1V32_GAMES`.
 | `tests/script/` | Scripts de prueba del intérprete. |
 
 ---
@@ -1363,9 +1129,6 @@ Respecto a la rama 3.99 (`docs/whatsnew.txt`):
 
 * **Linux**: todo el toolchain se compila en Linux (`env/setup-linux.sh`,
   `src/utils/build-linux.sh`) y hay `comp-zx.sh` y `comp-cpc.sh`.
-* **Windows**: cada `.sh` tiene su `.bat` equivalente (`env/setup-windows.bat`,
-  `src/utils/build-windows.bat`, `comp-zx.bat`, `comp-cpc.bat`, las pruebas y
-  el ejemplo de Goku Mal), que hacen lo mismo: scripts, niveles y 128K.
 * **Coma fija 8.8** en lugar de 10.6: las constantes de movimiento son 4 veces
   las de antes.
 * **Sincronía de frames** fija (`GAME_FRAME_TICKS`, 25 fps por defecto) también
