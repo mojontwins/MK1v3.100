@@ -1,4 +1,4 @@
-// MTE MK1 v4.7
+// La Churrera Engine 3.100
 // Copyleft 2010, 2011 by The Mojon Twins
 
 // Extrasprites.h

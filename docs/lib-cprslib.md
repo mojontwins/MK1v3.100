@@ -1,105 +1,87 @@
-# cpcrslib-mt en el motor MTE MK1 v3.2 (Amstrad CPC)
+# cpcrslib-mt en MTE MK1 v3.100 (Amstrad CPC)
 
 Copyleft 2011, 2026 The Mojon Twins
 
-Este documento explica, en detalle, cómo usa el motor la librería
-**CPCRSLIB "Mojon Tilemap"** (`cpcrslib-mt`), que está en `lib/cpcrslib-mt/`.
-Está pensado para quien vaya a escribir código propio (`dev/custom.h`,
-`dev/extern.h`, o cualquier cosa que se meta en el bucle del juego) y necesite
-saber:
+Este documento explica cómo usa el motor la librería **CPCRSLIB "Mojon
+Tilemap"** (`cpcrslib-mt`), que está en `lib/cpcrslib-mt/`. Está pensado para
+quien vaya a escribir código propio (`dev/custom.h`, `dev/extern.h`) y
+necesite saber:
 
 - qué hace la librería y cómo está recortada,
-- qué contrato tiene con el motor (qué exporta cada lado),
+- qué contrato tiene con el motor (qué pone cada lado),
 - cómo se dibuja una pantalla, cómo se actualiza y qué son las "celdas
   tocadas",
-- qué son las 35 rutinas de sprite y cuál tienes que usar,
+- cómo son los sprites y en qué unidades van sus coordenadas,
 - cómo se leen las teclas,
-- qué trampas hay (unidades de coordenadas, modos, LUTs, clipping).
+- qué trampas hay.
 
-> Contrasta con [`lib-splib2.md`](lib-splib2.md), que es el documento
-> equivalente para el target ZX Spectrum. Los dos backends son **completamente
-> distintos**: el ZX usa splib2 (display list + sprites con máscaras), el CPC
-> usa cpcrslib-mt (nametable + superbuffer + celdas sucias).
+> El equivalente para ZX Spectrum es [`lib-splib2.md`](lib-splib2.md). Los
+> dos backends son **completamente distintos** por dentro (el ZX usa splib2:
+> display list y sprites con máscaras; el CPC usa cpcrslib-mt: nametable,
+> superbuffer y celdas sucias), pero el motor les da **los mismos nombres**:
+> en CPC también hay un `sp_UpdateNow ()`, un `sp_PrintAtInv ()`, un
+> `sp_KeyPressed ()`… escritos con cpcrslib-mt. Así el resto del motor es el
+> mismo para las dos máquinas.
+
+Todo el uso de cpcrslib-mt está en `src/dev/cpc/`: `sysvars.h` (direcciones,
+teclas, estructura de los sprites), `printer.h` (inicialización, pintado,
+sprites, mandos), `tilemap_conf.asm` (el contrato con la librería) y
+`cell_arrays.h` (las tablas de frames).
 
 ---
 
 ## 1. Qué es cpcrslib-mt
 
-`cpcrslib-mt` es una **recortada** de la CPCRSLIB original (Raúl Simarro /
-Artaburu, 2007) modificada por na_th_an para encajar con el modelo del motor
-MTE MK1 v3.2:
+`cpcrslib-mt` es una versión **recortada** de la CPCRSLIB original (Raúl
+Simarro / Artaburu, 2007), modificada por na_th_an para el modelo del motor:
 
 - **Lo que se ha quitado**: todo lo que no es tilemap ni *dirty cells*. No
-  hay gestión de teclado (`cpc_AssignKey`, `cpc_ScanKeyboard`...), ni
-  impresión, ni gráficos genéricos, ni el gestor de tilemap completo, ni
-  actualizadores alternativos de pantalla. Tampoco hay *hashtable*, ni
-  sprites genéricos fuera del modelo de tilemap.
+  hay gestión de teclado completa (`cpc_AssignKey`, `cpc_ScanKeyboard`...),
+  ni impresión, ni gráficos genéricos, ni el gestor de tilemap completo, ni
+  actualizadores alternativos de pantalla.
 - **Lo que se ha cambiado**: la "lista de tiles tocados" (pares X,Y) se ha
   sustituido por un **bitfield** de 96 bytes (1 bit por celda de 32x24),
-  igual que hace splib2 con su `SPDirtyChars`. La marca ACME ("Actualización
-  de Código Mojona Eructo").
-- **Lo que se ha añadido**: las rutinas de sprite al pixel (las `*Px*`), que
-  dibujan sprites de cualquier posición con rotación de bytes mediante LUTs.
+  igual que hace splib2 con su `SPDirtyChars`. Los sprites no llevan
+  "cabecera": sus datos se ponen en una estructura propia (sección 6).
+- **Lo que se ha añadido**: rutinas de sprite que dibujan con una LUT de
+  píxeles transparentes (de CPCTelera) y rutinas al píxel.
 
-Quedan 50 módulos (la lista está en `lib/cpcrslib-mt/cpcrslib.lst`):
-
-- **Núcleo**: `cpc_ShowTileMap`, `cpc_UpdScr`, `cpc_ShowTouchedTiles`,
-  `cpc_ResetTouchedTiles`, `cpc_UpdTileTable`, `cpc_InvalidateRect`,
-  `cpc_KeysData`, `cpc_TestKeyboard`, `cpc_TestKey`, `cpc_SetMode`,
-  `cpc_MakeM1RotationLUTs`.
-- **Dependencias internas** (no se declaran en la cabecera):
-  `cpc_Bit2Mask`, `cpc_TblLookup`, `cpc_bitleft2mask`, `cpc_bitright2mask`.
-- **Sprites**: la matriz completa de tamaños y formatos de pixel que el
-  generador de assets (`mkts_om.exe mode=sprites`) puede pedir.
+La lista de módulos está en `lib/cpcrslib-mt/cpcrslib.lst`. Además del
+núcleo (`cpc_ShowTileMap`, `cpc_UpdScr`, `cpc_ShowTouchedTiles`,
+`cpc_ResetTouchedTiles`, `cpc_UpdTileTable`, `cpc_InvalidateRect`,
+`cpc_KeysData`, `cpc_TestKeyboard`, `cpc_TestKey`, `cpc_SetMode`), hay una
+colección de rutinas de sprite de varios tamaños y formatos. El motor usa
+sólo dos parejas (sección 6.3); las demás están por si un güego las
+necesita.
 
 ### 1.1. Las dos variantes
 
-- `cpcrslib_mt.lib`: la variante normal.
+- `cpcrslib_mt.lib`: la variante normal, la que usa el motor.
 - `cpcrslib_fg_mt.lib`: la variante **fg** ("foreground"), compilada con
   `PASARPORDETRAS = 1`, que permite que los sprites **pasen por detrás** de
-  ciertos tiles del fondo.
+  ciertos tiles del fondo. Necesita que el güego exporte una tabla
+  `behindtilemasks` (256 bytes, uno por tile: 1 = el sprite queda detrás).
+  Se elige al compilar (cambiando `-lcpcrslib_mt` por `-lcpcrslib_fg_mt` en
+  `comp-cpc.bat`), no durante el juego.
 
-La diferencia se compila, no se activa en runtime: la variante fg necesita
-además que el juego exporte la tabla `behindtilemasks` (256 bytes, 1 por
-tile: 1 = "primer plano", el sprite queda detrás; 0 = normal). La usan
-**Papaya** y **Sir Ababol**.
-
-La configuración de compilación está en `lib/cpcrslib-mt/CPCconfig.def`
-(que `make.bat` sobrescribe con `CPCconfig_normal.def` o
-`CPCconfig_fg.def`):
-
-```
-DEFC PASARPORDETRAS = 1     ; sólo en la variante fg
-DEFC CHURRERA_CLIPPING = 1  ; las marcas se recortan al viewport
-DEFC M1LUTR1 = $D700
-DEFC M1LUTR2 = $DE00
-DEFC M1LUTR3 = $E700
-```
+La configuración de compilación está en `lib/cpcrslib-mt/CPCconfig.def` (que
+`make.bat` sobrescribe con `CPCconfig_normal.def` o `CPCconfig_fg.def`).
 
 ### 1.2. Instalación y enlazado
 
-`lib/updatelib.bat` la instala en el z88dk:
+Las dos variantes y su cabecera (`cpcrslib_mt.h`) vienen ya puestas en
+`env/z88dk10-orig.zip`. Si recompilas la librería (`lib/cpcrslib-mt/make.bat`),
+`lib/updatelib.bat` las copia a `C:\z88dk10-orig`.
+
+`comp-cpc.bat` compila así:
 
 ```
-copy cpcrslib-mt\cpcrslib_mt.lib    c:\z88dk10-orig\lib\clibs\
-copy cpcrslib-mt\cpcrslib_fg_mt.lib c:\z88dk10-orig\lib\clibs\
-copy cpcrslib-mt\cpcrslib_mt.h      c:\z88dk10-orig\include\
+zcc +cpc -m -vn -zorg=1024 -lcpcrslib_mt -o %game%.bin cpc\tilemap_conf.asm churromain.c -DCPC -DMODE_%mode%
 ```
 
-La línea de compilación del target CPC (`src/dev/comp.bat:81`) es:
-
-```
-zcc +cpc -m -vn -unsigned -zorg=1024 -lcpcrslib_mt -o %game%.bin system\tilemap_conf.asm churromain.c -DCPC -DMODE_%mode%
-```
-
-Dos cosas a destacar:
-
-1. **El `tilemap_conf.asm` va en la línea de compilación**, antes que el
-   `.c`. Es el módulo que hace de contrato con la librería (ver la sección 2).
-2. La variante fg se enlaza cambiando `-lcpcrslib_mt` por
-   `-lcpcrslib_fg_mt`.
-
-La cabecera la incluye `src/dev/cpc.h:6`:
+**`tilemap_conf.asm` va en la línea de compilación**, antes que el `.c`: es
+el módulo que hace de contrato con la librería (sección 2). `cpc/sysvars.h`
+incluye la cabecera:
 
 ```c
 #include <cpcrslib_mt.h>
@@ -109,36 +91,31 @@ La cabecera la incluye `src/dev/cpc.h:6`:
 
 ## 2. El contrato entre el motor y la librería
 
-La librería **no** es autónoma: usa símbolos que aporta el juego. Eso está
-documentado en el propio `cpcrslib_mt.h` (líneas 17-22).
+La librería **no** es autónoma: usa símbolos que pone el güego.
 
-### 2.1. Lo que exporta el motor
+### 2.1. Lo que pone el motor
 
-Vive en `src/dev/system/tilemap_conf.asm` (`XLIB TileMapConf`), que se
-compila con el juego:
+En `src/dev/cpc/tilemap_conf.asm` (`XLIB TileMapConf`):
 
-- `_nametable` = `$100`: la nametable (el "display list" del CPC). 32x24
-  bytes, uno por celda, con el número de tile.
-- `pantalla_juego` = `$100`: la misma cosa (alias).
-- `tiles`: los gráficos de los tiles (los produce `mkts_om.exe`).
+- `_nametable` = `$100`: la nametable, 32x24 bytes, uno por celda, con el
+  número de tile. `pantalla_juego` es lo mismo.
+- `tiles`: los gráficos de los tiles (los define `cpc/tileset.h`: la fuente,
+  `font.bin`, y los tiles, `work.bin`, que genera `mkts_om`).
 - `tiles_tocados` = `$CE00`: el bitfield de celdas sucias (96 bytes).
-- `posiciones_pantalla`, `posiciones_super_buffer`: tablas con la dirección
-  del inicio de cada línea de la pantalla visible y del superbuffer.
-- `posicion_inicial_area_visible` = `$C000`: dónde está la parte visible de
-  la pantalla.
-- `posicion_inicial_superbuffer` = `$9000`: dónde está el superbuffer.
+- `posiciones_pantalla`, `posiciones_super_buffer`: la dirección del principio
+  de cada fila de caracteres en la pantalla y en el superbuffer.
+- `posicion_inicial_area_visible` = `$C000` y
+  `posicion_inicial_superbuffer` = `$9000`.
 - `ancho_pantalla_bytes` = 64, `alto_pantalla_bytes` = 192,
   `ancho_pantalla_bytes_visible` = 64.
-- `behindtilemasks` (sólo la variante fg): 256 bytes, 1 por tile.
-- `mascara1` / `mascara2` = `$00` / `$00`: máscaras de los "garbled bits" del
-  modo 0 (ver la sección 6.6; la biblioteca actual no las usa).
+- `mascara1`, `mascara2` = `$00`: máscaras para los píxeles "mezclados" del
+  modo 0. La librería actual no las usa.
 
-Y en `src/dev/cpc.h:9-26`, el motor exporta además:
+Y en `src/dev/cpc/sysvars.h`:
 
 ```c
 #asm
 	// Imports
-
 		XREF _nametable
 		XREF tabla_teclas
 		LIB cpc_KeysData
@@ -147,7 +124,6 @@ Y en `src/dev/cpc.h:9-26`, el motor exporta además:
 		LIB cpc_TestKeyboard
 
 	// Exports
-
 		XDEF viewport_x
 		XDEF viewport_y
 
@@ -157,264 +133,181 @@ Y en `src/dev/cpc.h:9-26`, el motor exporta además:
 ```
 
 `viewport_x` / `viewport_y` los usa la librería para recortar las marcas de
-celdas al área de juego (opción `CHURRERA_CLIPPING`).
+celdas a la zona de juego (opción `CHURRERA_CLIPPING`).
 
-### 2.2. Lo que exporta la librería
+### 2.2. Lo que usa el motor de la librería
 
-La cabecera `cpcrslib_mt.h` declara **sólo** la API que existe de verdad en
-las dos variantes compiladas. Lo que el motor usa:
-
-- En C: `cpc_Border`, `cpc_SetMode`, `cpc_MakeM1RotationLUTs`,
-  `cpc_ShowTileMap`, `cpc_TestKey`, y las 35 rutinas de sprite.
-- En ensamblador (importadas con `LIB`): `cpc_KeysData`,
-  `cpc_UpdTileTable`, `cpc_InvalidateRect`, `cpc_TestKeyboard`.
-
-Los símbolos internos (`cpc_Bit2Mask`, `cpc_TblLookup`, etc.) no se tocan.
+- Desde C: `cpc_SetMode`, `cpc_ShowTileMap`, y las rutinas de sprite
+  (`cpc_PutSPTileMap4Bx16`, `cpc_PutTrSp4Bx16TileMap`, y con disparos
+  `cpc_PutSPTileMap2Bx8`, `cpc_PutTrSp2Bx8TileMap`).
+- Desde ensamblador: `cpc_UpdScr`, `cpc_ShowTouchedTiles`,
+  `cpc_ResetTouchedTiles`, `cpc_UpdTileTable`, `cpc_InvalidateRect`,
+  `cpc_TestKeyboard` y la tabla `cpc_KeysData`.
 
 ---
 
 ## 3. Mapa de memoria (CPC)
 
-El motor lo documenta en `src/dev/cpc.h:49-66` y las direcciones están en
-`src/dev/definitions.h:46-56`:
+Las direcciones están en `src/dev/cpc/sysvars.h` y en `tilemap_conf.asm`:
 
 ```
-0100        tilemap        (_nametable / pantalla_juego)
-0400        ejecutable     (zorg=1024)
-8800        descomprimir canción
-9000        superbuffer    (posicion_inicial_superbuffer)
-C000        pantalla       (posicion_inicial_area_visible, a trozos)
-C600        room buffers
-CE00        dirty cells    (tiles_tocados)
-D600        arrays
-D700        M1 LUT R1      (M1LUTR1)
-DE00        M1 LUT R2      (M1LUTR2)
-DF80        buffers WYZ
-E600        estructuras de sprite  (BASE_SPRITES)
-E700        M1 LUT R3      (M1LUTR3)
-FE00        LUT            (BASE_LUT: LUT de píxeles transparentes)
+$0100   la nametable          (BASE_TILEMAP, _nametable)
+$0400   el programa           (zorg=1024)
+$8800   la canción descomprimida (WYZ_SONG_BUFFER)
+$9000   el superbuffer        (BASE_SUPERBUFF)
+$C000   la pantalla visible   (en los huecos, lo que sigue)
+$C600   la pantalla actual    (BASE_ROOM_BUFFERS: map_attr, map_buff)
+$CE00   las celdas sucias     (BASE_DIRTY_CELLS, tiles_tocados)
+$D600   arrays de enemigos y balas (BASE_ARRAYS)
+$D680   golpes de los muros rompibles (BASE_BRK_BUFF)
+$DF80   buffers del WYZ player (BASE_WYZ)
+$E600   las estructuras de los sprites (BASE_SPRITES)
+$F600   libre para el güego (BASE_CUSTOM)
+$FE00   la LUT de píxeles transparentes (BASE_LUT)
 ```
+
+Con la geometría de 32x24 caracteres que pone el motor, la pantalla visible
+no ocupa los 16 KB de `$C000`: los huecos al final de cada bloque de 2 KB
+(`$C600`, `$CE00`, `$D600`…) quedan libres, y el motor los aprovecha.
 
 Las direcciones **no** son negociables: la librería las tiene fijadas en
-`CPCconfig.def` (las LUTs M1) y en los `defc` de `tilemap_conf.asm` (el
-resto). Si las cambias, dejas de ser compatible con la librería.
+`tilemap_conf.asm` y en sus rutinas (la LUT, en `$FE00`). Si las cambias,
+dejas de ser compatible con la librería.
 
 ---
 
 ## 4. El modelo: nametable, superbuffer y celdas sucias
 
-A diferencia de splib2 (que tiene una display list y la redibuja), el CPC
-trabaja con **tres** buffers:
+A diferencia de splib2, el CPC trabaja con **tres** buffers:
 
-1. **La nametable** (`$100`): 32x24 bytes, uno por celda, con el número de
-   tile de cada celda. Es el "estado lógico" de la pantalla. El motor
-   escribe aquí (nunca en la memoria de pantalla).
+1. **La nametable** (`$100`): 32x24 bytes con el número de tile de cada
+   celda. Es el "estado lógico" de la pantalla. El motor escribe aquí, nunca
+   en la memoria de pantalla.
 2. **El superbuffer** (`$9000`): el buffer de píxeles donde se compone todo
-   (fondo + sprites), en el formato real de píxeles del modo activo.
-3. **El área visible** (`$C000`): lo que se ve en el CRTC.
+   (fondo y sprites), en el formato de píxeles del modo de vídeo.
+3. **La pantalla visible** (`$C000`): lo que se ve.
 
 Y un **bitfield de celdas sucias** (`tiles_tocados`, 96 bytes en `$CE00`): 1
-bit por celda de la nametable, que dice "esta celda hay que recomponer".
+bit por celda, "esta celda hay que recomponerla".
 
-El ciclo de un frame es:
+### 4.1. `sp_UpdateNow ()` en CPC
 
-1. El motor modifica la nametable (pintando tiles) y marca las celdas
-   afectadas con `cpc_UpdTileTable`.
-2. `cpc_UpdateNow(1)`:
-   a. por cada sprite, se llama a su `invfunc`, que marca en el bitfield las
-      celdas que ocupa el sprite **en su posición anterior y en la nueva**;
-   b. `cpc_UpdScr`: por cada celda marcada, se copia el gráfico del tile
-      desde la nametable al superbuffer (esto **borra** los sprites que
-      estuvieran ahí);
-   c. por cada sprite, se llama a su `updfunc`, que lo dibuja en el
-      superbuffer;
-   d. se espera el número de faps del frame;
-   e. `cpc_ShowTouchedTiles`: se copian del superbuffer a la pantalla
-      visible **sólo** las celdas marcadas;
-   f. `cpc_ResetTouchedTiles`: se limpia el bitfield.
+El motor llama a `sp_UpdateNow ()` cada frame, igual que en ZX. En CPC está
+en `cpc/printer.h` y hace esto:
 
-Ese paso (e) es lo que hace que el CPC no parpadee: sólo se tocan las
-celdas que han cambiado.
+1. Para cada sprite, llama a su rutina de **marcado**
+   (`cpc_PutSPTileMap4Bx16`, o `cpc_PutSPTileMap2Bx8` para las balas), que
+   marca en el bitfield las celdas que ocupa el sprite **en su posición
+   anterior y en la nueva**.
+2. `cpc_UpdScr`: para cada celda marcada, copia al superbuffer el gráfico del
+   tile que dice la nametable. Esto **borra** los sprites que hubiera.
+3. Para cada sprite, llama a su rutina de **dibujo**
+   (`cpc_PutTrSp4Bx16TileMap`, o `cpc_PutTrSp2Bx8TileMap`), que lo pinta en
+   el superbuffer.
+4. Espera a que hayan pasado `MIN_FAPS_PER_FRAME` interrupciones (sale de
+   `GAME_FRAME_TICKS`): es la sincronía de frames.
+5. `cpc_ShowTouchedTiles`: copia del superbuffer a la pantalla **sólo** las
+   celdas marcadas.
+6. `cpc_ResetTouchedTiles`: limpia el bitfield.
 
-### 4.1. Escribir en la nametable
+El paso 5 es lo que hace que el CPC no parpadee: sólo se tocan las celdas que
+han cambiado.
 
-El motor tiene una rutina interna, `__tile_address` (`cpc.h:598-626`), que
-devuelve en `DE` la dirección del byte de la nametable que corresponde a
-(`_x`, `_y`):
+### 4.2. Escribir en la nametable
 
-```c
-	// HL = _y * 32 + _x + _nametable
-```
+`tile_address ()` (`cpc/printer.h`) devuelve en `DE` la dirección del byte de
+la nametable de la celda (`px`, `py`): `_nametable + py * 32 + px`. La usan:
 
-La usan:
-
-- `draw_coloured_tile` (`cpc.h:642-997`): escribe los 4 tiles del
-  metatile 2x2 (los números `64 + _t*4` .. `67 + _t*4`) y marca las 4
-  celdas con `cpc_UpdTileTable`.
-- `set_map_tile` (`cpc.h:999-1056`): cambia un tile del mapa y llama a
-  `draw_coloured_tile`.
-- `draw_2_digits` (`cpc.h:1068-1113`): escribe 2 tiles y marca 2 celdas.
-- `draw_text` (`cpc.h:1115-1191`): escribe el texto (los caracteres ASCII
-  menos 32) y marca las celdas con `cpc_InvalidateRect`.
+- `draw_coloured_tile (x, y, t)`: escribe los 4 caracteres del tile de 16x16
+  (`64 + 4t` a `67 + 4t`) y marca las 4 celdas con `cpc_UpdTileTable`.
+- `sp_PrintAtInv (y, x, color, tile)`: escribe un carácter y marca su celda.
+  Es la misma función que en ZX, pero en CPC el color no se usa (el color va
+  en los gráficos).
+- `print_number2 (x, y, número)`: escribe dos dígitos y marca dos celdas.
+- `print_str (x, y, color, texto)`: escribe un texto (el ASCII menos 32) y
+  marca sus celdas con `cpc_InvalidateRect`.
 
 ---
 
 ## 5. La API usada, función por función
 
-### 5.1. `cpc_SetMode(mode)`
+### 5.1. `cpc_SetMode (modo)`
 
-- **Qué hace**: cambia el modo de vídeo del CPC escribiendo el Gate Array.
-- **Parámetro**: `L` (fastcall) = 0 (2 colores) o 1 (4 colores).
-- **Uso**: `cpc.h:438-442`
+- **Qué hace**: cambia el modo de vídeo (0: 16 colores, 1: 4 colores)
+  escribiendo en el Gate Array.
+- **Uso**: `system_init ()`, según `MODE_0` / `MODE_1` (que pone
+  `comp-cpc.bat` a partir de `set mode=`).
+- `cpc_SetMode` **no** toca el CRTC. El motor lo hace después, a mano, con la
+  geometría de 32x24 caracteres (registro 1 = 32 columnas, 2 = 42, 6 = 24
+  filas; y registro 5 = 4 con `MODE_1` y `AUTO_SPLIT`).
 
-```c
-	#ifdef MODE_1
-		cpc_SetMode (1);
-	#else
-		cpc_SetMode (0);
-	#endif
-```
+### 5.2. `cpc_Border (color)`
 
-- Ojo: `cpc_SetMode` **no** configura el CRTC. El motor lo hace a mano
-  después (`cpc.h:447-481`), con la "geometría retocada" de 32x24
-  caracteres (CRTC reg 1 = 32 columnas, reg 2 = 42, reg 6 = 24 filas; y
-  reg 5 = 4 si hay `AUTO_SPLIT`).
+El motor tiene la suya, en `cpc/printer.h`: escribe el color del borde en el
+Gate Array. `system_init ()` la llama con `0x54` (negro). La macro
+`BORDER (b)` la usa.
 
-### 5.2. `cpc_Border(colour)`
+### 5.3. `cpc_ShowTileMap (parámetro)`
 
-- **Qué hace**: pone el borde del CPC del color indicado.
-- **Parámetro**: `L` (fastcall) = el valor del borde.
-- **Uso**: `cpc.h:287-294` (definición del motor) y `cpc.h:412`
-  (`cpc_Border (0x54)` en `system_init`). El macro `BORDER(b)` del motor
-  (`cpc.h:133`) llama a esta función.
+- **Qué hace**: con `0`, recompone toda la pantalla (los 768 tiles de la
+  nametable al superbuffer) y la vuelca a la pantalla; con `1`, **sólo
+  vuelca** el superbuffer a la pantalla.
+- **Uso**: `pantallas.h`, `cpc_ShowTileMap (1)` después de descomprimir una
+  pantalla fija en el superbuffer (`unpack_screen ()` descomprime en
+  `BASE_SUPERBUFF`).
 
-### 5.3. `cpc_ShowTileMap(param)`
+### 5.4. `cpc_UpdScr ()`
 
-- **Qué hace**: dos cosas, según el parámetro:
-  - `L = 0`: **recompone** toda la pantalla: pasa los 768 tiles de la
-    nametable al superbuffer y luego vuelca el superbuffer a la pantalla
-    visible.
-  - `L = 1`: **sólo vuelca** el superbuffer a la pantalla visible (sin
-    recomponer desde la nametable).
-- **Uso**:
-  - `mainloop.h:39` y `pantallas.h:96`: `cpc_ShowTileMap (1)` tras
-    desempaquetar una pantalla fija (el bitmap ya está en el superbuffer).
-  - `cpc_ShowTileMap (0)` no lo llama el motor de forma directa, pero es lo
-    que usarías para forzar un repintado completo.
+Para cada celda marcada, copia al superbuffer el gráfico de su tile. Lo
+llama `sp_UpdateNow ()`.
 
-### 5.4. `cpc_UpdScr()`
+### 5.5. `cpc_ShowTouchedTiles ()` / `cpc_ResetTouchedTiles ()`
 
-- **Qué hace**: recorre el bitfield de celdas sucias y, para cada celda
-  marcada, copia el gráfico del tile (desde `tiles`, indexado por el byte de
-  la nametable) al superbuffer.
-- **Uso**: `cpc.h:1551`, dentro de `cpc_UpdateNow`.
+Copian a la pantalla las celdas marcadas y limpian el bitfield. Las llama
+`sp_UpdateNow ()`, al final.
 
-### 5.5. `cpc_ShowTouchedTiles()` / `cpc_ResetTouchedTiles()`
-
-- `cpc_ShowTouchedTiles`: copia del superbuffer al área visible las celdas
-  marcadas en el bitfield.
-- `cpc_ResetTouchedTiles`: pone el bitfield a cero (96 bytes).
-- **Uso**: `cpc.h:1648-1649`, al final de `cpc_UpdateNow`.
-
-Con la variante fg (`PASARPORDETRAS`), `cpc_ShowTouchedTiles` consulta
-`behindtilemasks` para decidir si una celda es "de primer plano" (y por
-tanto el sprite debe quedar detrás) o normal.
-
-### 5.6. `cpc_UpdTileTable(x, y)`
+### 5.6. `cpc_UpdTileTable` (en ensamblador)
 
 - **Qué hace**: marca una celda como sucia.
-- **Parámetros**: `E` = x (columna), `D` = y (fila).
-- **Uso**: `cpc.h:988-995` (los 4 tiles del metatile) y `cpc.h:1109-1111`
-  (los 2 dígitos).
+- **Parámetros**: `E` = columna, `D` = fila, en **coordenadas de pantalla**
+  (0..31, 0..23), no de la zona de juego.
+- **Uso**: `draw_coloured_tile`, `sp_PrintAtInv`, `print_number2`.
 
-- Ojo: la casilla marcada es `(x, y)` en **coordenadas de pantalla**
-  (0..31, 0..23), no en coordenadas de viewport.
+### 5.7. `cpc_InvalidateRect` (en ensamblador)
 
-### 5.7. `cpc_InvalidateRect(row, col, row2, col2)`
+- **Qué hace**: marca un rectángulo de celdas.
+- **Parámetros**: `B` = fila de arriba, `C` = columna izquierda, `D` = fila
+  de abajo, `E` = columna derecha (todo incluido).
+- **Uso**: `print_str`.
 
-- **Qué hace**: marca un rectángulo de celdas como sucias.
-- **Parámetros**: `B` = fila superior, `C` = columna izquierda,
-  `D` = fila inferior, `E` = columna derecha (ambos inclusivos).
-- **Uso**:
-  - `draw_text` (`cpc.h:1175-1187`): marca las celdas del texto.
-  - `invalidate_viewport` (`cpc.h:1058-1066`): marca todo el área de juego
-    (se usa al cambiar de pantalla).
+### 5.8. `cpc_TestKeyboard` (en ensamblador)
 
-### 5.8. `cpc_TestKeyboard(line)`
+- **Qué hace**: lee una línea de la matriz del teclado.
+- **Parámetro**: `A` = línea (con el bit 6 puesto: `$40 | línea`).
+- **Salida**: `A` con un bit a 1 por cada tecla pulsada de esa línea.
+- **Uso**: `pad_read ()` y `sp_KeyPressed ()`.
 
-- **Qué hace**: lee una línea del teclado (matriz del PSG) y devuelve el
-  estado de las teclas de esa línea.
-- **Parámetro**: `A` = número de línea.
-- **Salida**: el byte de la línea, **invertido** (0 = tecla pulsada).
-- **Uso**: `cpc.h:1199-1216`, dentro de `pad_read`:
+### 5.9. `cpc_KeysData` (la tabla de teclas)
 
-```c
-	#asm 
-			ld  hl, cpc_KeysData + 12
-			xor a
-			ld  (_pad0), a
-			ld  b, 1 				// Bit to switch
-		pad_read_loop:
-			push bc
-			ld  d, (hl) 			// LSB: Column
-			inc hl
-			ld  a, (hl) 			// MSB: Line
-			inc hl
-			call cpc_TestKeyboard
-			and d  					// Pressed?
-			pop bc
-			jr  z, pad_read_not_pressed
-			...
-```
+- Es una tabla de 12 entradas de 2 bytes, `(($40 | línea) << 8) | bit`, que
+  empieza en `cpc_KeysData + 12`. El orden es izquierda, derecha, arriba,
+  abajo, botón A, botón B, AUX3, AUX4, AUX1, AUX2, ENTER y ESC
+  (`KEY_LEFT` = 0 … `KEY_ESC` = 11, en `cpc/sysvars.h`).
+- `pad_read ()` recorre las 8 primeras y monta `pad0` con los bits
+  `sp_LEFT` (0x01), `sp_RIGHT` (0x02), `sp_UP` (0x04), `sp_DOWN` (0x08),
+  `sp_FIRE` (0x10), `sp_FIRE2` (0x20), `sp_AUX3` (0x40) y `sp_AUX4` (0x80).
+  Como en ZX, **a nivel bajo**: 0 = pulsado. `pad_this_frame` tiene a 0 los
+  que se acaban de pulsar en este frame.
+- En la pantalla de título, `select_joyfunc ()` copia sobre la tabla una de
+  las dos que hay en `cpc/sysvars.h`: `def_keys` (teclado: O, P, Q, A,
+  espacio…) si se pulsa 1, o `def_keys_joy` (joystick) si se pulsa 2.
 
-El motor recorre la tabla de teclas (12 entradas de 2 bytes: máscara +
-línea), y va montando `pad0` con los bits `sp_LEFT`, `sp_RIGHT`, `sp_UP`,
-`sp_DOWN`, `sp_FIRE`, etc. (`cpc.h:210-217`).
+### 5.10. `sp_KeyPressed (código)` y `sp_WaitForNoKey ()`
 
-### 5.9. `cpc_TestKey(index)`
-
-- **Qué hace**: comprueba si una tecla de la tabla está pulsada.
-- **Parámetro**: `L` (fastcall) = índice de la tecla (0 = la primera).
-- **Salida**: 1 si está pulsada, 0 si no.
-- **Uso**: `mainloop.h:381` (`cpc_TestKey (KEY_AUX1)`, la tecla M del
-  scripting) y `mainloop.h:484` (teclas de depuración).
-
-Los índices son los del `cpc_KeysData`: `KEY_LEFT` = 0, `KEY_RIGHT` = 1,
-`KEY_UP` = 2, `KEY_DOWN` = 3, `KEY_BUTTON_A` = 4, `KEY_BUTTON_B` = 5,
-`KEY_AUX3` = 6, `KEY_AUX4` = 7, `KEY_AUX1` = 8, `KEY_AUX2` = 9,
-`KEY_ENTER` = 10, `KEY_ESC` = 11 (`cpc.h:197-208`).
-
-### 5.10. `cpc_KeysData` (la tabla de teclas)
-
-- Es una tabla de 12 palabras de 16 bits (más 10 bytes de "keymap" y 2 de
-  reservas al principio). Cada palabra es `(línea << 8) | máscara`.
-- **Está en `cpc_KeysData + 12`** (el motor lo tiene hardcodeado en
-  `cpc.h:1199` y `cpc.h:1775`).
-- El motor la **reescribe** en `select_controls` (`cpc.h:1752-1779`),
-  copiando 24 bytes desde `def_keys` (teclado) o `def_keys_joy` (joystick):
-
-```c
-		.copy_keys_to_extern
-			ld  de, cpc_KeysData + 12
-			ld  bc, 24
-			ldir
-```
-
-  Así el jugador elige si usa teclado o joystick, sin tocar la librería.
-
-### 5.11. `cpc_MakeM1RotationLUTs()`
-
-- **Qué hace**: rellena las tres tablas de rotación de bytes de modo 1
-  (`M1LUTR1` = `$D700`, `M1LUTR2` = `$DE00`, `M1LUTR3` = `$E700`), que
-  sirven para dibujar sprites al pixel desplazados un byte.
-- **Uso**: `cpc.h:424-426`, en `system_init`, y sólo si `MODE_1` y no
-  `NO_MASKS`:
-
-```c
-	#if defined MODE_1 && !defined NO_MASKS
-		cpc_MakeM1RotationLUTs ();
-	#endif
-```
+Están escritas en `cpc/printer.h` para que el resto del motor funcione igual
+que en ZX. El código de tecla es `(($40 | línea) << 8) | bit`; los que usa el
+motor (`KEY_M`, `KEY_H`, `KEY_Y`, `KEY_Z`, `KEY_1`…) están en
+`cpc/sysvars.h`.
 
 ---
 
@@ -422,313 +315,215 @@ Los índices son los del `cpc_KeysData`: `KEY_LEFT` = 0, `KEY_RIGHT` = 1,
 
 ### 6.1. La estructura `SPR`
 
-El motor **no** usa los sprites de la CPCRSLIB original: define su propia
-estructura de 16 bytes (`cpc.h:221-233`):
+El motor no usa los sprites de la CPCRSLIB original: tiene su propia
+estructura de 16 bytes (`cpc/sysvars.h`):
 
 ```c
 typedef struct sprite {
-	unsigned int sp0;			// 0   puntero al gráfico del sprite
-	unsigned int sp1; 			// 2   puntero al gráfico de máscara
-	unsigned int coord0;		// 4   (no lo usa el motor)
-	signed char cox, coy;		// 6 7 offset de la "cara" del sprite
+	unsigned int sp0;			// 0   puntero al gráfico del frame
+	unsigned int sp1; 			// 2   (no se usa)
+	unsigned int coord0;		// 4   (no se usa)
+	signed char cox, coy;		// 6 7 (no se usa)
 	unsigned char cx, cy; 		// 8 9 posición actual
 	unsigned char ox, oy;		// 10 11 posición anterior
-	void *invfunc;				// 12 rutina que marca las celdas
-	void *updfunc;				// 14 rutina que dibuja el sprite
+	void *invfunc;				// 12 (no se usa)
+	void *updfunc;				// 14 (no se usa)
 } SPR;
+
+SPR sp_sw [SW_SPRITES_ALL] AT (BASE_SPRITES);
 ```
 
-- `cx`, `cy`: la posición **actual** del sprite. Las unidades dependen de la
-  rutina que se use (ver la sección 6.3).
-- `ox`, `oy`: la posición **anterior**. La rutina de invalidación marca
-  las celdas de las dos posiciones, para que el sprite no deje rastro.
-- `cox`, `coy`: el desplazamiento de la "cara" del sprite dentro del
-  spriteset (los arrays `sm_cox` / `sm_coy` que genera `mkts_om.exe`).
-- `invfunc` / `updfunc`: los punteros a las rutinas de la librería.
+- `cx`, `cy`: la posición **actual**. `cx` va en **bytes** de la pantalla
+  (0..63) y `cy` en **líneas** (0..191).
+- `ox`, `oy`: la posición **anterior**. La rutina de marcado marca las
+  celdas de las dos posiciones, para que el sprite no deje rastro, y luego
+  copia `cx`, `cy` en `ox`, `oy`.
+- `sp0`: el gráfico del frame que se ve.
 
-El array de sprites es `sp_sw[SW_SPRITES_ALL]` (`cpc.h:232`), en
-`BASE_SPRITES` (`$E600`), y los índices son (`cpc.h:97-104`):
+`sp_sw` está en `BASE_SPRITES` (`$E600`), y los índices son:
 
 - `SP_PLAYER` (0): el jugador,
-- `SP_ENEMS_BASE` (1): los enemigos,
-- `SP_BULLETS_BASE` (1 + `MAX_ENEMS`): las balas,
-- `SP_SWORD_BASE`, `SP_COCOS_BASE`, `SP_CUSTOM_BASE`: los siguientes huecos.
+- `SP_ENEMS_BASE` (1, 2 y 3): los enemigos,
+- `SP_BULLETS_BASE` (4…): las balas.
 
-`SW_SPRITES_ALL` = 1 (jugador) + `MAX_ENEMS` + `MAX_BULLETS` + (espada) +
-`MAX_CUSTOM_SW_SPRITES`. Si añades sprites propios, crece el array (y con
-él, la memoria en `BASE_SPRITES`).
+`SW_SPRITES_ALL` = 1 + 3 + `MAX_BULLETS`.
 
 ### 6.2. Quién pone qué
 
-En `system_init` (`cpc.h:491-595`):
+- `system_init ()` coloca todos los sprites fuera de la zona de juego.
+- `saca_a_todo_el_mundo_de_aqui ()` les pone a todos el gráfico vacío
+  (`sprite_18_a`).
+- Cada frame, `render_sprites ()` coloca a los enemigos, al jugador (o le
+  pone el gráfico vacío si está parpadeando) y a las balas con
+  `cpc_MoveSprAbs`.
 
-- **El jugador**: `cox`/`coy` de `sm_cox[0]`/`sm_coy[0]`, `invfunc` de
-  `sm_invfunc[0]`, `updfunc` de `sm_updfunc[0]` (todo del
-  `spriteset_mappings.h` que genera `mkts_om.exe`), y el gráfico apunta a
-  `spr_empty` (se cambia cada frame).
-- **Los enemigos**: rutinas fijas, `cpc_PutSpTileMap8x16Px` (invalidar) y
-  `cpc_PutTrSp8x16TileMapPx` (dibujar) (`cpc.h:527-531`).
-- **Las balas**: `cpc_PutSPTileMap2Bx8` (invalidar) y `cpc_PutTrSp2Bx8TileMap`
-  o `cpc_PutTrSp2Bx8TileMapG` (dibujar), según `NO_MASKS`
-  (`cpc.h:553-561`).
-- Al final, **todos** los sprites se colocan fuera de la pantalla
-  (`cpc.h:579-595`) poniéndoles `ox`/`oy` fuera del viewport.
+### 6.3. `cpc_MoveSprAbs (sprite, frame, x, y)`
 
-Cada frame, `render_all_sprites` (`cpc.h:1368-1469`):
+Es una función del motor (`cpc/printer.h`), equivalente a la `sp_MoveSprAbs`
+de splib2: pone en `sp_sw [sprite]` el gráfico `frame` y la posición, pasando
+de las coordenadas del motor (píxeles dentro de la zona de juego) a las de la
+librería:
 
-- enemies: `render_this_enemy` (`cpc.h:1328-1366`) pone `cx`, `cy` y el
-  puntero al gráfico (`sp0` = `en_an_next_frame[enit]`);
-- jugador: `cx`/`cy` desde `gpx`/`gpy`, y `sp0` = `player.next_frame` (o
-  `spr_empty` si está parpadeando);
-- balas: `cx`/`cy` desde `bullets_x[]`/`bullets_y[]` y `sp0` =
-  `spr_bullet`.
+```
+cx = x / 4 + VIEWPORT_X * 2     (bytes)
+cy = y + VIEWPORT_Y * 8         (líneas)
+```
 
-### 6.3. Las unidades de las coordenadas
+Así que **en horizontal los sprites se mueven de 4 en 4 píxeles** (un byte;
+en modo 0, un byte son dos píxeles anchos).
 
-Aquí está la mayor trampa del backend CPC. **Cada familia de rutinas espera
-unidades distintas** en `cx`, y el motor lo compensa con divisiones
-distintas:
+Las rutinas que usa el motor son siempre las mismas:
 
-- Las rutinas `*2Bx8*` (balas) trabajan con `cx` **en bytes**: su comentario
-  dice "X en bytes! (0-63)", y el motor divide la posición entre 4
-  (`cpc.h:1457`).
-- Las rutinas `*Px*` (modo 0) trabajan con `cx` en unidades donde 4 = un
-  tile ("X está en pixels. Al estar alineado a rejilla si & 3 == 0"): el
-  motor divide la posición entre 2 en `MODE_0` (`cpc.h:1340-1342` y
-  `1419-1421`) y no divide nada en `MODE_1`.
-- Las rutinas `*M1*` (modo 1) trabajan en píxeles de hardware.
+| Sprites | Marcar | Dibujar | Tamaño |
+|---|---|---|---|
+| Jugador y enemigos | `cpc_PutSPTileMap4Bx16` | `cpc_PutTrSp4Bx16TileMap` | 4 bytes x 16 líneas (64 bytes) |
+| Balas | `cpc_PutSPTileMap2Bx8` | `cpc_PutTrSp2Bx8TileMap` | 2 bytes x 8 líneas (16 bytes) |
 
-Traducción práctica: **si cambias de rutina de sprite, tienes que revisar la
-división de la coordenada X**. Cada módulo de la librería lleva en su
-cabecera un comentario con la convención que espera; míralo antes de
-enlazar uno nuevo.
+`sp_UpdateNow ()` las llama directamente para cada sprite (los campos
+`invfunc` y `updfunc` no se usan).
 
-### 6.4. Los datos del sprite
+### 6.4. Los datos de los sprites
 
-Los gráficos vienen de `sprites.bin`, que produce
-`mkts_om.exe ... mode=sprites` (`comp.bat:37`). El `spriteset_mappings.h`
-generado define punteros a cada "cara":
+Los gráficos vienen de los png de `gfx/cpc/`, que `comp-cpc.bat` convierte con
+`mkts_om` (capítulo 11 del manual):
+
+- `sprites.png` → `sprites.bin`: los 16 sprites del güego, 64 bytes cada uno
+  (`cpc/sprites.h`). `cpc/spriteset_mappings.h` define `sprite_1_a` …
+  `sprite_16_a` como `sprites + 64 * (n - 1)`, para que el resto del motor
+  (`cpc/cell_arrays.h`, `engine.h`) los use con los mismos nombres que en ZX.
+- `sprites_extra.png` → `sprites_extra.bin`: la explosión (`sprite_17_a`).
+- `sprite_18_a`: el sprite vacío (96 bytes a 0), en `cpc/extrasprites.h`.
+- `sprites_bullet.png` → `sprites_bullet.bin`: la bala (`sprite_19_a`).
+
+Cada sprite es un bitmap de 4 bytes por línea, en el formato de píxeles del
+modo de vídeo. Las tablas de frames (`player_frames []` y `enem_frames []`,
+en `cpc/cell_arrays.h`) apuntan a esos gráficos, y el motor pone el que toca
+en `sp0`.
+
+### 6.5. La transparencia: la LUT
+
+Las rutinas de dibujo mezclan el sprite con el fondo byte a byte:
+
+```
+destino = (fondo AND LUT [byte_del_sprite]) OR byte_del_sprite
+```
+
+`LUT` es la **LUT de píxeles transparentes** de `$FE00` (`BASE_LUT`). Para
+cada byte posible del sprite dice qué bits del fondo se conservan: los píxeles
+con el color 0 son transparentes. La genera el motor:
+
+- `src/dev/cpc/cpc_TrPixLutM0.asm` (modo 0) y `cpc_TrPixLutM1.asm` (modo 1),
+- `comp-cpc.bat` la ensambla con `pasmo` y la comprime con `zx0`
+  (`trpixlutc.bin`),
+- `system_init ()` la descomprime en su sitio al arrancar:
 
 ```c
-#define SPRITE_00 (_sprites + 0x0000)
-#define SPRITE_01 (_sprites + 0x0040)
-...
+#asm
+		ld  hl, _trpixlutc
+		ld  de, BASE_LUT
+		call depack
+#endasm
 ```
-
-El paso entre caras es el tamaño del sprite en bytes (por ejemplo 0x40 = 64
-bytes para un 16x16 en modo 1).
-
-El contenido de un sprite es un bitmap de N bytes por fila (N = el "metasize"
-del sprite) y 16 filas para los sprites de 16 de alto. La rutina de dibujo
-hace, byte a byte:
-
-```
-destino = (fondo & LUT[byte_del_sprite]) | byte_del_sprite
-```
-
-donde `LUT` es la **LUT de píxeles transparentes** que vive en `$FE00`
-(`BASE_LUT`). La genera el propio motor:
-
-- `src/dev/system/cpc_TrPixLutM1.asm` (modo 1) y `cpc_TrPixLutM0.asm`
-  (modo 0),
-- `comp.bat:76` la ensambla con `pasmo` y la comprime con `zx0`,
-- `cpc.h:417-421` la descomprime in situ al arrancar:
-
-```c
-	#asm
-			ld  hl, _trpixlutc
-			ld  de, BASE_LUT
-			call depack
-	#endasm
-```
-
-### 6.5. Las dos familias: con LUT y "G" (OR directo)
-
-Hay dos formas de mezclar el sprite con el fondo:
-
-- Las rutinas **sin "G"** en el nombre (`cpc_PutTrSp2Bx8TileMap`,
-  `cpc_PutTrSp8x16TileMapPx`, ...) usan la LUT de `$FE00`:
-  `fondo = (fondo & LUT[byte_del_sprite]) | byte_del_sprite`. La LUT dice,
-  para cada byte posible del sprite, qué bits del fondo se conservan (LUT[0]
-  = `$FF`, se conserva todo; LUT[255] = `$00`, no se conserva nada), así que
-  el sprite puede ser opaco o transparente según sus propios datos.
-- Las rutinas **"G"** (`cpc_PutTrSp2Bx8TileMapG`, ...) hacen un simple OR:
-  `fondo = fondo | byte_del_sprite`. No necesitan LUT, pero no pueden
-  "borrar" nada del fondo: los bits a 1 del sprite se mezclan con los del
-  fondo.
-
-El motor elige la de las balas así (`cpc.h:558-562`):
-
-```c
-			#ifdef NO_MASKS
-					ld  hl, cpc_PutTrSp2Bx8TileMap 	// sm_updfunc [0]
-			#else
-					ld  hl, cpc_PutTrSp2Bx8TileMapG 	// sm_updfunc [0]
-			#endif
-```
-
-O sea: con `NO_MASKS` definido usa la de la LUT; sin él (por defecto), la
-"G" (OR directo).
-
-### 6.6. Los "garbled bits" del modo 0
-
-`tilemap_conf.asm:27-54` exporta dos máscaras, `mascara1` y `mascara2`
-(ambas `$00` = "no garbled"), con la idea de marcar los tiles cuyo byte tiene
-los dos tipos de píxel intercalados (ABABABAB), que es lo que pasa en modo 0
-y complica el enmascarado. **La versión actual de la biblioteca no las usa**
-(ningún módulo las referencia): son una reserva para el caso "garbled" que
-se puede activar si hace falta.
 
 ---
 
-## 7. La matriz de rutinas de sprite
+## 7. La interrupción
 
-La librería incluye 35 rutinas de sprite, elegidas por **tamaño y formato de
-píxel**. Los nombres codifican:
-
-- `cpc_PutSpTileMap...`: la rutina de **invalidación** (marca las celdas
-  que ocupa el sprite).
-- `cpc_PutTrSp...TileMap...`: la rutina de **dibujo**.
-
-Tamaños: 4x8, 8x8, 8x16, 8x24, 16x16, 16x24, 12x24, 2Bx8, 4Bx16, 4Bx24.
-Formatos: `Px` (al pixel en modo 0), `PxM1` (al pixel en modo 1), `GPx`
-(al pixel con máscara), `G` (OR directo, sin LUT de transparencia), `LUT`
-(con las LUTs de rotación), `CA`.
-
-Las que usa el motor de serie:
-
-- Jugador: las que diga `spriteset_mappings.h` (generado por `mkts_om.exe`).
-  En el esqueleto, `cpc_PutSpTileMap16x16PxM1` y
-  `cpc_PutTrSp16x16TileMapPxM1LUT`.
-- Enemigos: `cpc_PutSpTileMap8x16Px` + `cpc_PutTrSp8x16TileMapPx`.
-- Balas: `cpc_PutSPTileMap2Bx8` + `cpc_PutTrSp2Bx8TileMap` (o `...G`).
-
-> Si tu juego usa un tamaño o un formato de píxel que no esté en la
-> matriz, hay que recuperar el módulo correspondiente del historial de git
-> (ver la nota final de `lib/cpcrslib-mt/README.md`).
+La interrupción es del motor, no de la librería: `system_init ()`
+(`cpc/printer.h`) pone un `jp _isr` en `$38`. El CPC interrumpe 300 veces por
+segundo; la ISR cuenta y, cada 6, suma uno al contador de frames (`isr_c2`,
+el que espera `sp_UpdateNow ()`) y llama al WYZ player.
 
 ---
 
-## 8. Recetas: cómo escribir tu propio código
+## 8. Recetas: tu propio código
 
 ### 8.1. Añadir un sprite propio
 
-1. Añade el sprite al PNG (`gfx/cpc/sprites.png`) y regenera `sprites.bin`
-   con `mkts_om.exe` (`comp.bat:37`).
-2. Si es una "cara" nueva del spriteset, `mkts_om.exe` actualizará
-   `spriteset_mappings.h` con el puntero (`SPRITE_xx`) y las rutinas
-   (`sm_invfunc` / `sm_updfunc`).
-3. Crea el sprite en `system_init`: copia el patrón de los enemigos
-   (`cpc.h:520-537`) y pon `sp0` al puntero de tu gráfico.
-4. En `render_all_sprites`, pon `cx`, `cy` y `sp0` cada frame.
-
-Recuerda: cada sprite necesita sus propias rutinas de invalidación y
-dibujo, y **sus unidades de coordenadas** (sección 6.3).
+1. Sube `SW_SPRITES_ALL` en `cpc/sysvars.h` (cada sprite son 16 bytes más en
+   `BASE_SPRITES`) y usa los índices de después de las balas.
+2. Pon el gráfico en el png de sprites (o en otro png convertido con
+   `mkts_om` y metido con `BINARY`, como `cpc/extrasprites.h`).
+3. Muévelo cada frame con `cpc_MoveSprAbs (índice, gráfico, x, y)`.
+4. Como `sp_UpdateNow ()` recorre todos los sprites de `sp_sw` con las
+   rutinas de 4Bx16 (salvo las balas), un sprite propio de 16x16 no necesita
+   nada más. Para otro tamaño, hay que cambiar `sp_UpdateNow ()` para que use
+   sus rutinas.
 
 ### 8.2. Escribir en pantalla
 
-- **Cambiar un tile**: escribe el número de tile en la nametable (con
-  `__tile_address`) y marca la celda con `cpc_UpdTileTable (x, y)`.
-- **Una zona**: escribe los tiles y marca el rectángulo con
-  `cpc_InvalidateRect`.
-- **Texto**: `draw_text` ya lo hace (escribe en la nametable e invalida).
+- **Un tile o un carácter**: `draw_coloured_tile`, `sp_PrintAtInv`,
+  `print_number2` y `print_str`, igual que en ZX (sección 4.2).
+- **A mano**: escribe en la nametable (`tile_address ()` da la dirección) y
+  marca las celdas con `cpc_UpdTileTable` o `cpc_InvalidateRect`.
 
-Nunca escribas en `$C000` (la pantalla visible) esperando que se queda: el
-próximo `cpc_UpdScr` + `cpc_ShowTouchedTiles` lo pisa. Escribe en la
-nametable.
+Nunca escribas en `$C000` (la pantalla visible) esperando que se quede: el
+siguiente `sp_UpdateNow ()` lo pisa en cuanto esas celdas se ensucien.
 
 ### 8.3. Teclas
 
-- `cpc_TestKey (KEY_AUX1)` para una tecla concreta.
-- `pad0` / `pad1` / `pad_this_frame` para el juego (los rellena `pad_read`
-  a partir de `cpc_KeysData`).
+- `sp_KeyPressed (código)` para una tecla concreta.
+- `pad0` y `pad_this_frame` para el mando del jugador (sección 5.9).
 
 ### 8.4. Forzar un repintado completo
 
-`cpc_ShowTileMap (0)` recompone la pantalla entera desde la nametable. Y si
-lo que quieres es repintar la zona de juego, `invalidate_viewport()`
-(`cpc.h:1058`) marca todo el viewport.
+`cpc_ShowTileMap (0)` recompone la pantalla entera desde la nametable.
 
 ---
 
 ## 9. Trampas
 
 - **La librería no es autónoma**: si cambias las direcciones de
-  `tilemap_conf.asm`, o las de `BASE_LUT`/`BASE_SPRITES`, dejas de ser
-  compatible con la librería compilada.
-- **El superbuffer es el protagonista**: cualquier cosa que se dibuje
-  "a mano" en `$C000` se pierde; hay que ir por la nametable.
-- **La ORDEN de las operaciones en `cpc_UpdateNow` es importante**: primero
-  se invalidan (marcan celdas), luego se recarga el fondo (`cpc_UpdScr`),
-  luego se dibujan los sprites, y al final se vuelca a la pantalla. Si
-  llamas a `cpc_UpdScr` después de dibujar los sprites, los borras.
-- **Unidades de coordenadas**: cada familia de rutinas espera unidades
-  distintas (sección 6.3).
-- **Modo 0 vs modo 1**: no es sólo el número de colores. En modo 0 el
-  motor divide la X entre 2, la LUT de transparencia es otra, y las rutinas
-  de sprite son otras (`Px` en vez de `PxM1`).
-- **La tabla de teclas se reescribe**: `select_controls` copia 24 bytes
-  sobre `cpc_KeysData + 12`. Si tocas `cpc_KeysData` en otro sitio, cuidado.
-- **La variante fg** (`cpcrslib_fg_mt.lib`) necesita la tabla
-  `behindtilemasks` exportada por el juego; si falta, el enlazado falla.
-- **`PASARPORDETRAS` es de compilación**: no se puede activar en runtime.
-- **Los sprites no tienen "capas"**: el orden de dibujo es el del array
-  `sp_sw`, y `cpc_UpdateNow` los recorre **del último al primero**, así que
-  el índice más bajo (el jugador) se dibuja el último y queda delante.
-- **La ISR es del motor, no de la librería**: el contador de frames
-  (`isr_c2`) y el reproductor de música WYZ están en la ISR del motor
-  (`cpc.h:303-408`); la librería no toca el sistema de interrupciones.
+  `tilemap_conf.asm`, `BASE_LUT` o `BASE_SPRITES`, dejas de ser compatible
+  con la librería compilada.
+- **El superbuffer es el protagonista**: lo que se dibuje "a mano" en
+  `$C000` se pierde; hay que ir por la nametable.
+- **El orden de `sp_UpdateNow ()` importa**: primero se marcan las celdas,
+  luego se recarga el fondo (`cpc_UpdScr`), luego se dibujan los sprites y al
+  final se vuelca a la pantalla. Si recargas el fondo después de dibujar los
+  sprites, los borras.
+- **Las coordenadas**: `cx` va en bytes y `cy` en líneas de la pantalla
+  entera, no de la zona de juego (`cpc_MoveSprAbs` hace la conversión).
+- **Modo 0 o modo 1**: cambia el número de colores, el formato de los
+  píxeles (`mkts_om` con `cpcmode=`) y la LUT de transparencia
+  (`cpc_TrPixLutM0` o `M1`). `comp-cpc.bat` lo elige todo con `set mode=`.
+- **La tabla de teclas se reescribe**: `select_joyfunc ()` copia 24 bytes
+  sobre `cpc_KeysData + 12`.
+- **La variante fg** necesita la tabla `behindtilemasks`; si falta, no
+  enlaza.
+- **Los sprites no tienen capas**: se dibujan en el orden de `sp_sw`, del
+  primero al último, así que los de índice más alto (las balas) quedan
+  delante.
 
 ---
 
 ## 10. Índice rápido
 
-Núcleo:
-
-- `cpc_SetMode` — cambia el modo de vídeo. `cpc.h:439`, `441`.
-- `cpc_Border` — color del borde. `cpc.h:412`.
-- `cpc_ShowTileMap` — recompone y/o vuelca la pantalla. `mainloop.h:39`;
-  `pantallas.h:96`.
-- `cpc_UpdScr` — recarga en el superbuffer las celdas sucias.
-  `cpc.h:1551`.
-- `cpc_ShowTouchedTiles` — vuelca a la pantalla las celdas sucias.
-  `cpc.h:1648`.
-- `cpc_ResetTouchedTiles` — limpia el bitfield de celdas sucias.
-  `cpc.h:1649`.
-- `cpc_UpdTileTable` — marca una celda como sucia. `cpc.h:988`, `993`;
-  `1109`.
-- `cpc_InvalidateRect` — marca un rectángulo como sucio. `cpc.h:1064`,
-  `1187`, `1324`.
-- `cpc_TestKeyboard` — lee una línea del teclado. `cpc.h:1209`.
-- `cpc_TestKey` — comprueba una tecla de la tabla. `mainloop.h:381`, `484`.
-- `cpc_KeysData` — la tabla de teclas (en `cpc_KeysData + 12`).
-  `cpc.h:1199`, `1775`.
-- `cpc_MakeM1RotationLUTs` — tablas de rotación de modo 1. `cpc.h:425`.
-
-Sprites:
-
-- `cpc_PutSpTileMap8x16Px` — invalidar enemigos. `cpc.h:527`.
-- `cpc_PutTrSp8x16TileMapPx` — dibujar enemigos. `cpc.h:531`.
-- `cpc_PutSPTileMap2Bx8` — invalidar balas. `cpc.h:553`.
-- `cpc_PutTrSp2Bx8TileMap` / `...TileMapG` — dibujar balas. `cpc.h:559`,
-  `561`.
-- `sm_invfunc` / `sm_updfunc` — rutinas del jugador, elegidas por
-  `mkts_om.exe`. `cpc.h:502`, `506`.
+| Función | Para qué | Dónde la usa el motor |
+|---|---|---|
+| `cpc_SetMode` | Cambia el modo de vídeo. | `system_init ()` |
+| `cpc_Border` (del motor) | Color del borde. | `system_init ()`, `BORDER ()` |
+| `cpc_ShowTileMap` | Recompone y/o vuelca la pantalla. | `pantallas.h` |
+| `cpc_UpdScr` | Recarga en el superbuffer las celdas sucias. | `sp_UpdateNow ()` |
+| `cpc_ShowTouchedTiles`, `cpc_ResetTouchedTiles` | Vuelcan las celdas sucias y limpian la marca. | `sp_UpdateNow ()` |
+| `cpc_UpdTileTable` | Marca una celda. | `draw_coloured_tile`, `sp_PrintAtInv`, `print_number2` |
+| `cpc_InvalidateRect` | Marca un rectángulo. | `print_str` |
+| `cpc_TestKeyboard` | Lee una línea del teclado. | `pad_read`, `sp_KeyPressed` |
+| `cpc_KeysData` | La tabla de teclas. | `pad_read`, `select_joyfunc` |
+| `cpc_PutSPTileMap4Bx16`, `cpc_PutTrSp4Bx16TileMap` | Marcan y dibujan un sprite de 16x16. | `sp_UpdateNow ()` |
+| `cpc_PutSPTileMap2Bx8`, `cpc_PutTrSp2Bx8TileMap` | Marcan y dibujan una bala. | `sp_UpdateNow ()` |
+| `cpc_MoveSprAbs` (del motor) | Coloca un sprite. | `render_sprites ()` |
 
 ### Ficheros relacionados
 
-- `lib/cpcrslib-mt/` — la librería (fuente en ensamblador + cabecera).
+- `lib/cpcrslib-mt/` — la librería (fuente en ensamblador, cabecera,
+  `cpcrslib.lst` con los módulos y `make.bat`).
 - `lib/cpcrslib-mt/README.md` — notas de la poda de la librería.
 - `lib/cpcrslib-mt/cosas.md` — notas de implementación (píxeles de modo 0,
-  LUTs de rotación).
+  LUTs).
 - `lib/cpcrslib-mt/CPCconfig.def` — configuración de compilación.
-- `src/dev/cpc.h` — el backend CPC: aquí está todo el uso de la librería.
-- `src/dev/system/tilemap_conf.asm` — el contrato con la librería.
-- `src/dev/system/cpc_TrPixLutM0.asm`, `cpc_TrPixLutM1.asm` — la LUT de
+- `src/dev/cpc/` — todo lo que usa la librería (ver el principio).
+- `src/dev/cpc/tilemap_conf.asm` — el contrato con la librería.
+- `src/dev/cpc/cpc_TrPixLutM0.asm`, `cpc_TrPixLutM1.asm` — la LUT de
   píxeles transparentes.
-- `src/dev/cpc/spriteset_mappings.h` — punteros a las caras del spriteset y
-  sus rutinas (generado).
-- `src/utils/mkts_om.bas` — el generador de `sprites.bin` y de
-  `spriteset_mappings.h`.
-- `misc/cpc-cpcrslib-demo/` — ejemplo standalone que usa cpcrslib-mt sin el
-  motor.
+- `src/utils/mkts_om.bas` — el conversor de gráficos de CPC.

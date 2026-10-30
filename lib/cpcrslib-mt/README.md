@@ -1,6 +1,6 @@
 # CPCRSLIB "Mojon Tilemap" (cpcrslib-mt)
 
-Versión recortada de CPCRSLIB, **orientada al motor MTE MK1 v3.2**. No es la
+Versión recortada de CPCRSLIB, **orientada al motor MTE MK1 v3.100**. No es la
 CPCRSLIB original: es sólo la porción que el motor usa de verdad.
 
 Original version by Artaburu. Modificaciones para el tilemap y los *dirty
@@ -36,16 +36,16 @@ resucitar alguna.
 
 La librería no es autonomous: usa símbolos que le aporta el juego.
 
-* `dev/system/tilemap_conf.asm` (se ensambla con el juego) exporta:
+* `dev/cpc/tilemap_conf.asm` (se ensambla con el juego) exporta:
   `tiles`, `pantalla_juego`, `tiles_tocados`, `tiles_tocados_ptr`,
   `posiciones_pantalla`, `posiciones_super_buffer`,
   `posicion_inicial_area_visible`, `posicion_inicial_superbuffer`,
   `ancho_pantalla_bytes`, `alto_pantalla_bytes`,
   `ancho_pantalla_bytes_visible` y `behindtilemasks` (éste último, sólo en la
   variante FG; ver más abajo).
-* `dev/cpc.h` exporta `viewport_x` y `viewport_y`, que se usan para el
+* `dev/cpc/sysvars.h` exporta `viewport_x` y `viewport_y`, que se usan para el
   *clipping* (`CHURRERA_CLIPPING`).
-* `dev/cpc.h` importa con `LIB`: `cpc_KeysData`, `cpc_UpdTileTable`,
+* `dev/cpc/sysvars.h` importa con `LIB`: `cpc_KeysData`, `cpc_UpdTileTable`,
   `cpc_InvalidateRect`, `cpc_TestKeyboard`.
 
 ### `behindtilemasks` (variante FG)
@@ -58,7 +58,7 @@ saberlo, lee una tabla de **256 bytes, uno por tile**, en el símbolo
 * `0` → tile normal: el sprite va por delante.
 * `1` → tile en primer plano: el sprite va por detrás.
 
-La tabla **la pone el juego**, en `dev/system/tilemap_conf.asm`:
+La tabla **la pone el juego**, en `dev/cpc/tilemap_conf.asm`:
 
 ```asm
     .behindtilemasks
@@ -68,17 +68,16 @@ La tabla **la pone el juego**, en `dev/system/tilemap_conf.asm`:
         ...                                ; 256 bytes
 ```
 
-Los juegos que usan la variante "fg" (**Papaya** y **Sir Ababol**) la
-rellenan. Los que usan la variante normal no la necesitan: la librería no
-la mira. El esqueleto de `src/` la deja vacía, porque enlaza con la
-variante normal.
+Los juegos que usan la variante "fg" la rellenan. Los que usan la variante
+normal no la necesitan: la librería no la mira. El motor enlaza con la
+variante normal y no la define.
 
 ## Variantes
 
 * `cpcrslib_mt.lib`: la normal (`CPCconfig_normal.def`).
 * `cpcrslib_fg_mt.lib`: la variante "fg" (`CPCconfig_fg.def`), que activa
   `PASARPORDETRAS` para que los sprites puedan quedar detrás de ciertos
-  tiles. La usan **Papaya** y **Sir Ababol**. Necesita la tabla
+  tiles. Necesita la tabla
   `behindtilemasks` (ver más abajo).
 
 ## Reconstruir
