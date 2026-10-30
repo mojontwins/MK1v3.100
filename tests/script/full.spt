@@ -1,0 +1,94 @@
+# Usa las secciones y comandos que no usa script.spt, para que la matriz
+# compile todo el intérprete (tests/matrix.sh, configuración "scriptfull").
+ROOMS = 30
+FASTNPANT
+ITEM SLOT = 5
+ITEM EMPTY = 0
+
+PLAYER KILLS ENEMY
+	IF EN_T = 1
+	THEN
+		INC KILLED, 0
+		%X = EN_X
+		%Y = EN_Y
+	END
+END
+
+ENEMY TOUCHED
+	IF EN_N = 2
+	THEN
+		EN_T = 0
+		LIFE = 50
+	END
+END
+
+SPECIAL TILE TOUCHED
+	IF TN = 30
+	THEN
+		GET ITEM SET $6
+	END
+END
+
+TILE PUSHED
+	IF MOVED_TILE = 3
+	THEN
+		SET BEH MOVED_X, MOVED_Y = 0
+	END
+END
+
+TILE DESTROYED
+	IF TX = 3
+	IF TY = 4
+	THEN
+		HIDE_HOTSPOTS = 1
+	END
+END
+
+ON TIMER ZERO
+	IF TIMER = 0
+	THEN
+		TIMER = 50
+		EXTERN 1, 2
+	END
+END
+
+ENTERING SCREEN 0
+	IF NPANT = 0
+	IF OPANT = 1
+	THEN
+		SET FIRE ZONE 16, 16, 64, 64
+		DONT_MAKE_FANTIES = 1
+	END
+	IF NPANT = 0
+	THEN
+		SET FIRE ZONE TILES 1, 1, 4, 4
+		PAUSE 2
+		SHOW
+		RECHARGE
+	END
+END
+
+PRESS FIRE AT ANY
+	IF PLAYER TOUCHES 3, 3
+	IF PLAYER IN_X 0, 100
+	IF PLAYER IN_Y 0, 100
+	IF PLAYER STILL
+	THEN
+		%A = TILE AT 3, 3
+		%B = BEH AT 3, 3
+		%C = DIALOG "SI O NO?", "SI", "NO"
+		TEXT BOX "ADIOS"
+		WIN GAME
+	END
+	IF PLAYER FALLING
+	THEN
+		GAME OVER
+	END
+	IF PLAYER NOT_FALLING
+	THEN
+		PX = 16
+		PY = 32
+		OBJS = 1
+		$$1 = 3
+	END
+END

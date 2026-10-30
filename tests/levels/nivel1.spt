@@ -1,0 +1,28 @@
+# Script del nivel 1 de la prueba de niveles (tests/levels, SCRIPTED=1)
+ROOMS = 30
+ALIAS %NIVEL = 1
+ALIAS %ENTRADAS = 2
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		%NIVEL = 1
+	END
+END
+
+ENTERING ANY
+	IF TRUE
+	THEN
+		INC %ENTRADAS, 1
+	END
+END
+
+ENTERING SCREEN 1
+	IF TRUE
+	THEN
+		DECOS
+			1, 7, 20
+			2, 7, 21
+		END
+	END
+END

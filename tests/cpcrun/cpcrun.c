@@ -78,6 +78,8 @@ static void parse_keys(const char *s) {
 }
 
 int main(int argc, char **argv) {
+	int pcfrom = -1;
+	int lowfrom = -1;	/* -low N: desde el frame N, últimos PC antes de saltar por debajo de 0x400 */	/* -pc N: PC y SP al final de cada frame desde el N */
 	int dumps[64][2], ndumps = 0;
 	const char *bin = NULL, *prefix = "shot"; int addr = 0x400, frames = 500, hash = 0;
 	for (int i = 1; i < argc; i++) {
@@ -87,6 +89,8 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[i], "-s")) { char *p = argv[++i]; while (*p) { shots[nshots++] = atoi(p); while (*p && *p != ',') p++; if (*p) p++; } }
 		else if (!strcmp(argv[i], "-o")) prefix = argv[++i];
 		else if (!strcmp(argv[i], "-h")) hash = 1;
+		else if (!strcmp(argv[i], "-pc")) pcfrom = atoi(argv[++i]);
+		else if (!strcmp(argv[i], "-low")) lowfrom = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-d")) { char *c; dumps[ndumps][0] = (int)strtol(argv[++i], &c, 0); dumps[ndumps][1] = (*c == ',') ? (int)strtol(c + 1, NULL, 0) : 16; ndumps++; }
 		else bin = argv[i];
 	}
@@ -124,7 +128,22 @@ int main(int argc, char **argv) {
 		for (int e = 0; e < nevs; e++) if (evs[e].frame == fr) {
 			if (evs[e].down) cpc_key_down(&sys, evs[e].key); else cpc_key_up(&sys, evs[e].key);
 		}
+		if (lowfrom >= 0 && fr >= lowfrom) {
+			static uint16_t hist[256]; int hi = 0, found = 0;
+			for (int us = 0; us < 20000 && !found; us += 2) {
+				cpc_exec(&sys, 2);
+				uint16_t pc = sys.cpu.pc;
+				if (pc != hist[(hi - 1) & 255]) hist[hi++ & 255] = pc;
+				if (pc < 0x400 && (pc < 0x38 || pc > 0x3F)) found = 1;
+			}
+			if (found) {
+				printf("frame %d: salto a %04X; PC anteriores:", fr, sys.cpu.pc);
+				for (int k = 64; k > 0; k--) printf(" %04X", hist[(hi - k) & 255]);
+				printf("\n"); return 0;
+			}
+		} else
 		cpc_exec(&sys, 20000);
+		if (pcfrom >= 0 && fr >= pcfrom) printf("frame %d pc %04X sp %04X\n", fr, sys.cpu.pc, sys.cpu.sp);
 		for (int s = 0; s < nshots; s++) if (shots[s] == fr) {
 			char fn[512]; snprintf(fn, sizeof fn, "%s_%05d.png", prefix, fr); save_png(fn);
 			if (hash) printf("frame %d hash %08x\n", fr, screen_hash());

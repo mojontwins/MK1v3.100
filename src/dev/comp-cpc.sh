@@ -38,9 +38,18 @@ if [ $justcompile = 0 ]; then
 	done
 fi
 
-echo "### COMPILANDO SCRIPT ###"
-# no olvides cambiar NPANT por el nº de pantallas
-# $U/msc ../script/script.spt msc.h 30
+if grep -qE '^[[:space:]]*#define[[:space:]]+ACTIVATE_SCRIPTING\b' config.h; then
+	echo "### COMPILANDO SCRIPT ###"
+	# Todos los scripts del juego juntos (uno por nivel, si hay niveles): un
+	# solo msc-config.h para el intérprete (msc.h) y un .bin por script.
+	# rooms= es el valor por defecto; cada script puede poner ROOMS = n.
+	scripts=../script/script.spt
+	[ -f scripts.txt ] && scripts=$(grep -v '^#' scripts.txt | tr '\n' ',' | sed 's/,*$//')
+	mw=$(grep -E '^#define[[:space:]]+MAP_W\b' config.h | awk '{print $3}')
+	mh=$(grep -E '^#define[[:space:]]+MAP_H\b' config.h | awk '{print $3}')
+	$U/msc4 in=$scripts v=3_100 output=c rooms=$((mw * mh)) > msc4.log || { cat msc4.log; echo "ERROR en el script"; exit 1; }
+	grep -iE "warning" msc4.log; grep -iE "error|wrong|unexpected|unknown|expecting|too long" msc4.log && { echo "ERROR en el script"; exit 1; }
+fi
 
 echo "### COMPILANDO GUEGO ###"
 $U/pasmo cpc/cpc_TrPixLutM$mode.asm trpixlut.bin

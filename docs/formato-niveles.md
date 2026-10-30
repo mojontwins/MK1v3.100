@@ -61,14 +61,33 @@ Cada juego la define en `levelset.h` con los recursos que genera `librarian`:
 
 ```c
 LEVEL levels [MAX_LEVELS] = {
-	// bundle      tileset        spriteset      música
-	{ RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 3 },
-	{ RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   4 },	// reutiliza los gráficos
+	// bundle      tileset        spriteset      música  script
+	{ RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 3,      RES_SCRIPT1C },
+	{ RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   4,      NO_RESOURCE },	// reutiliza los gráficos, sin script
 };
 ```
 
 `prepare_level ()` descomprime el bundle en `level_data` y, si el nivel los
 define, el tileset en `tileset` y el spriteset sobre los sprites actuales.
+
+Con `ACTIVATE_SCRIPTING`, el script del nivel se descomprime en `msc_buffer`
+(sin script, el índice queda vacío y no se ejecuta nada). Los scripts de todos
+los niveles se compilan juntos para que el intérprete tenga todo lo que usa
+cualquiera de ellos: `comp-zx.sh` le pasa a msc4 la lista de `scripts.txt`
+(una ruta por línea). msc4 deja un `.spt.bin` junto a cada script, que
+`levels.sh` comprime y `librarian.txt` reparte como los demás recursos:
+
+```
+# scripts.txt
+../script/nivel1.spt
+../script/nivel2.spt
+
+# levels.sh
+zx0 ../script/nivel1.spt.bin script1c.bin
+zx0 ../script/nivel2.spt.bin script2c.bin
+```
+
+Cada script indica sus pantallas con `ROOMS = n` (el tamaño de su mapa).
 
 ## Herramientas
 

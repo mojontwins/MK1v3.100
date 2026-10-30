@@ -3,6 +3,9 @@
 # Uso: ./comp-zx.sh [justcompile] [noclean]
 # Requiere z88dk 1.10 en el PATH (source z88env.sh, ver env/setup-linux.sh)
 #
+# Con ACTIVATE_SCRIPTING compila los scripts con msc4 (../script/script.spt
+# o la lista de scripts.txt).
+#
 # Si config.h define MODE_128K, además:
 #  * ensambla el WYZ player (speccy_128/wyz/wyzplayer.asm) con las canciones,
 #    instrumentos y efectos del juego (../ogt/zx128 o ../ogt) en RAM1 y genera
@@ -42,9 +45,18 @@ if [ $justcompile = 0 ]; then
 	done
 fi
 
-echo "### COMPILANDO SCRIPT ###"
-# no olvides cambiar NPANT por el nº de pantallas
-# $U/msc ../script/script.spt msc.h 30
+if grep -qE '^[[:space:]]*#define[[:space:]]+ACTIVATE_SCRIPTING\b' config.h; then
+	echo "### COMPILANDO SCRIPT ###"
+	# Todos los scripts del juego juntos (uno por nivel, si hay niveles): un
+	# solo msc-config.h para el intérprete (msc.h) y un .bin por script.
+	# rooms= es el valor por defecto; cada script puede poner ROOMS = n.
+	scripts=../script/script.spt
+	[ -f scripts.txt ] && scripts=$(grep -v '^#' scripts.txt | tr '\n' ',' | sed 's/,*$//')
+	mw=$(grep -E '^#define[[:space:]]+MAP_W\b' config.h | awk '{print $3}')
+	mh=$(grep -E '^#define[[:space:]]+MAP_H\b' config.h | awk '{print $3}')
+	$U/msc4 in=$scripts v=3_100 output=c rooms=$((mw * mh)) > msc4.log || { cat msc4.log; echo "ERROR en el script"; exit 1; }
+	grep -iE "warning" msc4.log; grep -iE "error|wrong|unexpected|unknown|expecting|too long" msc4.log && { echo "ERROR en el script"; exit 1; }
+fi
 
 # Paso propio del juego para construir niveles (bundles, tilesets...). Ver
 # docs/formato-niveles.md. Se ejecuta antes de librarian.
@@ -98,7 +110,7 @@ $U/printsize $game.bin
 if [ $mode128 = 1 ]; then
 	# Todo lo que se usa con otra página de RAM en 0xC000 tiene que estar por debajo.
 	bad=0
-	for s in DEPACK _UNPACK_RAMN SETRAMBANK _ISR _TILESET _SPRITES_END _LEVEL_DATA_END; do
+	for s in DEPACK _UNPACK_RAMN SETRAMBANK _ISR _TILESET _SPRITES_END _LEVEL_DATA_END _MSC_BUFFER; do
 		a=$(grep -m1 -E "^$s[[:space:]]" $game.map | sed -E 's/.*= ([0-9A-F]+),.*/\1/')
 		[ -z "$a" ] && continue
 		if [ $((16#$a)) -ge $((0xC000)) ]; then

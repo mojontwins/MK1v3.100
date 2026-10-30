@@ -47,6 +47,24 @@ Dim Shared As Integer allOpcodes
 Dim Shared As Integer itemSlot
 Dim Shared As Integer itemEmpty = 0
 
+'' Salida en C (output=c, solo con v=3_100): un intérprete fijo en el motor
+'' (src/dev/msc.h) y aquí solo se generan el bytecode y msc-config.h.
+Const IDX_ROOMS = 15			' Entrada libre del índice: nº de pantallas (salida C)
+Dim Shared As Integer outC
+Dim Shared As Integer SV (255)	' Índices usados como flag ($n), para variables especiales
+Dim Shared As Integer maxFlag = -1
+Dim Shared As Integer sectUsed (15)
+Dim Shared As Integer roomSectionsUsed
+Dim Shared As Integer maxScriptSize
+Dim Shared As Integer maxTextLen
+
+'' CALL a SUBs: la dirección se resuelve al final del script, así se puede
+'' llamar a una SUB definida más abajo.
+Dim Shared As String pendingCallName
+Dim Shared As String secFixName (255), fixName (1023)
+Dim Shared As Integer secFixOff (255), fixPos (1023)
+Dim Shared As Integer secFixCount, fixCount
+
 Dim Shared As Integer textWidth
 Dim Shared As Integer textPoolIndex
 Dim Shared As Integer lastTextOffset 
@@ -253,6 +271,14 @@ Sub parseScriptLine (linea As String)
 			tokens (i) = "$234"
 		ElseIf Ucase(tokens(i)) = "PARAM" Then
 			tokens (i) = "$233"
+		ElseIf Ucase(tokens(i)) = "TIMER" Then
+			tokens (i) = "$241"
+		ElseIf Ucase(tokens(i)) = "MOVED_TILE" Then
+			tokens (i) = "$244"
+		ElseIf Ucase(tokens(i)) = "MOVED_X" Then
+			tokens (i) = "$243"
+		ElseIf Ucase(tokens(i)) = "MOVED_Y" Then
+			tokens (i) = "$242"
 		End If
 
 		' Static identifiers
@@ -409,6 +435,9 @@ Function getTextOffset (text As String) As String
 	' encode this text
 	encodedText = encode5BitEsc (text, textWidth)
 
+	' Para el buffer del intérprete C: caracteres + saltos de línea + fin
+	If Len (text) + Len (text) \ textWidth + 2 > maxTextLen Then maxTextLen = Len (text) + Len (text) \ textWidth + 2
+
 	' return offset
 	offset = -1
 
@@ -439,7 +468,17 @@ Function getTextOffset (text As String) As String
 
 End Function
 
-Function pVal (expresion As String) As String 
+' Anota que el script usa "$n" (el flag n o la variable especial n).
+Sub markFlagUse (inner As String)
+	Dim As Integer n
+	If Not isNumber (inner) Then Exit Sub
+	n = Val (inner)
+	If n > 255 Then Exit Sub
+	SV (n) = -1
+	If n < &HE6 And n > maxFlag Then maxFlag = n
+End Sub
+
+Function pVal (expresion As String) As String
 	Dim As String subTokens(16)
 	Dim As Integer i
 	Dim As String result
@@ -455,13 +494,13 @@ Function pVal (expresion As String) As String
 			result = Chr (&HFF) & Chr (&HE6) & getTextOffset (decodeSpaces (subTokens (1))) & _
 				getTextOffset (decodeSpaces (subTokens (2))) & _
 				getTextOffset (decodeSpaces (subTokens (3)))
-			RV (&HE6) = -1
+			RV (&HE6) = -1: SV (&HE6) = -1
 		ElseIf subTokens (0) = "TILE" Then  
 			result = Chr (&HFF) & Chr (&HE8) & pVal(subTokens (1)) & pVal (subTokens (2))
-			RV (&HE8) = -1
+			RV (&HE8) = -1: SV (&HE8) = -1
 		ElseIf subTokens (0) = "BEH" Then 
 			result = Chr (&HFF) & Chr (&HE7) & pVal(subTokens (1)) & pVal (subTokens (2))
-			RV (&HE7) = -1
+			RV (&HE7) = -1: SV (&HE7) = -1
 		Else 
 			Print "Wrong expresion @ " & curLineNo
 			Return Chr (0)
@@ -470,10 +509,11 @@ Function pVal (expresion As String) As String
 		If debug Then Print "Result bytecode = ";: printBinStr result
 		Return result
 
-	ElseIf Len (expresion) > 1 And Left (expresion, 1) = "$" Then 
-		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1)) 
+	ElseIf Len (expresion) > 1 And Left (expresion, 1) = "$" Then
+		markFlagUse Right (expresion, Len (expresion) - 1)
+		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1))
 	Else
-		If Val (expresion) <= 254 Then 
+		If Val (expresion) <= 254 Then
 			RV (Val (expresion)) = -1
 			Return Chr (Val (expresion)) 
 		Else 
@@ -499,6 +539,7 @@ Function lVal (expresion As String) As String
 	Dim As String value
 	' Used for lValues such as $A = B, so first $ is ignored.
 	If correctLvalue (expresion) Then
+		markFlagUse Right (expresion, Len (expresion) - 1)
 		value = lValR (Right (expresion, Len (expresion) - 1))
 		LV (Asc (Right (value, 1))) = -1
 		Return value
@@ -705,6 +746,18 @@ Function processCommand (linea As String) As String
 				' SET BEH X Y = N
 				code = buildAction (Chr (&H21) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
 
+			ElseIf scmd = "fire" And lCase (tokens (2)) = "zone" Then
+				If Not outC Then Print "SET FIRE ZONE needs v=3_100 output=c @ " & curLineNo
+				If lCase (tokens (3)) = "tiles" Then
+					' SET FIRE ZONE TILES X1, Y1, X2, Y2 (en tiles)
+					' $52 X1 Y1 X2 Y2
+					code = buildAction (Chr (&H52) & pVal (tokens (4)) & pVal (tokens (5)) & pVal (tokens (6)) & pVal (tokens (7)))
+				Else
+					' SET FIRE ZONE X1, Y1, X2, Y2 (en píxeles)
+					' $51 X1 Y1 X2 Y2
+					code = buildAction (Chr (&H51) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (5)) & pVal (tokens (6)))
+				End If
+
 			ElseIf correctLvalue (tokens (1)) And tokens (2) = "=" And isNumberOrVar (tokens (3)) Then
 				' SET $A = B
 				code = buildAction (Chr(&H00) & lVal (tokens(1)) & pVal (tokens (3)))
@@ -811,10 +864,11 @@ Function processCommand (linea As String) As String
 			Else
 				indexSize = ENTERING_INDEX_OFFSET + maxPants * 2
 			End If
-			subBinIndex = getSubAddressByName (tokens (1)) + indexSize * 2
-
-			If subBinIndex > -1 Then
-				code = buildAction (Chr (&HF4) & Chr(subBinIndex And &HFF) & Chr (subBinIndex \ 256))				
+			' La dirección (LSB MSB) se rellena al final de processScript:
+			' así se puede llamar a una SUB definida más abajo.
+			If tokens (1) <> "" Then
+				code = buildAction (Chr (&HF4) & Chr (0) & Chr (0))
+				pendingCallName = tokens (1)
 			Else
 				syntaxError
 			End If
@@ -871,6 +925,11 @@ Function processCurrentSection (fIn As Integer) As String
 				End If
 
 				' Write current clausule
+				' (el tamaño va en un byte y 0xFF marca el final de sección)
+				If Len (clausule) + 1 >= 255 Then
+					Print "Clausule too long (" & Len (clausule) & " bytes) @ " & curLineNo
+					wrong = -1
+				End If
 				sectionCode = sectionCode & Chr (Len (clausule) + 1) & clausule
 				
 				' New clausule
@@ -930,7 +989,16 @@ Function processCurrentSection (fIn As Integer) As String
 				If lastCommandWasTerminator Then
 					Print "Warning! unreachable code @ " & curLineNo
 				End If
+				pendingCallName = ""
+				Dim As Integer before = Len (clausule)
 				clausule = clausule & processCommand (linea)
+				If pendingCallName <> "" Then
+					' Posición de LSB dentro de la sección: tamaño + cláusula + opcode
+					secFixName (secFixCount) = pendingCallName
+					secFixOff (secFixCount) = Len (sectionCode) + 1 + before + 1
+					secFixCount = secFixCount + 1
+					pendingCallName = ""
+				End If
 
 			ElseIf Left (linea, 1) <> "#" Then 
 				wrong = -1: terminado = -1
@@ -967,6 +1035,13 @@ End Function
 Sub writeToSectBinary (section As String)
 	Dim As Integer i 
 
+	For i = 0 To secFixCount - 1
+		fixName (fixCount) = secFixName (i)
+		fixPos (fixCount) = sectBinIdx + secFixOff (i)
+		fixCount = fixCount + 1
+	Next i
+	secFixCount = 0
+
 	For i = 1 To Len (section) 	
 		sectBinary (sectBinIdx) = Asc (Mid (section, i, 1))
 		sectBinIdx = sectBinIdx + 1
@@ -988,7 +1063,9 @@ Sub processScript (fIn As Integer)
 	Dim As Integer indexSize
 
 	sectBinIdx = 0
-	
+	subInfoIdx = 0
+	fixCount = 0: secFixCount = 0
+
 	For i = 0 To uBound (sectOffs)
 		sectOffs (i) = -1
 	Next i
@@ -996,7 +1073,10 @@ Sub processScript (fIn As Integer)
 	While Not Eof (fIn) 
 		linea = readNewLine (fIn)
 		parseTokenizeString lcase (linea), tokens (), ",_()[]", "#"
-		
+
+		' "ON PLAYER KILLS ENEMY" = "PLAYER KILLS ENEMY"
+		If tokens (0) = "on" Then shiftTokens 0
+
 		If linea <> "" And tokens (0) <> "" Then
 			If debug Then 
 				Print "==========================================" 
@@ -1078,7 +1158,9 @@ Sub processScript (fIn As Integer)
 						sectOffset = PRESS_FIRE_INDEX_OFFSET
 					End If
 
-					' Now adjust. 
+					roomSectionsUsed = -1
+
+					' Now adjust.
 					' Enter is ENTERING_INDEX_OFFSET + N * 2
 					' Fire is PRESS_FIRE_INDEX_OFFSET + N * 2
 					i = 0: While i + listToken < uBound (tokens) And tokens (i + listToken) <> ""
@@ -1110,10 +1192,21 @@ Sub processScript (fIn As Integer)
 					ElseIf startsWith (tokens (), "special tile touched") Then
 						section = 5
 					
+					ElseIf startsWith (tokens (), "timer zero") Then
+						section = 6
+
+					ElseIf startsWith (tokens (), "tile pushed") Then
+						section = 7
+
 					ElseIf startsWith (tokens (), "enemy touched") Then
 						section = 8
 
+					ElseIf startsWith (tokens (), "tile destroyed") Then
+						section = 9
+
 					End If
+
+					If section >= 0 Then sectUsed (section) = -1
 
 					listRooms (0) = Str(section)
 					listRooms (1) = ""
@@ -1159,12 +1252,24 @@ Sub processScript (fIn As Integer)
 		indexSize = ENTERING_INDEX_OFFSET + maxPants * 2
 	End If
 
+	If Not jumptable Then
+		For i = indexSize To uBound (sectOffs)
+			If sectOffs (i) >= 0 Then
+				Print "ERROR! section for screen " & ((i - ENTERING_INDEX_OFFSET) \ 2) & " but ROOMS = " & maxPants
+				End 1
+			End If
+		Next i
+	End If
+
 	For i = 0 To indexSize - 1
-		If sectOffs (i) < 0 Then 
-			sectOffs (i) = 0 
-		Else 
+		If sectOffs (i) < 0 Then
+			sectOffs (i) = 0
+		Else
 			sectOffs (i) = sectOffs (i) + indexSize * 2
 		End If
+		' En la salida C la entrada libre 15 guarda el número de pantallas
+		' del índice, para que el intérprete no lea fuera de él.
+		If outC And i = IDX_ROOMS Then sectOffs (i) = maxPants
 		WriteToMainBin sectOffs (i) Mod 256
 		WriteToMainBin sectOffs (i) \ 256
 	Next i 
@@ -1177,6 +1282,18 @@ Sub processScript (fIn As Integer)
 	Next i
 
 	Print "Bytecode section: " & sectBinIdx & " bytes"
+
+	' Resolver los CALL
+	For i = 0 To fixCount - 1
+		sectOffset = getSubAddressByName (fixName (i))
+		If sectOffset < 0 Then
+			Print "ERROR! Unknown SUB " & fixName (i)
+			End 1
+		End If
+		sectOffset = sectOffset + indexSize * 2
+		mainBinary (indexSize * 2 + fixPos (i)) = sectOffset And &HFF
+		mainBinary (indexSize * 2 + fixPos (i) + 1) = sectOffset \ 256
+	Next i
 
 End Sub
 
@@ -1193,6 +1310,129 @@ Sub writeScript (fName As String)
 
 	Print "Wrote " & mainBinIdx & " bytes to " & fName
 	Close fOut
+
+	If mainBinIdx > maxScriptSize Then maxScriptSize = mainBinIdx
+End Sub
+
+'' ---------------------------------------------------------------------------
+'' Salida C (output=c)
+'' ---------------------------------------------------------------------------
+
+' "script/level1.spt" -> "LEVEL1"
+Function cName (fName As String) As String
+	Dim As String b, r, c
+	Dim As Integer i
+	b = fName
+	While Instr (b, "/"): b = Mid (b, Instr (b, "/") + 1): Wend
+	While Instr (b, "\"): b = Mid (b, Instr (b, "\") + 1): Wend
+	If Instr (b, ".") Then b = Left (b, Instr (b, ".") - 1)
+	For i = 1 To Len (b)
+		c = Ucase (Mid (b, i, 1))
+		If (c >= "A" And c <= "Z") Or (c >= "0" And c <= "9") Then r = r & c Else r = r & "_"
+	Next i
+	Return r
+End Function
+
+Sub writeCArray (fOut As Integer, arrName As String, bytes () As uByte, size As Integer)
+	Dim As Integer i
+	Dim As String l
+	Print #fOut, "unsigned char " & arrName & " [] = {"
+	l = ""
+	For i = 0 To size - 1
+		l = l & Trim (Str (bytes (i)))
+		If i < size - 1 Then l = l & ", "
+		If (i Mod 16) = 15 Or i = size - 1 Then Print #fOut, "	" & l: l = ""
+	Next i
+	If size = 0 Then Print #fOut, "	0"
+	Print #fOut, "};"
+	Print #fOut, ""
+End Sub
+
+' Añade el script recién compilado (mainBinary) a msc-scripts.h
+Sub writeCScript (fOut As Integer, fName As String)
+	Print #fOut, "// " & fName & " (" & mainBinIdx & " bytes)"
+	Print #fOut, "#ifndef MSC_SCRIPTS_AS_RESOURCES"
+	writeCArray fOut, "script_" & LCase (cName (fName)), mainBinary (), mainBinIdx
+	Print #fOut, "#endif"
+	Print #fOut, ""
+End Sub
+
+Sub cDefine (fOut As Integer, nombre As String, valor As String, comentario As String)
+	Dim As String l
+	l = "#define " & nombre
+	If valor <> "" Then l = l & Space (28 - Len (l)) & valor
+	If comentario <> "" Then l = l & Space (36 - Len (l)) & "// " & comentario
+	Print #fOut, l
+End Sub
+
+Function hex2 (n As Integer) As String
+	Return Hex (n, 2)
+End Function
+
+Sub writeCConfig (fName As String, fileIns () As String, nScripts As Integer)
+	Dim As Integer fOut, i
+	Dim As String sectNames (15) = { "ENTERING_GAME", "ENTERING_ANY", "FIRE_ANY", "PLAYER_GOT_SOMETHING", _
+		"PLAYER_KILLS_ENEMY", "SPECIAL_TILE", "TIMER_ZERO", "TILE_PUSHED", _
+		"ENEMY_TOUCHED", "TILE_DESTROYED", "", "", "", "", "", "" }
+
+	fOut = FreeFile
+	Open fName For Output As #fOut
+	Print #fOut, "// msc-config.h"
+	Print #fOut, "// Generado por msc4 (v=3_100 output=c). No editar: se regenera al compilar los scripts."
+	Print #fOut, "// Dice al intérprete (msc.h) qué partes necesitan los scripts del juego."
+	Print #fOut, ""
+
+	Print #fOut, "// Scripts: identificadores (índice de msc_scripts [] en msc-scripts.h)"
+	For i = 0 To nScripts - 1
+		cDefine fOut, "SCRIPT_" & cName (fileIns (i)), Trim (Str (i)), fileIns (i)
+	Next i
+	cDefine fOut, "MSC_N_SCRIPTS", Trim (Str (nScripts)), ""
+	cDefine fOut, "MSC_SCRIPT_MAX_SIZE", Trim (Str (maxScriptSize)), "bytes del script más grande"
+	Print #fOut, ""
+
+	Print #fOut, "// Flags: del 0 al mayor que se usa"
+	cDefine fOut, "MSC_FLAGS", Trim (Str (maxFlag + 1)), ""
+	Print #fOut, ""
+
+	Print #fOut, "// Secciones que existen en algún script"
+	For i = 0 To 15
+		If sectUsed (i) And sectNames (i) <> "" Then cDefine fOut, "MSC_SECT_" & sectNames (i), "", ""
+	Next i
+	If roomSectionsUsed Then cDefine fOut, "MSC_SECT_ROOMS", "", "ENTERING SCREEN n / PRESS FIRE AT SCREEN n"
+	Print #fOut, ""
+
+	Print #fOut, "// Condiciones (MSC_CU_xx) y acciones (MSC_AU_xx) que se usan"
+	For i = 0 To 255
+		If CU (i) Then cDefine fOut, "MSC_CU_" & hex2 (i), "", ""
+	Next i
+	For i = 0 To 255
+		If AU (i) Then cDefine fOut, "MSC_AU_" & hex2 (i), "", ""
+	Next i
+	Print #fOut, ""
+
+	Print #fOut, "// Variables especiales que se leen (MSC_RV_xx) o se escriben (MSC_LV_xx)"
+	For i = &HE6 To &HFE
+		If SV (i) Then cDefine fOut, "MSC_RV_" & hex2 (i), "", ""
+	Next i
+	For i = &HE6 To &HFE
+		If LV (i) And SV (i) Then cDefine fOut, "MSC_LV_" & hex2 (i), "", ""
+	Next i
+	Print #fOut, ""
+
+	Print #fOut, "// GET ITEM"
+	cDefine fOut, "MSC_ITEM_SLOT", Trim (Str (itemSlot)), "flag con el objeto que se lleva"
+	cDefine fOut, "MSC_ITEM_EMPTY", Trim (Str (itemEmpty)), "valor de ""no llevo nada"""
+	Print #fOut, ""
+
+	If textPoolIndex > 0 Then
+		Print #fOut, "// Textos (TEXT BOX, DIALOG)"
+		cDefine fOut, "MSC_TEXTS", "", ""
+		cDefine fOut, "MSC_TEXT_MAX_LEN", Trim (Str (maxTextLen)), "caracteres del texto más largo"
+		cDefine fOut, "MSC_TEXT_WIDTH", Trim (Str (textWidth)), ""
+	End If
+
+	Close #fOut
+	Print "Wrote " & fName
 End Sub
 
 Sub writeTexts (fName As String)
@@ -1417,7 +1657,7 @@ End Sub
 Sub usage
 	Print "usage:"
 	Print ""
-	Print "msc4.exe in=f1.spt[,f2.spt,...] v=3|4|5 target=cpc|zx rooms=N [text=text.bin]"
+	Print "msc4.exe in=f1.spt[,f2.spt,...] v=3|4|5 target=cpc|zx|gb rooms=N [text=text.bin]"
 	Print "         [interpreter=msci.asm] [noindexed] [fastnpant] [jumptable]"
 	Print "         in is [a list of|the] input filename."
 	Print "           msc4 will generate a f.bin per input,"
@@ -1429,6 +1669,12 @@ Sub usage
 	Print "         noindexed: if you are only using general sections (ANY, etc)"
 	Print "         fastnpant: generates a (faster) special opcode for IF NPANT"
 	Print "         jumptable: code based jump table rather than index"
+	Print ""
+	Print "msc4.exe in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]"
+	Print "         [interpreter=msc-config.h] [scripts=msc-scripts.h]"
+	Print "         MK1 v3.100: the interpreter is src/dev/msc.h (pure C). msc4 writes"
+	Print "         f.spt.bin per input, msc-config.h (what the interpreter needs) and"
+	Print "         msc-scripts.h (bytecode as C arrays + encoded texts)."
 End Sub
 
 '' Interfaz
@@ -1437,13 +1683,13 @@ End Sub
 '' target=cpc|zx
 
 
-Dim As String mandatory (2) = { "in", "v", "target" }
+Dim As String mandatory (1) = { "in", "v" }
 Dim As Integer fIn, fOut, i
 Dim As String fileIns(127)
 Dim As String fileText
 Dim As Integer isEntering, room
 
-Print "msc v4.6.20260729 ~ ";
+Print "msc v4.7.20261030 ~ ";
 
 sclpParseAttrs
 If Not sclpCheck (mandatory ()) Then usage: End 
@@ -1456,11 +1702,39 @@ interpreterFn = sclpGetValue("interpreter")
 If interpreterFn = "" Then interpreterFn = "msci.asm"
 
 outV = Val(sclpGetValue("v"))
+If sclpGetValue("v") = "3_100" Then outV = 3100
 outT = SPECCY: If sclpGetValue("target") = "cpc" Then outT = CPC
 If sclpGetValue("target") = "gb" Then outT = GB
 noIndexed = (sclpGetValue("noindexed") <> "")
 fastNPant = (sclpGetValue("fastnpant") <> "")
 jumptable = (sclpGetValue("jumptable") <> "")
+
+' output=c: bytecode + msc-config.h + msc-scripts.h para el intérprete C de
+' MK1 v3.100 (src/dev/msc.h). El intérprete no se genera: ya está en el motor.
+outC = (LCase (sclpGetValue("output")) = "c")
+If outC Then
+	If outV <> 3100 Then Print "output=c needs v=3_100": End 1
+	If jumptable Then Print "jumptable makes no sense with output=c": End 1
+	If interpreterFn = "msci.asm" Then interpreterFn = "msc-config.h"
+ElseIf outV = 3100 Then
+	Print "v=3_100 needs output=c": End 1
+ElseIf sclpGetValue("target") = "" Then
+	usage: End 1
+End If
+
+Dim As String scriptsFn
+Dim As Integer fScripts
+scriptsFn = sclpGetValue ("scripts")
+If scriptsFn = "" Then scriptsFn = "msc-scripts.h"
+If outC Then
+	fScripts = FreeFile
+	Open scriptsFn For Output As #fScripts
+	Print #fScripts, "// msc-scripts.h"
+	Print #fScripts, "// Generado por msc4 (v=3_100 output=c). No editar."
+	Print #fScripts, "// Bytecode de los scripts y textos. Con MSC_SCRIPTS_AS_RESOURCES (niveles"
+	Print #fScripts, "// en 128K) los scripts van como recursos y aquí solo quedan los textos."
+	Print #fScripts, ""
+End If
 
 allOpcodes = (sclpGetValue ("allopcodes") <> "")
 
@@ -1482,6 +1756,7 @@ i = 0: While i < 127 And fileIns(i) <> ""
 	processScript (fIn)
 	Close #fIn
 	writeScript fileIns(i) & ".bin"
+	If outC Then writeCScript fScripts, fileIns (i)
 	If debug Then debugPrintAliases
 
 	i = i + 1
@@ -1491,6 +1766,47 @@ Wend
 If textPoolIndex > 0 Then 
 	Print "Exporting encoded text"
 	writeTexts fileText
+End If
+
+If outC Then
+	Dim As Integer nScripts, j, k
+	nScripts = i
+
+	' Índice de scripts: msc_scripts [SCRIPT_X] apunta al bytecode de X.
+	Print #fScripts, "#ifndef MSC_SCRIPTS_AS_RESOURCES"
+	Print #fScripts, "unsigned char *msc_scripts [] = {"
+	For j = 0 To nScripts - 1
+		Print #fScripts, "	script_" & LCase (cName (fileIns (j))) & IIf (j < nScripts - 1, ",", "")
+	Next j
+	Print #fScripts, "};"
+	Print #fScripts, "#endif"
+	Print #fScripts, ""
+
+	' Textos codificados (5 bits por carácter), referenciados por offset.
+	If textPoolIndex > 0 Then
+		ReDim As uByte textBytes (lastTextOffset)
+		k = 0
+		For j = 0 To textPoolIndex - 1
+			For i = 1 To Len (textPool (j))
+				textBytes (k) = Asc (Mid (textPool (j), i, 1)): k = k + 1
+			Next i
+		Next j
+		writeCArray fScripts, "msc_texts", textBytes (), k
+	End If
+	Close #fScripts
+	Print "Wrote " & scriptsFn
+
+	If allOpcodes Then
+		For i = 0 To 255
+			AU (i) = -1: CU (i) = -1: LV (i) = -1: RV (i) = -1: SV (i) = -1
+		Next i
+		For i = 0 To 15: sectUsed (i) = -1: Next i
+		roomSectionsUsed = -1
+	End If
+
+	writeCConfig interpreterFn, fileIns (), nScripts
+	Print "DONE!"
+	End
 End If
 
 '' GENERATE INTERPRETER

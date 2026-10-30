@@ -28,7 +28,8 @@ echo ### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###
 :compile
 echo ### COMPILANDO SCRIPT ###
 rem no olvides cambiar NPANT por el nº de pantallas
-rem ..\utils\msc ..\script\script.spt msc.h 30
+rem Con ACTIVATE_SCRIPTING:
+rem ..\utils\msc4 in=..\script\script.spt v=3_100 output=c rooms=30
 
 echo ### COMPILANDO GUEGO ###
 ..\utils\pasmo.exe cpc\cpc_TrPixLutM%mode%.asm trpixlut.bin

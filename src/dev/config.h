@@ -76,11 +76,8 @@
 
 //#define PLAYER_PUSH_BOXES				// If defined, tile #14 is pushable. Must be type 10.
 //#define FIRE_TO_PUSH					// If defined, you have to press FIRE+direction to push.
-//#define ENABLE_PUSHED_SCRIPTING		// If defined, nice goodies (below) are activated:
-//#define MOVED_TILE_FLAG		1		// Current tile "overwritten" with block is stored here.
-//#define MOVED_X_FLAG			2		// X after pushing is stored here.
-//#define MOVED_Y_FLAG			3		// Y after pushing is stored here.
-//#define PUSHING_ACTION				// If defined, pushing a tile runs PRESS_FIRE script
+// Con scripting, empujar un bloque lanza la sección TILE PUSHED del script
+// (variables MOVED_TILE, MOVED_X, MOVED_Y).
 
 // Shooting behaviour
 // ------------------
@@ -114,12 +111,13 @@
 // Scripting
 // ---------
 
+// Los scripts se compilan con msc4 (v=3_100 output=c), que genera
+// msc-config.h y msc-scripts.h. Lo que el script necesita (EXTERN, zona de
+// fuego, TIMER ZERO...) se activa solo. Ver msc.h.
 //#define ACTIVATE_SCRIPTING		// Activates msc scripting and flag related stuff.
 //#define SCRIPTING_DOWN			// Use DOWN as the action key.
 //#define SCRIPTING_KEY_M			// Use M as the action key instead.
-//#define SCRIPTING_KEY_FIRE		// User FIRE as the action key instead.
-//#define ENABLE_EXTERN_CODE		// Enables custom code to be run from the script using EXTERN n
-//#define ENABLE_FIRE_ZONE			// Allows to define a zone which auto-triggers "FIRE"
+//#define MAX_FLAGS				32		// Más flags de los que usa el script (por defecto, MSC_FLAGS)
 
 // Timer
 // -----
@@ -129,7 +127,7 @@
 //#define TIMER_REFILL		30			// Timer refill, using tile 21 (hotspot #5)
 //#define TIMER_LAPSE		32			// # of frames between decrements
 //#define TIMER_START					// If defined, start timer from the beginning
-//#define TIMER_SCRIPT_0				// If defined, timer = 0 runs "ON_TIMER_OFF" in the script
+// Con scripting, timer = 0 lanza la sección TIMER ZERO si el script la tiene.
 //#define TIMER_GAMEOVER_0				// If defined, timer = 0 causes "game over"
 //#define TIMER_KILL_0					// If defined, timer = 0 causes "one life less".
 //#define TIMER_WARP_TO 0				// If defined, warp to screen X after "one life less".
@@ -190,11 +188,10 @@
 //#define PLAYER_SHOW_TIMER 			// If defined, show timer counter
 
 // Text
-/*
-#define LINE_OF_TEXT			1		// If defined, scripts can show text @ Y = #
-#define LINE_OF_TEXT_X			1		// X coordinate.
-#define LINE_OF_TEXT_ATTR		71		// Attribute
-*/
+//#define LINE_OF_TEXT			1		// If defined, scripts can show text @ Y = # (TEXT "...")
+//#define LINE_OF_TEXT_X		1		// X coordinate.
+//#define LINE_OF_TEXT_ATTR		71		// Attribute
+//#define MSC_TEXT_ATTR			71		// Attribute for TEXT BOX and DIALOG
 
 // Graphic FX, uncomment which applies...
 

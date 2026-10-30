@@ -30,6 +30,15 @@ for bas in "$U"/*.bas; do
 	fi
 done
 
+# msc4 (compilador de scripts) vive en msc4/, con sus pruebas y plantillas
+M="$U/../../msc4"
+if fbc -p "$TMP" -x "$OUT/msc4" "$M/msc4.bas" "$M/mtparser.bas" "$M/cmdlineparser.bas" "$M/mt5bitEsc.bas" > "$TMP/msc4.log" 2>&1; then
+	cp -r "$M/targets" "$OUT/"		# plantillas de los intérpretes en ensamblador
+	echo "  ok  msc4"
+else
+	echo "FALLO msc4"; cat "$TMP/msc4.log"; exit 1
+fi
+
 # Herramientas externas (C/C++)
 S="$U/src"
 gcc -O2 -w -o "$OUT/zx0" "$S/ZX0/src/zx0.c" "$S/ZX0/src/optimize.c" "$S/ZX0/src/compress.c" "$S/ZX0/src/memory.c" && echo "  ok  zx0"

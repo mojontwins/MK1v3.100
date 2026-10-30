@@ -106,12 +106,11 @@ void main (void) {
 
 
 			#ifdef ACTIVATE_SCRIPTING
-				script_result = 0;
-				msc_init_all ();
-
-				// Entering game
-				script = e_scripts [MAP_W * MAP_H];
-				run_script ();
+				// Flags a 0 y el script del nivel (o el del juego)
+				msc_init ();
+				#ifdef MSC_SECT_ENTERING_GAME
+					msc_run (MSC_ENTERING_GAME);
+				#endif
 			#endif
 
 			#ifdef PLAYER_KILLS_ENEMIES
@@ -162,10 +161,6 @@ void main (void) {
 				wyz_play_music (1);
 			#endif
 
-			#ifdef MSC_MAXITEMS
-				display_items ();
-			#endif
-
 			#ifdef HOOK_LEVEL_START
 				hook_level_start ();
 			#endif
@@ -173,8 +168,17 @@ void main (void) {
 			playing = 1;
 			while (playing) {
 				if (o_pant != n_pant) {
-					draw_scr ();
-					o_pant = n_pant;
+					#ifdef ACTIVATE_SCRIPTING
+						// Durante draw_scr, o_pant es la pantalla de la que venimos
+						// (OPANT en los scripts). Si un script de ENTERING cambia
+						// n_pant (WARP TO...), en la siguiente vuelta se pinta la nueva.
+						rdn = n_pant;
+						draw_scr ();
+						o_pant = rdn;
+					#else
+						draw_scr ();
+						o_pant = n_pant;
+					#endif
 					#ifdef HOOK_ENTERING_SCREEN
 						hook_entering_screen ();
 					#endif
@@ -191,22 +195,22 @@ void main (void) {
 						}
 					}
 
-					#if defined(TIMER_SCRIPT_0) && defined(ACTIVATE_SCRIPTING)
+					#if defined ACTIVATE_SCRIPTING && defined MSC_SECT_TIMER_ZERO
+						// El tiempo llega a 0: sección TIMER ZERO del script
 						if (ctimer.zero) {
 							ctimer.zero = 0;
 							#ifdef SHOW_TIMER_OVER
 								saca_a_todo_el_mundo_de_aqui ();
 								time_over ();
 							#endif
-							script = e_scripts [MAP_W * MAP_H + 2];
-							run_script ();	
+							msc_run (MSC_TIMER_ZERO);
 						}	
 					#endif
 
 					#ifdef TIMER_KILL_0
 						if (ctimer.zero) {
 							#ifdef SHOW_TIMER_OVER
-								#ifndef TIMER_SCRIPT_0
+								#ifndef MSC_SECT_TIMER_ZERO
 									saca_a_todo_el_mundo_de_aqui ();
 									time_over ();
 								#endif
@@ -282,6 +286,24 @@ void main (void) {
 			
 				// Move player
 				move ();
+
+				#ifdef ACTIVATE_SCRIPTING
+					#ifdef PUSHED_SCRIPTING
+						// Se ha empujado un bloque: TILE PUSHED (TX, TY = donde quedó)
+						if (just_pushed) {
+							just_pushed = 0;
+							#ifdef MSC_SECT_TILE_PUSHED
+								msc_run_at (MSC_TILE_PUSHED, msc_moved_x, msc_moved_y);
+							#endif
+						}
+					#endif
+
+					#ifdef MSC_SECT_SPECIAL_TILE
+						// El centro del jugador está en un tile con comportamiento 128
+						rdx = (gpx + 8) >> 4; rdy = (gpy + 8) >> 4;
+						if (attr (rdx, rdy) & 128) msc_run_at (MSC_SPECIAL_TILE, rdx, rdy);
+					#endif
+				#endif
 				
 				// Move enemies
 				mueve_bicharracos ();
@@ -299,8 +321,9 @@ void main (void) {
 	
 				#ifdef FIRE_ZONE
 					if (f_zone_ac == 1) {
+						// Dentro de la zona de fuego es como pulsar FIRE
 						if (gpx >= fzx1 && gpx <= fzx2 && gpy >= fzy1 && gpy <= fzy2) {
-							run_fire_script ();
+							msc_run_screen (MSC_FIRE_ANY);
 						}	
 					}
 				#endif			
@@ -339,22 +362,8 @@ void main (void) {
 
 				// Flick screen checks and scripting related stuff
 				
-				// Select object
-				#if defined ACTIVATE_SCRIPTING 
-
-					#if defined MSC_MAXITEMS
-						if (sp_KeyPressed (KEY_Z)) {
-							if (!key_z_pressed) {
-								PLAY_SFX (2);
-								flags [FLAG_SLOT_SELECTED] = (flags [FLAG_SLOT_SELECTED] + 1) % MSC_MAXITEMS;
-								display_items ();
-							}
-							key_z_pressed = 1;
-						} else {
-							key_z_pressed = 0;
-						}
-					#endif			
-
+				// Tecla de acción: PRESS FIRE AT ANY y PRESS FIRE AT SCREEN n_pant
+				#if defined ACTIVATE_SCRIPTING && (defined MSC_SECT_FIRE_ANY || defined MSC_SECT_ROOMS)
 					if (
 						#if defined SCRIPTING_KEY_M			
 							sp_KeyPressed (KEY_M)
@@ -364,8 +373,7 @@ void main (void) {
 							(pad_this_frame & sp_FIRE) == 0
 						#endif
 					) {
-						// Any scripts to run in this screen?
-						run_fire_script ();
+						msc_run_screen (MSC_FIRE_ANY);
 					}
 				#endif
 

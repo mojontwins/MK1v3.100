@@ -26,7 +26,8 @@ del ending.bin  > nul 2> nul
 :compile
 echo ### COMPILANDO SCRIPT ###
 rem no olvides cambiar NPANT por el nº de pantallas
-rem ..\utils\msc ..\script\script.spt msc.h 30
+rem Con ACTIVATE_SCRIPTING:
+rem ..\utils\msc4 in=..\script\script.spt v=3_100 output=c rooms=30
 
 echo ### COMPILANDO GUEGO ###
 zcc +zx -a -vn churromain.c -o %game%.asm -lsplib2 -zorg=24200  > nul 2> nul

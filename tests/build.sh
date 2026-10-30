@@ -1,9 +1,10 @@
 #!/bin/bash
 # Compila el juego en una copia limpia de src/ (no toca el árbol de trabajo).
 #
-# Uso: tests/build.sh zx|cpc SALIDA.bin [DEF[=valor] ...] [-UNDEF ...]
+# Uso: tests/build.sh zx|cpc SALIDA.bin [DEF[=valor] ...] [-UNDEF ...] [@script.spt]
 #   DEF        activa (o añade) "#define DEF valor" en config.h
 #   -UNDEF     comenta "#define UNDEF"
+#   @archivo   usa ese script (src/script/script.spt) y activa ACTIVATE_SCRIPTING
 # Escribe el log del compilador en SALIDA.log. Devuelve 0 si compila.
 
 set -e
@@ -17,6 +18,11 @@ cfg="$T/src/dev/config.h"
 
 extra=""
 for d in "$@"; do
+	if [[ $d == @* ]]; then
+		mkdir -p "$T/src/script"; cp "${d#@}" "$T/src/script/script.spt"
+		sed -i -E "s@^[ \t]*//[ \t]*#define[ \t]+ACTIVATE_SCRIPTING\b@#define ACTIVATE_SCRIPTING@" "$cfg"
+		continue
+	fi
 	if [[ $d == -* ]]; then
 		u=${d#-}
 		sed -i -E "s@^([ \t]*)#define[ \t]+$u\b@\1//#define $u@" "$cfg"

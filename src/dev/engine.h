@@ -289,6 +289,15 @@ void do_hotspots (void) {
 		set_map_tile (hotspot_x >> 4, hotspot_y >> 4, orig_tile, 0);
 		gpit = 0;
 
+		#ifdef MSC_RV_F5
+			// HOTSPOT (scripts): tipo del objeto (3 si es una recarga de vida)
+			#ifndef USE_HOTSPOTS_TYPE_3
+				hotspot_t = hotspots [n_pant].act ? hotspots [n_pant].tipo : 3;
+			#else
+				hotspot_t = hotspots [n_pant].tipo;
+			#endif
+		#endif
+
 		#ifndef USE_HOTSPOTS_TYPE_3
 			// Was it an object, key or life boost?
 			if (hotspots [n_pant].act == 0) {
@@ -392,6 +401,10 @@ void do_hotspots (void) {
 		}
 
 		hotspot_y = 240;
+
+		#ifdef MSC_SECT_PLAYER_GOT_SOMETHING
+			msc_run (MSC_PLAYER_GOT_SOMETHING);
+		#endif
 	}
 }
 
@@ -430,10 +443,12 @@ void do_hotspots (void) {
 		// devuelve 0, que parecería un hueco libre).
 		if (x1 < 15 && y1 < 10 && (attr (x1, y1) & 8) == 0) {
 			#ifdef PUSHED_SCRIPTING
-				// Para el script: el tile que tapa la caja y su nueva posición.
-				flags [MOVED_TILE_FLAG] = qtile (x1, y1);
-				flags [MOVED_X_FLAG] = x1;
-				flags [MOVED_Y_FLAG] = y1;
+				// Para el script (TILE PUSHED, MOVED_TILE, MOVED_X, MOVED_Y): el
+				// tile que tapa la caja y su nueva posición. La sección se
+				// ejecuta en el bucle principal, después de move ().
+				msc_moved_tile = qtile (x1, y1);
+				msc_moved_x = x1;
+				msc_moved_y = y1;
 				just_pushed = 1;
 			#endif
 			set_map_tile (x0, y0, 0, 0);
@@ -562,8 +577,8 @@ void draw_scr (void) {
 		max_tilanims = 0; 		// Reset animated tiles
 	#endif
 
-	#ifdef ENABLE_FIRE_ZONE
-		f_zone_ac = 0; 			// Turn fire zone off
+	#ifdef FIRE_ZONE
+		f_zone_ac = 0; 			// La zona de fuego es de cada pantalla
 	#endif	
 
 	// Pintamos el fondo
@@ -639,11 +654,23 @@ void draw_scr (void) {
 		#ifdef LINE_OF_TEXT
 			print_str (LINE_OF_TEXT_X, LINE_OF_TEXT, LINE_OF_TEXT_ATTR, "                              ");
 		#endif
-		// Ejecutamos los scripts de entrar en pantalla:
-		script = e_scripts [MAP_W * MAP_H + 1];
-		run_script ();
-		script = e_scripts [n_pant];
-		run_script ();
+		#ifdef MSC_RV_F0
+			hide_hotspots = 0;
+		#endif
+		#ifdef MSC_RV_EF
+			dont_make_fanties = 0;
+		#endif
+
+		// Scripts de entrar en pantalla: ENTERING ANY y ENTERING SCREEN n_pant
+		msc_run_screen (MSC_ENTERING_ANY);
+
+		#ifdef MSC_RV_F0
+			// El script puede esconder el objeto de esta pantalla
+			if (hide_hotspots && hotspot_y < 240) {
+				set_map_tile (hotspot_x >> 4, hotspot_y >> 4, orig_tile, 0);
+				hotspot_y = 240;
+			}
+		#endif
 	#endif
 
 	// Inicializamos las balas.
@@ -664,6 +691,9 @@ void draw_scr (void) {
 			map_buff [gpaux] = 0;
 			set_map_tile (x, y, 0, 0);
 			gpaux = 0;
+			#ifdef MSC_SECT_TILE_DESTROYED
+				msc_run_at (MSC_TILE_DESTROYED, x, y);
+			#endif
 		}
 		PLAY_SFX (gpaux);
 		
@@ -1436,19 +1466,15 @@ void move (void) {
 
 		if (levels [level].spriteset != NO_RESOURCE)
 			get_resource (levels [level].spriteset, (unsigned int) (sprite_1_a - 16));
-	}
-#endif
 
-// ---------------------------------------------------------------------------
-// Integración con msc
-// ---------------------------------------------------------------------------
-
-#ifdef ACTIVATE_SCRIPTING
-	void run_fire_script (void) {
-		script = f_scripts [MAP_W * MAP_H];
-		run_script ();
-		script = f_scripts [n_pant];
-		run_script ();
+		#ifdef ACTIVATE_SCRIPTING
+			// El script del nivel. Sin script, un índice vacío (todo 0).
+			if (levels [level].script != NO_RESOURCE) {
+				get_resource (levels [level].script, (unsigned int) (msc_buffer));
+			} else {
+				for (gpit = 0; gpit < 32; gpit ++) msc_buffer [gpit] = 0;
+			}
+		#endif
 	}
 #endif
 
@@ -1539,6 +1565,11 @@ void enemy_dies (void) {
 	en_an_state [gpit] = GENERAL_DYING;
 	en_an_count [gpit] = 8;
 	player.killed ++;
+
+	#ifdef MSC_SECT_PLAYER_KILLS_ENEMY
+		// EN_T, EN_N, EN_X, EN_Y: el enemigo que muere
+		msc_run (MSC_PLAYER_KILLS_ENEMY);
+	#endif
 
 	#ifdef ENABLE_RANDOM_RESPAWN
 		if (en_an_fanty_activo [gpit]) {
@@ -1860,6 +1891,11 @@ void mueve_bicharracos (void) {
 				// In genital, _en_t = any; in lateral, _en_t != 4
 				if (!tocado && collide (gpx, gpy, gpen_cx, gpen_cy) && player.estado == EST_NORMAL) {
 
+					#ifdef MSC_SECT_ENEMY_TOUCHED
+						// EN_T, EN_N, EN_X, EN_Y: el enemigo que se toca
+						msc_run (MSC_ENEMY_TOUCHED);
+					#endif
+
 					// Colisión especial: pisar enemigo
 
 					#ifdef PLAYER_STEPS_ON_ENEMIES
@@ -1887,14 +1923,6 @@ void mueve_bicharracos (void) {
 							SET_FIXED_PIX (player.y, gpy);
 							player.vy = -1024;
 
-							#ifdef ACTIVATE_SCRIPTING
-								// Run this screen fire script or "entering any".
-								// Legacy & nonsensical!
-								script = f_scripts [n_pant];
-								run_script ();
-								script = e_scripts [MAP_W * MAP_H + 1];
-								run_script ();
-							#endif
 						} else
 					#endif
 
@@ -1990,7 +2018,11 @@ void mueve_bicharracos (void) {
 		#ifdef ENABLE_RANDOM_RESPAWN
 			// Activar fanty
 			// De vez en cuando aparece un fanty en lugar de un enemigo muerto.
-			if (_en_t > 15 && en_an_fanty_activo [gpit] == 0 && en_an_state [gpit] != GENERAL_DYING && (rand () & 31) == 1) {
+			if (_en_t > 15 && en_an_fanty_activo [gpit] == 0 && en_an_state [gpit] != GENERAL_DYING && (rand () & 31) == 1
+				#ifdef MSC_RV_EF
+					&& !dont_make_fanties
+				#endif
+			) {
 				en_an_fanty_activo [gpit] = 1;
 				// Aparece por arriba o por abajo, lejos del jugador
 				SET_FIXED_PIX (en_an_y [gpit], gpy > 80 ? 0 : 144);

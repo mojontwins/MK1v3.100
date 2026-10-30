@@ -11,6 +11,11 @@
 	#undef MODE_128K
 #endif
 
+// Lo que necesitan los scripts (generado por msc4)
+#ifdef ACTIVATE_SCRIPTING
+	#include "msc-config.h"
+#endif
+
 // Constantes y banderas derivadas de config.h
 #include "config_derived.h"
 
@@ -63,10 +68,6 @@
 
 #include "definitions.h"
 
-#ifdef ACTIVATE_SCRIPTING
-	#include "msc-config.h"
-#endif
-
 #ifndef CPC
 	#ifdef MODE_128K
 		#include "speccy_128/128k.h"
@@ -115,6 +116,11 @@
 	#include "mapa.h"
 #endif
 
+// Scripts (bytecode) y textos, generado por msc4
+#ifdef ACTIVATE_SCRIPTING
+	#include "msc-scripts.h"
+#endif
+
 // **********
 // HW BACKEND
 // **********
@@ -133,13 +139,6 @@
 
 #include "pantallas.h"
 
-#ifdef ACTIVATE_SCRIPTING
-	#ifdef ENABLE_EXTERN_CODE
-		#include "extern.h"
-	#endif
-	#include "msc.h"
-#endif
-
 #ifdef ENABLE_TILANIMS
 	#include "tilanim.h"
 #endif
@@ -153,6 +152,14 @@
 
 // Código propio del juego y ganchos (hooks) del bucle principal.
 #include "custom.h"
+
+// Intérprete de scripts
+#ifdef ACTIVATE_SCRIPTING
+	#ifdef MSC_AU_E4
+		#include "extern.h"
+	#endif
+	#include "msc.h"
+#endif
 
 #include "mainloop.h"
 

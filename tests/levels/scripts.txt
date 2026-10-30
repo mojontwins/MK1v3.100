@@ -1,0 +1,3 @@
+# Scripts de los niveles (comp-zx.sh los compila juntos con msc4)
+../../tests/levels/nivel1.spt
+../../tests/levels/nivel2.spt

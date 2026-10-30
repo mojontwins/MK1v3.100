@@ -149,7 +149,7 @@
 // ---------------------------------------------------------------------------
 
 // Repintar la pantalla actual desde los buffers (pausa, "get X more").
-#if defined PAUSE_ABORT || defined GET_X_MORE
+#if defined PAUSE_ABORT || defined GET_X_MORE || (defined ACTIVATE_SCRIPTING && defined MSC_TEXTS)
 	#define NEEDS_REDRAW_SCR
 #endif
 
@@ -171,12 +171,28 @@
 // Scripting
 // ---------------------------------------------------------------------------
 
-#if defined ACTIVATE_SCRIPTING && defined ENABLE_PUSHED_SCRIPTING
-	#define PUSHED_SCRIPTING
-#endif
+// Lo que necesitan los scripts lo dice msc-config.h (lo genera msc4 y se
+// incluye antes que este archivo).
+#ifdef ACTIVATE_SCRIPTING
+	// Empujar un bloque: sección TILE PUSHED y variables MOVED_*
+	#if defined MSC_SECT_TILE_PUSHED || defined MSC_RV_F4 || defined MSC_RV_F3 || defined MSC_RV_F2
+		#define PUSHED_SCRIPTING
+	#endif
 
-#if defined ACTIVATE_SCRIPTING && defined ENABLE_FIRE_ZONE
-	#define FIRE_ZONE
+	// SET FIRE ZONE
+	#if defined MSC_AU_51 || defined MSC_AU_52
+		#define FIRE_ZONE
+	#endif
+
+	// Con niveles cada uno tiene su script, como recurso (ver levels.h).
+	#ifdef COMPRESSED_LEVELS
+		#define MSC_SCRIPTS_AS_RESOURCES
+	#endif
+
+	// TIMER ZERO
+	#if defined MSC_SECT_TIMER_ZERO && !defined TIMER_ENABLE
+		#error "El script tiene TIMER ZERO pero no está definido TIMER_ENABLE"
+	#endif
 #endif
 
 // Número de flags que guardan los checkpoints (ninguno sin scripting).

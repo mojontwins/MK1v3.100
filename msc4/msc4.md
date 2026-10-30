@@ -21,6 +21,12 @@ Como hemos dicho, las diferentes secciones de tu script se lanzarán cuando ocur
 * `PLAYER GETS COIN` se ejecutará cuando se coja una moneda (y esté activado) (en mk1v4).
 * `PLAYER KILLS ENEMY` se ejecutará cada vez que se muera un enemigo.
 * `SPECIAL TILE TOUCHED` se ejecutará cada vez que el jugador esté en un tile con comportamiento 128.
+* `TIMER ZERO` se ejecutará cuando el temporizador llegue a 0 (MK1 v3.100).
+* `TILE PUSHED` se ejecutará al empujar un bloque; `MOVED_TILE`, `MOVED_X` y `MOVED_Y` dicen qué tile tapó y dónde quedó (MK1 v3.100).
+* `ENEMY TOUCHED` se ejecutará al tocar un enemigo (`EN_T`, `EN_N`, `EN_X`, `EN_Y`).
+* `TILE DESTROYED` se ejecutará al romper un tile; `TX`, `TY` son sus coordenadas (MK1 v3.100).
+
+Las secciones que empiezan por `PLAYER`, `ENEMY`, `TILE`, `SPECIAL` o `TIMER` admiten un `ON` delante: `ON PLAYER KILLS ENEMY`.
 
 ### No Indexed
 
@@ -54,3 +60,47 @@ Esto sirve para simplificar la tramolla de coger items y usarlos en sitios con u
 
 ## Ejemplo
 
+
+## MK1 v3.100: intérprete en C
+
+Con `v=3_100 output=c` msc4 no genera un intérprete: el de MK1 v3.100 está en
+`src/dev/msc.h`, en C y comentado, y msc4 solo le dice qué partes necesitan los
+scripts del juego.
+
+```
+msc4 in=script.spt v=3_100 output=c [rooms=30] [interpreter=msc-config.h] [scripts=msc-scripts.h]
+msc4 in=nivel1.spt,nivel2.spt v=3_100 output=c
+```
+
+Genera:
+
+* `script.spt.bin`, el bytecode de cada script de `in=`.
+* `msc-config.h`: lo que usan **todos** los scripts juntos (condiciones
+  `MSC_CU_xx`, acciones `MSC_AU_xx`, variables `MSC_RV_xx`/`MSC_LV_xx`,
+  secciones `MSC_SECT_*`, número de flags, tamaño del script más grande...) y
+  un identificador `SCRIPT_<NOMBRE>` por script. Con varios scripts (uno por
+  nivel) hay un solo intérprete que vale para todos.
+* `msc-scripts.h`: el bytecode como arrays de C (`script_<nombre>`, y
+  `msc_scripts []` indexado por `SCRIPT_<NOMBRE>`) y los textos codificados
+  (`msc_texts`). Con niveles comprimidos los scripts van como recursos (ver
+  `docs/formato-niveles.md`) y de este archivo solo se usan los textos.
+
+`comp-zx.sh` y `comp-cpc.sh` lo llaman solos si `config.h` define
+`ACTIVATE_SCRIPTING` (con `../script/script.spt`, o la lista de `scripts.txt`).
+
+Novedades respecto a la salida en ensamblador:
+
+* `SET FIRE ZONE X1, Y1, X2, Y2` (en píxeles) y `SET FIRE ZONE TILES X1, Y1, X2, Y2`:
+  si el jugador está dentro de la zona es como si pulsase la tecla de acción.
+  La zona se apaga al cambiar de pantalla.
+* Variables `TIMER`, `MOVED_TILE`, `MOVED_X`, `MOVED_Y`.
+* `HIDE_HOTSPOTS` y `DONT_MAKE_FANTIES` vuelven a 0 al entrar en cada pantalla:
+  se ponen en `ENTERING` para esa pantalla.
+* `CALL` puede llamar a una `SUB` definida más abajo.
+* `TEXT BOX` y `DIALOG` tienen una versión por defecto (un recuadro en la zona
+  de juego; `DIALOG` devuelve 1 o 2 según se pulse 1 o 2) que cada juego puede
+  cambiar con `HOOK_TEXT_BOX` / `HOOK_DIALOG` en `custom.h`.
+* `TEXT "..."` escribe en la línea `LINE_OF_TEXT` de `config.h`.
+* `EXTERN N, M` llama a `do_extern_action (n, m)` de `extern.h`.
+* En la entrada 15 del índice (libre) va el número de pantallas del script,
+  para que el intérprete no lea fuera del índice.

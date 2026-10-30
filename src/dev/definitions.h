@@ -45,7 +45,7 @@ unsigned char pad0, pad1, pad_this_frame;
 // al byte alto directamente: en sccz80 un desplazamiento es una llamada a una
 // rutina con un bucle. Z80 y SM83 guardan primero el byte bajo.
 #define FIXED_PIX(v)			((unsigned char) ((v) >> 8))
-#define SET_FIXED_PIX(v, p)		{ ((unsigned char *) &(v)) [1] = (p); ((unsigned char *) &(v)) [0] = 0; }
+#define SET_FIXED_PIX(v, p)		{ ((unsigned char *) (&(v))) [1] = (p); ((unsigned char *) (&(v))) [0] = 0; }
 
 // Límites de la zona de juego en 8.8 (224 y 144 píxeles). En hexadecimal para
 // que sccz80 los trate como unsigned int y no como long.
@@ -178,23 +178,76 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 	unsigned char brk_buff [150] AT (BASE_BRK_BUFF);
 #endif
 
-// Scripting
+// Scripting (msc4, ver msc.h)
 
 #ifdef ACTIVATE_SCRIPTING
-	#define MAX_FLAGS 32
-	unsigned char flags[MAX_FLAGS];
+	// Flags del script: los que usa (MSC_FLAGS, de msc-config.h), salvo que
+	// config.h pida más con MAX_FLAGS.
+	#ifndef MAX_FLAGS
+		#if MSC_FLAGS > 0
+			#define MAX_FLAGS MSC_FLAGS
+		#else
+			#define MAX_FLAGS 1
+		#endif
+	#endif
+	unsigned char flags [MAX_FLAGS];
+
+	// Secciones del script (entradas del índice)
+	#define MSC_ENTERING_GAME			0
+	#define MSC_ENTERING_ANY			1
+	#define MSC_FIRE_ANY				2
+	#define MSC_PLAYER_GOT_SOMETHING	3
+	#define MSC_PLAYER_KILLS_ENEMY		4
+	#define MSC_SPECIAL_TILE			5
+	#define MSC_TIMER_ZERO				6
+	#define MSC_TILE_PUSHED				7
+	#define MSC_ENEMY_TOUCHED			8
+	#define MSC_TILE_DESTROYED			9
+	#define MSC_IDX_ROOMS				15	// Nº de pantallas del índice
+
+	// Con niveles, el script del nivel se descomprime aquí (prepare_level).
+	// Como mínimo 32 bytes: un índice vacío.
+	#ifdef MSC_SCRIPTS_AS_RESOURCES
+		#if MSC_SCRIPT_MAX_SIZE > 32
+			unsigned char msc_buffer [MSC_SCRIPT_MAX_SIZE];
+		#else
+			unsigned char msc_buffer [32];
+		#endif
+	#endif
+
+	unsigned char script_result;		// 1: WIN GAME, 2: GAME OVER
+	unsigned char msc_param;			// PARAM
+	unsigned char msc_tx, msc_ty;		// TX, TY: casilla que lanza el script
+	unsigned char rdn;					// Pantalla que se está pintando (mainloop)
+
+	#ifdef MSC_RV_F5
+		unsigned char hotspot_t;		// HOTSPOT: tipo del último objeto
+	#endif
+	#ifdef MSC_RV_F0
+		unsigned char hide_hotspots;	// HIDE_HOTSPOTS (vuelve a 0 en cada pantalla)
+	#endif
+	#ifdef MSC_RV_EF
+		unsigned char dont_make_fanties;	// DONT_MAKE_FANTIES (ídem)
+	#endif
+	#ifdef PUSHED_SCRIPTING
+		unsigned char msc_moved_tile, msc_moved_x, msc_moved_y;
+		unsigned char just_pushed;
+	#endif
+
+	#ifdef MSC_TEXTS
+		// Texto descodificado de TEXT BOX / DIALOG (ver msc_decode_text)
+		unsigned char msc_text_buf [MSC_TEXT_MAX_LEN + 1];
+		void msc_decode_text (unsigned int offset);
+	#endif
+
+	// Están en msc.h, que se incluye después del motor.
+	void msc_run (unsigned char sect);
+	void msc_run_at (unsigned char sect, unsigned char x, unsigned char y);
+	void msc_run_screen (unsigned char sect);
 #endif
 
-#ifdef ENABLE_FIRE_ZONE
+#ifdef FIRE_ZONE
 	unsigned char fzx1, fzy1, fzx2, fzy2, f_zone_ac;
-#endif
-
-#ifdef PUSHED_SCRIPTING
-	unsigned char just_pushed;
-#endif
-
-#ifdef MSC_MAXITEMS
-	unsigned char key_z_pressed = 0;
 #endif
 
 // Timer

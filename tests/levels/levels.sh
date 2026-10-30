@@ -15,3 +15,8 @@ $U/buildlevel map=crop.map ene=crop.ene behs=behs.txt out=level2.bin maxpant=30 
 	scr_ini=0 ini_x=3 ini_y=2 max_objs=4 life=1 2bytes
 for f in level1 level2; do rm -f ${f}c.bin; $U/zx0 $f.bin ${f}c.bin > /dev/null; done
 rm -f ts2c.bin; $U/zx0 ts.bin ts2c.bin > /dev/null
+
+# Con scripting (SCRIPTED=1 en run.sh): los .bin de msc4 comprimidos, como recursos
+if [ -f ../../tests/levels/nivel1.spt.bin ]; then
+	for n in 1 2; do rm -f script${n}c.bin; $U/zx0 ../../tests/levels/nivel$n.spt.bin script${n}c.bin > /dev/null; done
+fi

@@ -1,0 +1,30 @@
+# Script del nivel 2 de la prueba de niveles (tests/levels, SCRIPTED=1).
+# Usa cosas que no usa el nivel 1 (SET TILE, PRINT TILE, CALL): el
+# intérprete tiene que llevarlas aunque el nivel 1 no las necesite.
+ROOMS = 6
+ALIAS %NIVEL = 1
+ALIAS %ENTRADAS = 2
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		%NIVEL = 2
+		%ENTRADAS = 100
+	END
+END
+
+ENTERING ANY
+	IF TRUE
+	THEN
+		INC %ENTRADAS, 1
+		CALL MARCA
+	END
+END
+
+SUB MARCA
+	IF NPANT = 0
+	THEN
+		SET TILE 1, 7 = 22
+		PRINT TILE 30, 20 = 22
+	END
+END

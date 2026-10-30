@@ -13,16 +13,20 @@
 //    MAP_W * MAP_H (config.h) es el máximo y fija el tamaño de los buffers.
 //  * recursos gráficos aparte (tileset, spriteset), que pueden compartir
 //    varios niveles.
+//  * su script (con ACTIVATE_SCRIPTING): el .bin que genera msc4, comprimido
+//    y como recurso. Todos los scripts se compilan juntos (in=a.spt,b.spt...)
+//    para que el intérprete tenga todo lo que necesitan.
 //
 // La tabla de niveles la define cada juego en levelset.h:
 //
 //   LEVEL levels [MAX_LEVELS] = {
-//       // bundle      tileset        spriteset      música
-//       { RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 2 },
-//       { RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   3 },   // reutiliza gráficos
+//       // bundle      tileset        spriteset      música  script
+//       { RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 2,      RES_SCRIPT1C },
+//       { RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   3,      RES_SCRIPT2C },
 //   };
 //
-// Los RES_* los genera librarian a partir de los nombres de archivo.
+// Los RES_* los genera librarian a partir de los nombres de archivo. Sin
+// script (o sin scripting), NO_RESOURCE.
 
 #ifndef MODE_128K
 	#error "COMPRESSED_LEVELS necesita MODE_128K"
@@ -65,6 +69,7 @@ typedef struct {
 	unsigned char tileset;					// Recurso del tileset o NO_RESOURCE
 	unsigned char spriteset;				// Recurso del spriteset o NO_RESOURCE
 	unsigned char music;					// Canción del WYZ player
+	unsigned char script;					// Recurso del script o NO_RESOURCE
 } LEVEL;
 
 // Buffer del nivel actual. get_resource descomprime el bundle entero aquí y
