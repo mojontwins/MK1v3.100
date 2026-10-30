@@ -384,12 +384,13 @@ unsigned char msc_conditions (void) {
 			#endif
 			#ifdef MSC_CU_24
 				case 0x24:								// IF PLAYER FALLING
-					if (possee) return 0;
+					// Cayendo: velocidad vertical hacia abajo y sin apoyo
+					if (player.vy <= 0 || possee) return 0;
 					break;
 			#endif
 			#ifdef MSC_CU_25
-				case 0x25:								// IF PLAYER NOT_FALLING
-					if (!possee) return 0;
+				case 0x25:								// IF PLAYER NOT FALLING
+					if (player.vy > 0 && !possee) return 0;
 					break;
 			#endif
 			#ifdef MSC_CU_26
@@ -397,18 +398,7 @@ unsigned char msc_conditions (void) {
 					if (player.vx || player.vy) return 0;
 					break;
 			#endif
-			#ifdef MSC_CU_30
-				case 0x30:								// IF TILE AT X, Y = T (forma antigua)
-					a = msc_value (); b = msc_value ();
-					if (qtile (a, b) != msc_value ()) return 0;
-					break;
-			#endif
-			#ifdef MSC_CU_31
-				case 0x31:								// IF BEH AT X, Y = B (forma antigua)
-					a = msc_value (); b = msc_value ();
-					if (attr (a, b) != msc_value ()) return 0;
-					break;
-			#endif
+			// TILE AT / BEH AT son expresiones (msc_var), no condiciones.
 			// 0xF0 (IF TRUE) y cualquier otra: se cumple.
 		}
 	}

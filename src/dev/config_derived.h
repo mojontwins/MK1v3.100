@@ -190,6 +190,11 @@
 		#define MSC_SCRIPTS_AS_RESOURCES
 	#endif
 
+	// Marcador del objeto que se lleva (GET ITEM SET, ITEM SLOT)
+	#if defined MSC_AU_30 && defined ITEM_X
+		#define MSC_SHOW_ITEM
+	#endif
+
 	// TIMER ZERO
 	#if defined MSC_SECT_TIMER_ZERO && !defined TIMER_ENABLE
 		#error "El script tiene TIMER ZERO pero no está definido TIMER_ENABLE"

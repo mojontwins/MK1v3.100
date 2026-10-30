@@ -13,9 +13,9 @@ Const ENTERING_INDEX_OFFSET = 16
 Const PRESS_FIRE_INDEX_OFFSET = 17
 
 Type TypeSubroutineInfo
-	subName As String 
+	subName As String
 	binAddress As Integer
-End Type 
+End Type
 
 Dim Shared As Integer debug = -1
 Dim Shared As Integer textDebug = 0
@@ -67,10 +67,17 @@ Dim Shared As Integer secFixCount, fixCount
 
 Dim Shared As Integer textWidth
 Dim Shared As Integer textPoolIndex
-Dim Shared As Integer lastTextOffset 
+Dim Shared As Integer lastTextOffset
 Dim Shared As String textPool (16384)
 Dim Shared As Integer textOffsets (16384)
 Dim Shared As Integer lastCommandWasTerminator
+
+Dim Shared As Integer errorCount = 0
+
+Sub reportError (msg As String)
+	errorCount = errorCount + 1
+	Print "*** ERROR: " & msg
+End Sub
 
 Dim Shared As TypeSubroutineInfo subInfo (128)
 Dim Shared As Integer subInfoIdx = 0
@@ -79,7 +86,7 @@ Sub addSubInfo (subName As String, binAddress As Integer)
 	subInfo (subInfoIdx).subName = subName
 	subInfo (subInfoIdx).binAddress = binAddress
 	subInfoIdx = subInfoIdx + 1
-	If subInfoIdx > 128 Then 
+	If subInfoIdx > 128 Then
 		Print "Warning! Too manu Subroutines!"
 		subInfoIdx = 128
 	End If
@@ -90,7 +97,7 @@ Function getSubAddressByName (subName As String) As Integer
 	subName = Lcase (subName)
 	For i = 0 To subInfoIdx - 1
 		If Lcase (subInfo (i).subName) = subName Then Return subInfo (i).binAddress
-	Next i 
+	Next i
 	Return -1
 End Function
 
@@ -113,18 +120,18 @@ End Sub
 
 Sub printBinStr (s As String)
 	Dim As Integer i
-	For i = 1 To Len (s) 
+	For i = 1 To Len (s)
 		Print Hex (Asc (Mid (s, i, 1)), 2) & " ";
 	Next i
 	Print
 End Sub
 
-Sub resetAliases () 
+Sub resetAliases ()
 	Dim i As Integer
 
 	For i = 0 To uBound (aliases)
 		aliases (i) = ""
-	Next i 
+	Next i
 End Sub
 
 Function encodeSpaces (b as String) As String
@@ -142,23 +149,23 @@ Function addOrResolveAlias (salias As String) As Integer
 
 	' Find
 	For i = 0 To uBound (aliases)
-		If aliases (i) = salias Then 
+		If aliases (i) = salias Then
 			'Print salias & " resolved to " & i
-			Return i 
-		End If 
-	Next 
+			Return i
+		End If
+	Next
 
 	' Not found, add to 1st unused slot
 	For i = 0 To uBound (aliases)
 		If aliases (i) = "" Then
-			aliases (i) = salias 
+			aliases (i) = salias
 			'Print salias & " resolved to " & i
-			Return i 
-		End If 
-	Next 
+			Return i
+		End If
+	Next
 
 	Print "Warning! Too many aliases, resolving to 0"
-	
+
 End Function
 
 Sub debugPrintAliases ()
@@ -166,7 +173,7 @@ Sub debugPrintAliases ()
 	For i = 0 To uBound(aliases)
 		If aliases(i) <> "" Then Print "%" & aliases(i) & " -> $" & i
 	Next i
-End Sub 
+End Sub
 
 Sub parseScriptLine (linea As String)
 	Dim As Integer i
@@ -183,18 +190,18 @@ Sub parseScriptLine (linea As String)
 	' Preprocess so = <= >= < > != <> don't need whitespace.
 	quotes = 0
 	curToken = ""
-	i = 1: While i <= Len (linea) 
+	i = 1: While i <= Len (linea)
 		m = Mid (linea, i, 1)
-		If quotes Then 
+		If quotes Then
 			' Ignore...
 			If m = Chr(34) Then quotes = 0
 		Else
-			If m = Chr(34) Then 
+			If m = Chr(34) Then
 				quotes = -1
 			ElseIf Instr ("<>=!", m) Then
 				If curToken = "" Then index = i
 				curToken = curToken & m
-			Else 
+			Else
 				If curToken <> "" Then
 					'  12345679
 					'     /---- i
@@ -202,7 +209,7 @@ Sub parseScriptLine (linea As String)
 					'   \------ index'
 					prefix = "": If index >1 Then prefix = left (linea, index - 1)
 					sufix = Right (linea, Len (linea) - i + 1)
-					linea = prefix & " " & curToken & " " & sufix 
+					linea = prefix & " " & curToken & " " & sufix
 					i = i + 2
 
 					curToken = ""
@@ -237,25 +244,25 @@ Sub parseScriptLine (linea As String)
 			tokens (i) = prefix & "$" & addOrResolveAlias (tokenAlias)
 		ElseIf Ucase(tokens(i)) = "NPANT" Or Ucase(tokens (i)) = "N_PANT" Then
 			tokens (i) = "$254"
-		ElseIf Ucase(tokens (i)) = "PX" Then 
+		ElseIf Ucase(tokens (i)) = "PX" Then
 			tokens (i) = "$253"
-		ElseIf Ucase(tokens (i)) = "PY" Then 
+		ElseIf Ucase(tokens (i)) = "PY" Then
 			tokens (i) = "$252"
-		ElseIf Ucase(tokens (i)) = "KILLED" Then 
-			tokens (i) = "$251" 
+		ElseIf Ucase(tokens (i)) = "KILLED" Then
+			tokens (i) = "$251"
 		ElseIf Ucase(tokens (i)) = "OBJS" Then
 			tokens (i) = "$250"
 		ElseIf Ucase(tokens (i)) = "LIFE" Then
 			tokens (i) = "$249"
-		ElseIf Ucase(tokens (i)) = "TX" then 
+		ElseIf Ucase(tokens (i)) = "TX" then
 			tokens (i) = "$248"
-		ElseIf Ucase(tokens (i)) = "TY" Then 
+		ElseIf Ucase(tokens (i)) = "TY" Then
 			tokens (i) = "$247"
-		ElseIf Ucase(tokens (i)) = "TN" Then 
+		ElseIf Ucase(tokens (i)) = "TN" Then
 			tokens (i) = "$246"
 		ElseIf Ucase(tokens (i)) = "HOTSPOT" Then
 			tokens (i) = "$245"
-		ElseIf Ucase(tokens (i)) = "HIDE_HOTSPOTS" Then 
+		ElseIf Ucase(tokens (i)) = "HIDE_HOTSPOTS" Then
 			tokens (i) = "$240"
 		ElseIf Ucase(tokens (i)) = "DONT_MAKE_FANTIES" Then
 			tokens (i) = "$239"
@@ -282,12 +289,12 @@ Sub parseScriptLine (linea As String)
 		End If
 
 		' Static identifiers
-		If Ucase(tokens (i)) = "EMPTY" Then 
+		If Ucase(tokens (i)) = "EMPTY" Then
 			tokens (i) = Trim(Str(itemEmpty))
 		End If
 
 		i = i + 1
-	Wend		
+	Wend
 
 	' Process to encode expressions TILE AT and BEH AT
 	' TILE AT A B -> =TILE=AT=A=B, shift tokens 3 times
@@ -315,12 +322,12 @@ Sub parseScriptLine (linea As String)
 	' Process to solve FLAG n -> $n
 	' This should be made recursively so FLAG FLAG FLAG n -> $$$n
 
-	i = 0: While i < uBound (tokens) And tokens (i) <> "" 
+	i = 0: While i < uBound (tokens) And tokens (i) <> ""
 		indirec = ""
 		While Ucase (tokens (i)) = "FLAG" And i < uBound (tokens)
 			indirec = indirec & "$"
 			shiftTokens i
-		Wend 
+		Wend
 		If indirec <> "" Then tokens (i) = indirec & tokens (i)
 
 		i = i + 1
@@ -336,30 +343,40 @@ End Function
 Function isNumber (s As String) As Integer
 	' there're better ways but this is safe
 	Dim As Integer i
-	Dim As String m 
-	
+	Dim As String m
+
 	For i = 1 To Len (s)
 		m = Mid (s, i, 1)
-		If m < "0" Or m > "9" Then return 0 
-	Next i 
+		If m < "0" Or m > "9" Then return 0
+	Next i
 
+	Return -1
+End Function
+
+Function isFlagIndex (s As String) As Integer
+	' A flag index is either a plain number (0..254) or another
+	' indirection ("$something"), which will be resolved later on.
+	If Len (s) = 0 Then Return 0
+	If Left (s, 1) = "$" Then Return -1
+	If Not isNumber (s) Then Return 0
+	If Val (s) > 254 Then Return 0
 	Return -1
 End Function
 
 Function correctSuBExpresion (s As String) As Integer
 	If Len (s) < 2 Then Return 0
-	If Left (s, 1) <> "=" Then Return 0 
+	If Left (s, 1) <> "=" Then Return 0
 
 	' For now we accept anything.
 
-	Return -1	
+	Return -1
 
 End Function
 
 Function isNumberOrVar (s As String) As Integer
 
 	If correctSubExpresion (s) Then Return -1
-	If correctLvalue (s) Then Return -1 
+	If correctLvalue (s) Then Return -1
 	If isNumber (s) Then Return -1
 
 	Return 0
@@ -370,7 +387,7 @@ Function isComp (s As String) As Integer
 End Function
 
 Sub writeAssemblyString (fOut As Integer, s As String)
-	Dim As Integer i, index 
+	Dim As Integer i, index
 	Dim As String m
 
 	For i = lBound (tokens) To uBound (tokens)
@@ -380,34 +397,34 @@ Sub writeAssemblyString (fOut As Integer, s As String)
 	' Break by |
 	s = s & "||[FIN]"
 
-	index = 0: For i = 1 To Len (s) 
-		m = Mid (s, i, 1) 
-		If m = "|" Then 
-			index = index + 1 
-		Else 
-			tokens (index) = tokens (index) & m 
-		End If 
-	Next i 
+	index = 0: For i = 1 To Len (s)
+		m = Mid (s, i, 1)
+		If m = "|" Then
+			index = index + 1
+		Else
+			tokens (index) = tokens (index) & m
+		End If
+	Next i
 
 	i = 0: While i < uBound (tokens) And tokens (i) <> "[FIN]"
-		If tokens (i) = "" Then 	
-			If fOut = 0 Then  
+		If tokens (i) = "" Then
+			If fOut = 0 Then
 				Print
-			Else 
+			Else
 				Print #fOut, ""
 			End If
 		ElseIf Left (tokens (i), 1) = "." Or Left (tokens (i), 1) = ";" Or (Right (tokens (i), 1) = ":" And InStr (tokens (i), " ") = 0) Then
 			If fOut = 0 Then
-				Print tokens (i) 
-			Else 
+				Print tokens (i)
+			Else
 				Print #fOut, tokens (i)
-			End If 
-		Else 
-			If fOut = 0 Then 
+			End If
+		Else
+			If fOut = 0 Then
 				Print "	" & tokens (i)
-			Else 
+			Else
 				Print #fOut, "	" & tokens (i)
-			End If 
+			End If
 		End if
 		i = i + 1
 	Wend
@@ -415,8 +432,8 @@ End Sub
 
 Function readNewLine (fIn As Integer) As String
 	Dim As String linea
-	
-	Line Input #fIn, linea 
+
+	Line Input #fIn, linea
 	linea = Trim (linea, Any chr (32) + chr (9))
 	curLineNo = curLineNo + 1
 
@@ -442,16 +459,16 @@ Function getTextOffset (text As String) As String
 	offset = -1
 
 	For i = 0 To textPoolIndex - 1
-		If textPool (i) = encodedText Then 
+		If textPool (i) = encodedText Then
 			offset = textOffsets (i)
 			Exit For
 		End If
 	Next i
 
 	If offset = -1 Then
-		' New text! store offset, add text, return offset 
-		offset = lastTextOffset 
-		textOffsets (textPoolIndex) = lastTextOffset 
+		' New text! store offset, add text, return offset
+		offset = lastTextOffset
+		textOffsets (textPoolIndex) = lastTextOffset
 		textPool (textPoolIndex) = encodedText
 
 		If textdebug Then
@@ -462,7 +479,7 @@ Function getTextOffset (text As String) As String
 
 		lastTextOffset = lastTextOffset + Len (encodedText)
 		textPoolIndex = textPoolIndex + 1
-	End If 
+	End If
 
 	Return Chr (offset Mod 256) & Chr (offset \ 256)
 
@@ -490,19 +507,19 @@ Function pVal (expresion As String) As String
 
 		parseTokenizeString expresion & "=", subTokens (), "=", "#"'
 
-		IF subTokens (0) = "DIALOG" Then 
+		IF subTokens (0) = "DIALOG" Then
 			result = Chr (&HFF) & Chr (&HE6) & getTextOffset (decodeSpaces (subTokens (1))) & _
 				getTextOffset (decodeSpaces (subTokens (2))) & _
 				getTextOffset (decodeSpaces (subTokens (3)))
 			RV (&HE6) = -1: SV (&HE6) = -1
-		ElseIf subTokens (0) = "TILE" Then  
+		ElseIf subTokens (0) = "TILE" Then
 			result = Chr (&HFF) & Chr (&HE8) & pVal(subTokens (1)) & pVal (subTokens (2))
 			RV (&HE8) = -1: SV (&HE8) = -1
-		ElseIf subTokens (0) = "BEH" Then 
+		ElseIf subTokens (0) = "BEH" Then
 			result = Chr (&HFF) & Chr (&HE7) & pVal(subTokens (1)) & pVal (subTokens (2))
 			RV (&HE7) = -1: SV (&HE7) = -1
-		Else 
-			Print "Wrong expresion @ " & curLineNo
+		Else
+			reportError ("Wrong expresion @ " & curLineNo)
 			Return Chr (0)
 		End If
 
@@ -510,26 +527,40 @@ Function pVal (expresion As String) As String
 		Return result
 
 	ElseIf Len (expresion) > 1 And Left (expresion, 1) = "$" Then
+		If Not isFlagIndex (Right (expresion, Len (expresion) - 1)) Then
+			reportError ("Bad flag reference '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
 		markFlagUse Right (expresion, Len (expresion) - 1)
 		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1))
 	Else
+		If Len (expresion) = 0 Then
+			' Empty value: zero
+			Return Chr (0)
+		End If
+
+		If Not isNumber (expresion) Then
+			reportError ("Wrong value '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
+
 		If Val (expresion) <= 254 Then
 			RV (Val (expresion)) = -1
-			Return Chr (Val (expresion)) 
-		Else 
-			Print "Wrong value @ " & curLineNo
+			Return Chr (Val (expresion))
+		Else
+			reportError ("Wrong value @ " & curLineNo)
 			Return Chr (0)
 		End If
 	End If
 End Function
 
-Function lValR(expresion As String) As String 
-	If Len (expresion) > 1 And Left (expresion, 1) = "$" Then 
-		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1)) 
+Function lValR(expresion As String) As String
+	If Len (expresion) > 1 And Left (expresion, 1) = "$" Then
+		Return Chr (&HFF) & pVal (Right (expresion, Len (expresion) - 1))
 	Else
-		If Val (expresion) <= 254 Then 
-			Return Chr (Val (expresion)) 
-		Else 
+		If Val (expresion) <= 254 Then
+			Return Chr (Val (expresion))
+		Else
 			Print "Wrong value @ " & curLineNo
 		End If
 	End If
@@ -539,12 +570,17 @@ Function lVal (expresion As String) As String
 	Dim As String value
 	' Used for lValues such as $A = B, so first $ is ignored.
 	If correctLvalue (expresion) Then
+		If Not isFlagIndex (Right (expresion, Len (expresion) - 1)) Then
+			reportError ("Bad flag reference '" & expresion & "' @ " & curLineNo)
+			Return Chr (0)
+		End If
 		markFlagUse Right (expresion, Len (expresion) - 1)
 		value = lValR (Right (expresion, Len (expresion) - 1))
 		LV (Asc (Right (value, 1))) = -1
 		Return value
 	Else
-		Print "Expecting lValue @ " & curLineNo
+		reportError ("Expecting lValue @ " & curLineNo)
+		Return Chr (0)
 	End If
 End Function
 
@@ -569,24 +605,24 @@ Function buildAction (bytecode As String) As String
 	Return byteCode
 End Function
 
-Sub syntaxError 
-	Print "Syntax error at " & curLineNo
+Sub syntaxError
+	reportError ("Syntax error at line " & curLineNo)
 End Sub
 
 Function processIf (linea As String) As String
 	Dim As String code = ""
 	Dim As String cmd
 	Dim As Integer v1, v2
-	parseScriptLine linea	
+	parseScriptLine linea
 
 	' First of all, override IF NPANT if desired
-	If fastNPant And lCase (tokens (1)) = "$254" And tokens (2) = "=" Then 
+	If fastNPant And lCase (tokens (1)) = "$254" And tokens (2) = "=" Then
 		code = buildCond (Chr(&H05) & pVal (tokens (3)))
 
-	' Detect numeric conditions IF a OP b 
+	' Detect numeric conditions IF a OP b
 	ElseIf isNumberOrVar (tokens (1)) And isComp (tokens(2)) And isNumberOrVar (tokens (3)) Then
 		Select Case tokens (2)
-			Case "=" 
+			Case "="
 				' $01 A B
 				code = buildCond (Chr(&H01) & pVal (tokens (1)) & pVal (tokens (3)))
 
@@ -594,8 +630,8 @@ Function processIf (linea As String) As String
 				' $02 A B
 				code = buildCond (Chr(&H02) & pVal (tokens (1)) & pVal (tokens (3)))
 
-			Case ">" 
-				' $02 B A 
+			Case ">"
+				' $02 B A
 				code = buildCond (Chr(&H02) & pVal (tokens (3)) & pVal (tokens (1)))
 
 			Case ">="
@@ -626,62 +662,60 @@ Function processIf (linea As String) As String
 						' $21 X Y
 						' Otherwise use special OPCODE 20
 						code = buildCond (Chr (&H21) & pVal (tokens (3)) & pVal (tokens (4)))
-					
+
 					Case "in_y"
 						' $22 X Y
 						code = buildCond (Chr (&H22) & pVal (tokens (3)) & pVal (tokens (4)))
-					
+
 					Case "touches", "at"
 						' $23 X Y
 						code = buildCond (Chr (&H23) & pVal (tokens (3)) & pVal (tokens (4)))
-					
+
 					Case "falling"
 						' $24 X Y
 						code = buildCond (Chr (&H24))
-		
+
 					Case "not_falling"
-						' $25 X Y
+						' $25
 						code = buildCond (Chr (&H25))
-					
+
+					Case "not"
+						' $25, written as "PLAYER NOT FALLING"
+						If lCase (tokens (3)) = "falling" Then
+							code = buildCond (Chr (&H25))
+						End If
+
 					Case "still"
 						' $26 X Y
 						code = buildCond (Chr (&H26))
-				End Select
-
-			Case "tile"
-
-				Select Case lCase (tokens (2))
-					Case "at"
-						' $30 X Y T
-						code = buildCond (Chr (&H30) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (6)))
-
-				End Select
-
-			Case "beh"
-
-				Select Case lCase (tokens (2))
-					Case "at"
-						' $31 X Y T
-						code = buildCond (Chr (&H31) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (6)))
-
 				End Select
 
 		End Select
 
 	End If
 
-	Return code 
+	' Note: "TILE AT" and "BEH AT" are handled as expressions (see pVal),
+	' so there are no dedicated conditions for them.
+
+	If Len (code) = 0 Then
+		reportError ("Unknown condition @ line " & curLineNo & ": " & linea)
+	End If
+
+	Return code
 End Function
 
 Function processCommand (linea As String) As String
 	Dim As String code = ""
-	Dim As String cmd, scmd 
+	Dim As String cmd, scmd
 	Dim As Integer subBinIndex, indexSize
+	Dim As Integer errBefore
+
+	errBefore = errorCount
 
 	parseScriptLine linea
 
-	' Detect direct numeric asignation $A = B 
-	If tokens (1) = "=" Then 
+	' Detect direct numeric asignation $A = B
+	If tokens (1) = "=" Then
 		If correctLvalue (tokens (0)) And isNumberOrVar (tokens (2)) Then
 			code = buildAction (Chr(&H00) & lVal (tokens(0)) & pVal (tokens (2)))
 		Else
@@ -706,7 +740,7 @@ Function processCommand (linea As String) As String
 
 		Case "dec"
 			' DEC $A B
-			' $02 A B 
+			' $02 A B
 			If correctLvalue (tokens(1)) And isNumberOrVar (tokens (2)) Then
 				code = buildAction (Chr(&H02) & lVal (tokens (1)) & pVal (tokens (2)))
 			Else
@@ -714,24 +748,24 @@ Function processCommand (linea As String) As String
 			End If
 
 		Case "add"
-			' First deprecated construct add flags x y -> inc $X $Y 
-			If scmd = "flags" Then 
+			' First deprecated construct add flags x y -> inc $X $Y
+			If scmd = "flags" Then
 				code = buildAction (Chr (&H01) & pVal (tokens (2)) & makeFlag (pVal (tokens (3))))
 
 			ElseIf correctLvalue (tokens(1)) And isNumberOrVar (tokens (2)) Then
-				' Alias for inc 
+				' Alias for inc
 				code = buildAction (Chr(&H01) & lVal (tokens (1)) & pVal (tokens (2)))
 			Else
 				syntaxError
-			End If 
+			End If
 
 		Case "sub"
-			' First deprecated construct sub flags x y -> dec $X $Y 
-			If scmd = "flags" Then 
+			' First deprecated construct sub flags x y -> dec $X $Y
+			If scmd = "flags" Then
 				code = buildAction (Chr (&H02) & pVal (tokens (2)) & makeFlag (pVal (tokens (3))))
 
 			ElseIf correctLvalue (tokens(1)) And isNumberOrVar (tokens (2)) Then
-				' Alias for dec 
+				' Alias for dec
 				code = buildAction (Chr(&H02) & lVal (tokens (1)) & pVal (tokens (2)))
 			Else
 				syntaxError
@@ -740,14 +774,22 @@ Function processCommand (linea As String) As String
 		Case "set"
 			If scmd = "tile" Then
 				' SET TILE X Y = N
-				code = buildAction (Chr (&H20) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
+					code = buildAction (Chr (&H20) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
 
 			ElseIf scmd = "beh" Then
 				' SET BEH X Y = N
-				code = buildAction (Chr (&H21) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
+					code = buildAction (Chr (&H21) & pVal (tokens(2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
 
 			ElseIf scmd = "fire" And lCase (tokens (2)) = "zone" Then
-				If Not outC Then Print "SET FIRE ZONE needs v=3_100 output=c @ " & curLineNo
+				If Not outC Then reportError ("SET FIRE ZONE needs v=3_100 output=c @ line " & curLineNo)
 				If lCase (tokens (3)) = "tiles" Then
 					' SET FIRE ZONE TILES X1, Y1, X2, Y2 (en tiles)
 					' $52 X1 Y1 X2 Y2
@@ -769,14 +811,26 @@ Function processCommand (linea As String) As String
 			If scmd = "item" Then
 				' GET ITEM SET f
 				' $30 F (lvalue)
-				code = buildAction (Chr (&H30) & lVal (tokens(3)))
+				If correctLvalue (tokens (3)) Then
+					code = buildAction (Chr (&H30) & lVal (tokens(3)))
+				Else
+					syntaxError
+				End If
+			Else
+				syntaxError
 			End If
 
 		Case "print"
-			If scmd = "tile" Then 
+			If scmd = "tile" Then
 				' PRINT TILE X Y = T
 				' $50 X Y T
-				code = buildAction (Chr (&H50) & pVal (tokens (2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				If tokens (4) = "=" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (5)) Then
+					code = buildAction (Chr (&H50) & pVal (tokens (2)) & pVal (tokens (3)) & pVal (tokens (5)))
+				Else
+					syntaxError
+				End If
+			Else
+				syntaxError
 			End If
 
 		Case "warp"
@@ -811,7 +865,7 @@ Function processCommand (linea As String) As String
 				' $E3 L <TEXT> 0
 				code = buildAction (Chr (&HE3)) & Chr(1 + Len(tokens (1))) & tokens (1) & Chr (0)
 			End If
-				
+
 		Case "extern"
 			' EXTERN N M
 			' $E4 N M'
@@ -823,18 +877,18 @@ Function processCommand (linea As String) As String
 			code = buildAction (Chr (&HE5) & pVal (tokens(1)))
 
 		Case "game"
-			If scmd = "over" then 
+			If scmd = "over" then
 				code = buildAction (Chr (&HF1))
 				lastCommandWasTerminator = -1
-			Else 
+			Else
 				syntaxError
 			End If
 
 		Case "win"
-			If scmd = "game" Then  
+			If scmd = "game" Then
 				code = buildAction (Chr (&HF0))
 				lastCommandWasTerminator = -1
-			Else 
+			Else
 				syntaxError
 			End If
 
@@ -856,7 +910,7 @@ Function processCommand (linea As String) As String
 
 		Case "call"
 			' CALL SUBRUTINE
-			' $F4 LSB MSB 
+			' $F4 LSB MSB
 
 			If jumptable Then
 				' Don't index rooms in jumptable mode!
@@ -873,12 +927,16 @@ Function processCommand (linea As String) As String
 				syntaxError
 			End If
 
-	End Select 
+	End Select
 
-	Return code 
+	If Len (code) = 0 And errorCount = errBefore And Len (tokens (0)) > 0 Then
+		reportError ("Unknown command @ line " & curLineNo & ": " & linea)
+	End If
+
+	Return code
 End Function
 
-Function processCurrentSection (fIn As Integer) As String 
+Function processCurrentSection (fIn As Integer) As String
 	Dim sectionCode As String
 	Dim clausule As String
 	Dim As Integer terminado
@@ -895,20 +953,20 @@ Function processCurrentSection (fIn As Integer) As String
 		linea = readNewLine (fIn)
 		lineaLc = lCase (linea)
 
-		If linea = "" Then 
-			' Skip 
+		If linea = "" Then
+			' Skip
 
-		ElseIf lineaLc = "end" Then
+		ElseIf lineaLc = "end" Or lineaLc = "end if" Then
 			' If we are fetching -> this section has ended.
 			' If we are reading conditions -> wrong
 			' If we are reading actions -> this clausule has ended.
 			' If we are reading decos -> decos ended.
-			If state = 0 Then 
+			If state = 0 Then
 				terminado = -1
-			ElseIf state = 1 Then 
+			ElseIf state = 1 Then
 				wrong = -1: terminado = -1
-				Print "Unexpected END @ " & curLineNo
-			ElseIf state = 3 Then 
+				reportError ("Unexpected END @ line " & curLineNo)
+			ElseIf state = 3 Then
 				' End decos
 				clausule = clausule & Chr (&HFF)
 
@@ -927,38 +985,38 @@ Function processCurrentSection (fIn As Integer) As String
 				' Write current clausule
 				' (el tamaño va en un byte y 0xFF marca el final de sección)
 				If Len (clausule) + 1 >= 255 Then
-					Print "Clausule too long (" & Len (clausule) & " bytes) @ " & curLineNo
+					reportError ("Clausule too long (" & Len (clausule) & " bytes) @ line " & curLineNo)
 					wrong = -1
 				End If
 				sectionCode = sectionCode & Chr (Len (clausule) + 1) & clausule
-				
+
 				' New clausule
 				clausule = ""
-				
+
 				' Back to fetching
 				state = 0
-			End If 
+			End If
 
 		ElseIf lineaLc = "then" Then
 			' If we are fetching or reading actions -> wrong
 			' Else  change to state 2
-			If state = 1 Then 
+			If state = 1 Then
 				' Write FF to signal "end of section" to the interpreter
 				clausule = clausule & Chr (&HFF)
 
 				state = 2
 				lastCommandWasTerminator = 0
-			Else 
+			Else
 				wrong = -1: terminado = -1
-				Print "Unexpected THEN @ " & curLineNo
+				reportError ("Unexpected THEN @ line " & curLineNo)
 			End If
 
-		ElseIf Len (lineaLc) > 3 And Left (lineaLc, 3) = "if " Then 
+		ElseIf Len (lineaLc) > 3 And Left (lineaLc, 3) = "if " Then
 			' Only valid when fetching or reading conditions
-			If state = 2 Then 
+			If state = 2 Then
 				wrong = -1: terminado = -1
-				Print "Unexpected IF @ " & curLineNo
-			Else 
+				reportError ("Unexpected IF @ line " & curLineNo)
+			Else
 				state = 1
 
 				' Process IF
@@ -967,7 +1025,7 @@ Function processCurrentSection (fIn As Integer) As String
 
 		ElseIf lineaLc = "decos" Then
 			' Only valid when reading actions
-			If state = 2 Then 
+			If state = 2 Then
 				state = 3
 				clausule = clausule & Chr (&H22)
 				AU (&H22) = -1
@@ -975,10 +1033,10 @@ Function processCurrentSection (fIn As Integer) As String
 
 			Else
 				wrong = -1: terminado = -1
-				Print "Unexpected DECOS @ " & curLineNo
+				reportError ("Unexpected DECOS @ line " & curLineNo)
 			End If
 		Else
-			If state = 3 Then 
+			If state = 3 Then
 				' Read & add a decoration
 				parseCoordinatesString linea, deco ()
 				clausule = clausule & Chr (deco (2) And &HFF) & Chr ((deco(1) And &HF) * 16 + (deco (0) And &HF))
@@ -1000,11 +1058,11 @@ Function processCurrentSection (fIn As Integer) As String
 					pendingCallName = ""
 				End If
 
-			ElseIf Left (linea, 1) <> "#" Then 
+			ElseIf Left (linea, 1) <> "#" Then
 				wrong = -1: terminado = -1
-				Print "Unexpected command @ " & curLineNo
+				reportError ("Unexpected command @ line " & curLineNo)
 
-			Else 
+			Else
 				' ignoring comment
 
 			End If
@@ -1014,12 +1072,12 @@ Function processCurrentSection (fIn As Integer) As String
 	' End of section code.
 	sectionCode = sectionCode & Chr (&HFF)
 
-	Return sectionCode 
+	Return sectionCode
 End Function
 
-Function startsWith (haysTack () As String, spec As String) As Integer 
+Function startsWith (haysTack () As String, spec As String) As Integer
 	Dim as String specTokens (uBound (tokens))
-	Dim as Integer i 
+	Dim as Integer i
 
 	parseTokenizeString spec, specTokens (), "", ""
 
@@ -1030,10 +1088,10 @@ Function startsWith (haysTack () As String, spec As String) As Integer
 	Wend
 
 	Return -1
-End Function 
+End Function
 
 Sub writeToSectBinary (section As String)
-	Dim As Integer i 
+	Dim As Integer i
 
 	For i = 0 To secFixCount - 1
 		fixName (fixCount) = secFixName (i)
@@ -1042,11 +1100,11 @@ Sub writeToSectBinary (section As String)
 	Next i
 	secFixCount = 0
 
-	For i = 1 To Len (section) 	
+	For i = 1 To Len (section)
 		sectBinary (sectBinIdx) = Asc (Mid (section, i, 1))
 		sectBinIdx = sectBinIdx + 1
 	Next i
-End Sub 
+End Sub
 
 Sub WriteToMainBin (b As uByte)
 	mainBinary (mainBinIdx) = b
@@ -1070,7 +1128,7 @@ Sub processScript (fIn As Integer)
 		sectOffs (i) = -1
 	Next i
 
-	While Not Eof (fIn) 
+	While Not Eof (fIn)
 		linea = readNewLine (fIn)
 		parseTokenizeString lcase (linea), tokens (), ",_()[]", "#"
 
@@ -1078,22 +1136,22 @@ Sub processScript (fIn As Integer)
 		If tokens (0) = "on" Then shiftTokens 0
 
 		If linea <> "" And tokens (0) <> "" Then
-			If debug Then 
-				Print "==========================================" 
+			If debug Then
+				Print "=========================================="
 				Print "LINEA " & linea
 				debugPrintTokens
 			End If
 
-			For i = 0 To uBound (listRooms) 
+			For i = 0 To uBound (listRooms)
 				listRooms (i) = ""
 			Next i
 			cError = 0
 
-			If tokens (0) = "rooms" Then 
+			If tokens (0) = "rooms" Then
 				' ROOMS = N
 				maxPants = Val(tokens (2))
 
-			ElseIf tokens (0) = "alias" Then 
+			ElseIf tokens (0) = "alias" Then
 				' ALIAS %A = B
 				' Needs reparsing
 				parseTokenizeString lcase (linea), tokens (), ",()[]", "#"
@@ -1103,14 +1161,14 @@ Sub processScript (fIn As Integer)
 					aliases (Val (tokens (3))) = lCase (tokens (1))
 					If debug Then Print "Set alias %" & tokens (1) & " for flag $" & tokens (3)
 				Else
-					Print "Wrong alias definition at " & curLineNo
+					reportError ("Wrong alias definition at line " & curLineNo)
 				End If
 
-			ElseIf tokens(0) = "noindexed" Then 
+			ElseIf tokens(0) = "noindexed" Then
 				noIndexed = -1
 				If debug Then Print "No indexed script. Beware!"
 
-			ElseIf tokens(0) = "fastnpant" Then 
+			ElseIf tokens(0) = "fastnpant" Then
 				fastNPant = -1
 				If debug Then Print "IF NPANT = N will generate its own opcode!"
 
@@ -1122,13 +1180,13 @@ Sub processScript (fIn As Integer)
 				If debug Then Print "Item empty set to " & Val (tokens (3))
 				itemEmpty = Val (tokens (3))
 
-			ElseIf startsWith (tokens (), "text width") And tokens (2) = "=" And isNumber (tokens (3)) Then 
+			ElseIf startsWith (tokens (), "text width") And tokens (2) = "=" And isNumber (tokens (3)) Then
 				If debug Then Print "Text width set to " & Val (tokens (3))
 				textWidth = Val (tokens (3))
 
 			ElseIf tokens (0) = "sub" Then
 
-				' Subroutines are added to the main binary in order, 
+				' Subroutines are added to the main binary in order,
 				' their base address remembered and used in `call` commands.
 
 				If tokens (1) <> "" Then
@@ -1148,12 +1206,12 @@ Sub processScript (fIn As Integer)
 				End If
 
 			Else
-				If startsWith (tokens (), "entering screen") Or startsWith (tokens (), "press fire at screen") Then 
+				If startsWith (tokens (), "entering screen") Or startsWith (tokens (), "press fire at screen") Then
 					' Find comma separated list
-					If tokens (0) = "entering" Then 
-						listToken = 2 
+					If tokens (0) = "entering" Then
+						listToken = 2
 						sectOffset = ENTERING_INDEX_OFFSET
-					Else 
+					Else
 						listToken = 4
 						sectOffset = PRESS_FIRE_INDEX_OFFSET
 					End If
@@ -1165,7 +1223,7 @@ Sub processScript (fIn As Integer)
 					' Fire is PRESS_FIRE_INDEX_OFFSET + N * 2
 					i = 0: While i + listToken < uBound (tokens) And tokens (i + listToken) <> ""
 						listRooms (i) = tokens (i + listToken)
-						If isNumber (listRooms (i)) Then 
+						If isNumber (listRooms (i)) Then
 							listRooms (i) = Str (Val (listRooms (i)) * 2 + sectOffset)
 						End If
 						i = i + 1
@@ -1177,21 +1235,21 @@ Sub processScript (fIn As Integer)
 					If startsWith (tokens (), "entering game") Then
 						section = 0
 
-					ElseIf startsWith (tokens (), "entering any") Then 
+					ElseIf startsWith (tokens (), "entering any") Then
 						section = 1
-					
+
 					ElseIf startsWith (tokens (), "press fire at any") Then
 						section = 2
-					
+
 					ElseIf startsWith (tokens (), "player got something") Then
 						section = 3
-					
-					ElseIf startsWith (tokens (), "player kills enemy") Then 
+
+					ElseIf startsWith (tokens (), "player kills enemy") Then
 						section = 4
 
 					ElseIf startsWith (tokens (), "special tile touched") Then
 						section = 5
-					
+
 					ElseIf startsWith (tokens (), "timer zero") Then
 						section = 6
 
@@ -1219,14 +1277,14 @@ Sub processScript (fIn As Integer)
 						If debug Then Print "Adding " & sectBinIdx & " @ sect " & section
 						sectOffs (section) = sectBinIdx
 					Else
-						Print "Wrong section at " & curLineNo
+						reportError ("Wrong section at line " & curLineNo)
 						cError = -1
 					End If
 
 					i = i + 1
 				Wend
 
-				If Not cError Then 
+				If Not cError Then
 					' Parse current section
 					sectionBytecode = processCurrentSection (fIn)
 					If debug Then Print "Bytecode: ";: printBinStr sectionBytecode
@@ -1238,7 +1296,7 @@ Sub processScript (fIn As Integer)
 		End If
 	Wend
 
-	' Output binary = index with adjusted offsets, then main binary 
+	' Output binary = index with adjusted offsets, then main binary
 	' Index size = 2 * (16 + max_pants). Also write index
 
 	mainBinIdx = 0
@@ -1255,8 +1313,8 @@ Sub processScript (fIn As Integer)
 	If Not jumptable Then
 		For i = indexSize To uBound (sectOffs)
 			If sectOffs (i) >= 0 Then
-				Print "ERROR! section for screen " & ((i - ENTERING_INDEX_OFFSET) \ 2) & " but ROOMS = " & maxPants
-				End 1
+				reportError ("section for screen " & ((i - ENTERING_INDEX_OFFSET) \ 2) & " but ROOMS = " & maxPants)
+				sectOffs (i) = -1
 			End If
 		Next i
 	End If
@@ -1272,7 +1330,7 @@ Sub processScript (fIn As Integer)
 		If outC And i = IDX_ROOMS Then sectOffs (i) = maxPants
 		WriteToMainBin sectOffs (i) Mod 256
 		WriteToMainBin sectOffs (i) \ 256
-	Next i 
+	Next i
 
 	Print "Index section: " & mainBinIdx & " bytes"
 
@@ -1287,8 +1345,8 @@ Sub processScript (fIn As Integer)
 	For i = 0 To fixCount - 1
 		sectOffset = getSubAddressByName (fixName (i))
 		If sectOffset < 0 Then
-			Print "ERROR! Unknown SUB " & fixName (i)
-			End 1
+			reportError ("Unknown SUB " & fixName (i))
+			sectOffset = 0
 		End If
 		sectOffset = sectOffset + indexSize * 2
 		mainBinary (indexSize * 2 + fixPos (i)) = sectOffset And &HFF
@@ -1298,7 +1356,7 @@ Sub processScript (fIn As Integer)
 End Sub
 
 Sub writeScript (fName As String)
-	Dim As Integer i, fOut 
+	Dim As Integer i, fOut
 
 	fOut = FreeFile
 	Kill fName
@@ -1306,7 +1364,7 @@ Sub writeScript (fName As String)
 
 	For i = 0 To mainBinIdx - 1
 		Put #fOut, , mainBinary (i)
-	Next i 
+	Next i
 
 	Print "Wrote " & mainBinIdx & " bytes to " & fName
 	Close fOut
@@ -1441,7 +1499,7 @@ Sub writeTexts (fName As String)
 
 	fOut = FreeFile
 	Kill fName
-	Open fName for Binary As #fOut 
+	Open fName for Binary As #fOut
 
 	binSize = 0
 
@@ -1459,7 +1517,7 @@ Sub writeTexts (fName As String)
 			d = Asc (Mid (textPool (i), j, 1)): Put #fOut, , d
 		Next j
 		binSize = binSize + Len (textPool (i))
-	Next i 
+	Next i
 
 	Print "Wrote " & binSize & " bytes to " & fName
 	Close fOut
@@ -1494,13 +1552,13 @@ Function tplAtom (a As String) As Integer
 	ElseIf Len (a) > 3 And Mid (a, 3, 1) = ":" Then
 		k = Left (a, 2)
 		v = ValInt ("&H" & Mid (a, 4)) And 255
-		If k = "cu" Then 
+		If k = "cu" Then
 			ok = (CU (v) <> 0)
-		ElseIf k = "au" Then 
+		ElseIf k = "au" Then
 			ok = (AU (v) <> 0)
-		ElseIf k = "rv" Then 
+		ElseIf k = "rv" Then
 			ok = (RV (v) <> 0)
-		ElseIf k = "lv" Then 
+		ElseIf k = "lv" Then
 			ok = (LV (v) <> 0)
 		Else
 			Print "Template: unknown atom " & a: End
@@ -1597,7 +1655,7 @@ Sub generateInterpreter (fOut As Integer, tplFile As String)
 	Dim As String feBody (31)
 
 	fT = FreeFile
-	If Open (tplFile For Input As #fT) <> 0 Then 
+	If Open (tplFile For Input As #fT) <> 0 Then
 		Print "Can't open template " & tplFile
 		End 1
 	End If
@@ -1647,7 +1705,7 @@ Sub generateInterpreter (fOut As Integer, tplFile As String)
 		End If
 	Wend
 
-	If chunkOpen And active And Not inFE Then 
+	If chunkOpen And active And Not inFE Then
 		writeAssemblyString fOut, tplGlobals (body)
 	End If
 
@@ -1692,7 +1750,7 @@ Dim As Integer isEntering, room
 Print "msc v4.7.20261030 ~ ";
 
 sclpParseAttrs
-If Not sclpCheck (mandatory ()) Then usage: End 
+If Not sclpCheck (mandatory ()) Then usage: End
 
 debug = (sclpGetValue ("debug") <> "")
 textdebug = (sclpGetValue ("textdebug") <> "")
@@ -1747,7 +1805,7 @@ textWidth = 24
 
 i = 0: While i < 127 And fileIns(i) <> ""
 	curLineNo = 0
-	resetAliases 
+	resetAliases
 	maxPants = Val (sclpGetValue ("rooms"))
 
 	fIn = FreeFile
@@ -1755,17 +1813,29 @@ i = 0: While i < 127 And fileIns(i) <> ""
 	Print "Processing " & fileIns(i)
 	processScript (fIn)
 	Close #fIn
-	writeScript fileIns(i) & ".bin"
-	If outC Then writeCScript fScripts, fileIns (i)
+	If errorCount = 0 Then
+		writeScript fileIns(i) & ".bin"
+		If outC Then writeCScript fScripts, fileIns (i)
+	Else
+		Print "NOT writing " & fileIns(i) & ".bin because of errors"
+	End If
 	If debug Then debugPrintAliases
 
 	i = i + 1
-Wend 
+Wend
 
 '' Export encoded texts (if any)
-If textPoolIndex > 0 Then 
+If textPoolIndex > 0 Then
 	Print "Exporting encoded text"
 	writeTexts fileText
+End If
+
+'' If there were errors, do not generate the interpreter (nor msc-config.h):
+'' it would not match the (missing) bytecode.
+If errorCount > 0 Then
+	Print "*** " & errorCount & " ERROR(S) FOUND! Not writing the interpreter. ***"
+	If outC Then Close #fScripts: Kill scriptsFn
+	End 1
 End If
 
 If outC Then

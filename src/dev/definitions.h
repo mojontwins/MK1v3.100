@@ -220,6 +220,10 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 	unsigned char msc_tx, msc_ty;		// TX, TY: casilla que lanza el script
 	unsigned char rdn;					// Pantalla que se está pintando (mainloop)
 
+	#ifdef MSC_SHOW_ITEM
+		unsigned char item_old;			// Último objeto pintado en el marcador
+	#endif
+
 	#ifdef MSC_RV_F5
 		unsigned char hotspot_t;		// HOTSPOT: tipo del último objeto
 	#endif

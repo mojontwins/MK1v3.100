@@ -42,7 +42,7 @@
 	XREF _hotspot_t
 	XREF _scenery_info
 	XREF __en_t
-	XREF _en_it
+	XREF _enit
 	XREF __en_x
 	XREF __en_y
 	XREF _script_param
@@ -331,27 +331,48 @@
 .copcode_23_end
 ;@ when cu:24
 ;; OPCODE 0x24
-;; IF PLAYER FALLING
+;; IF PLAYER FALLING (vy > 0 and not possee)
 	cp  0x24
 	jr  nz, copcode_24_end
 .copcode_24
-;; Player falling if not possee
+	ld  hl, (_player + 8) 	; player.vy
+	ld  a, h
+	and 0x80
+	jp  nz, copcode_24_false	; vy < 0
+	ld  a, l
+	or  a
+	jp  nz, copcode_24_moving
+	ld  a, h
+	or  a
+	jp  z, copcode_24_false	; vy == 0
+.copcode_24_moving
 	ld  a, (_player + 26) 	; player.possee
 	or  a
-	jp  z, skip_clausule
+	jp  nz, skip_clausule	; standing on something
 	jp  script_clausule
+.copcode_24_false
+	jp  skip_clausule
 .copcode_24_end
 ;@ when cu:25
 ;; OPCODE 0x25
-;; IF PLAYER NOT FALLING
+;; IF PLAYER NOT FALLING (vy <= 0 or possee)
 	cp  0x25
 	jr  nz, copcode_25_end
 .copcode_25
-;; Player not falling if possee
-	ld  a, (_player + 26)	; player.possee
+	ld  a, (_player + 26) 	; player.possee
 	or  a
-	jp  nz, skip_clausule
-	jp  script_clausule
+	jp  nz, script_clausule	; standing on something
+	ld  hl, (_player + 8) 	; player.vy
+	ld  a, h
+	and 0x80
+	jp  nz, script_clausule	; vy < 0
+	ld  a, l
+	or  a
+	jp  nz, skip_clausule	; vy > 0
+	ld  a, h
+	or  a
+	jp  nz, skip_clausule	; vy > 0
+	jp  script_clausule	; vy == 0
 .copcode_25_end
 ;@ when cu:26
 ;; OPCODE 0x26
@@ -369,40 +390,14 @@
 	jp  nz, skip_clausule
 	jp  script_clausule
 .copcode_26_end
-;@ when cu:30
-;; OPCODE 0x30
-;; TILE AT (X, Y) = T
-	cp  0x30
-	jr  nz, copcode_30_end
-.copcode_30
-	call read_x_y
-	ld  a, (sc_x)
-	ld  c, a
-	ld  a, (sc_y)
-	call qtile_do
-	ld  c, l
-	call read_vbyte
-	cp  c
-	jp  nz, skip_clausule
+;@ when cu:F0
+;; OPCODE 0xF0
+;; TRUE
+	cp  0xf0
+	jr  nz, copcode_F0_end
+.copcode_F0
 	jp  script_clausule
-.copcode_30_end
-;@ when cu:31
-;; OPCODE 0x31
-;; BEH AT (X, Y) = T
-	cp  0x31
-	jr  nz, copcode_31_end
-.copcode_31
-	call read_x_y
-	ld  a, (sc_x)
-	ld  c, a
-	ld  a, (sc_y)
-	call _attr_2
-	ld  c, l
-	call read_vbyte
-	cp  c
-	jp  nz, skip_clausule
-	jp  script_clausule
-.copcode_31_end
+.copcode_F0_end
 ;@ always
 ;; UNKNOWN
 	jp  script_clausule
@@ -899,7 +894,7 @@
 ; EN_N RVALUE
 	cp  0xED
 	jr  nz, rvb_set_en_n_done
-	ld  a, (_en_it)
+	ld  a, (_enit)
 	ret
 .rvb_set_en_n_done
 ;@ when rv:EC

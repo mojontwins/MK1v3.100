@@ -118,6 +118,8 @@
 //#define SCRIPTING_DOWN			// Use DOWN as the action key.
 //#define SCRIPTING_KEY_M			// Use M as the action key instead.
 //#define MAX_FLAGS				32		// Más flags de los que usa el script (por defecto, MSC_FLAGS)
+//#define ITEM_X				28		// Con GET ITEM SET: el tile del objeto que se lleva
+//#define ITEM_Y				1		// se pinta en el marcador en (ITEM_X, ITEM_Y)
 
 // Timer
 // -----

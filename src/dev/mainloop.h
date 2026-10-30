@@ -127,6 +127,9 @@ void main (void) {
 			maincounter = 0;
 			success = 0;
 			objs_old = keys_old = life_old = killed_old = 0xff;
+			#ifdef MSC_SHOW_ITEM
+				item_old = 0xff;
+			#endif
 
 			#ifdef MAX_AMMO
 				ammo_old = 0xff;
@@ -265,6 +268,14 @@ void main (void) {
 					if (player.killed != killed_old) {
 						print_number2 (KILLED_X, KILLED_Y, player.killed);
 						killed_old = player.killed; 
+					}
+				#endif
+
+				#ifdef MSC_SHOW_ITEM
+					// El objeto que se lleva (GET ITEM): su tile en ITEM_X, ITEM_Y
+					if (flags [MSC_ITEM_SLOT] != item_old) {
+						draw_coloured_tile (ITEM_X, ITEM_Y, flags [MSC_ITEM_SLOT]);
+						item_old = flags [MSC_ITEM_SLOT];
 					}
 				#endif
 

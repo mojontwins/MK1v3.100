@@ -1,10 +1,19 @@
 # MSC4 — Mojon Script Compiler 4
 ## Especificación del lenguaje de scripts y de su integración con el motor
 
-*Aplica a:* `msc4/msc4.bas` / `msc4/msc4.exe` — versión `msc v4.6.20260729`.
+*Aplica a:* `msc4/msc4.bas` — versión `msc v4.7.20261030`.
 *Implementación de referencia:* `msc4/`.
-*Juego de referencia:* `games/papaya` (motor MK1 v3.2, CPC + ZX Spectrum).
-*Versión en inglés:* [msc4-scripting.md](./msc4-scripting.md).
+*Motores:* MK1 v3.2 (intérprete en ensamblador generado por msc4; juego de
+referencia `games/papaya` del repositorio de MK1 v3.2) y **MK1 v3.100** (este
+repositorio: intérprete en C fijo, `src/dev/msc.h`, con `v=3_100 output=c`).
+
+> **MK1 v3.100.** El lenguaje es el mismo para los dos motores, pero la
+> integración no: en v3.100 msc4 no genera ensamblador sino `msc-config.h` y
+> `msc-scripts.h`, el intérprete es `src/dev/msc.h`, y hay secciones, comandos
+> y variables que solo existen en v3.100. Todo lo específico de v3.100 está en
+> el [§19](#19-mk1-v3100-el-intérprete-en-c) y señalado con **[v3.100]** a lo
+> largo del documento. Lo que se describe para "el motor" sin más se refiere a
+> MK1 v3.2.
 
 > Este documento describe **MSC4**, el "Mojon Script Compiler 4", tal y como está
 > realmente implementado en `msc4/msc4.bas`. No es una descripción del
@@ -36,6 +45,7 @@
 16. [Trucos y errores corregidos](#16-trucos-y-errores-corregidos)
 17. [Ejemplos](#17-ejemplos)
 18. [Apéndice — formato del binario](#18-apéndice--formato-del-binario)
+19. [MK1 v3.100: el intérprete en C](#19-mk1-v3100-el-intérprete-en-c)
 
 ---
 
@@ -84,9 +94,12 @@ El estado se guarda en **flags**: un array plano de valores de 8 bits
 |---|---|---|
 | Bytecode del script | `<entrada>.bin` (p.ej. `script.spt.bin`) | El índice de secciones seguido del bytecode compilado. Se integra en el juego con `BINARY "script.spt.bin"`. |
 | Pool de textos | `text.bin` (opción `text=`) | Los textos codificados en 5 bits que usan `TEXT BOX` y `DIALOG`. Se integra con `BINARY "text.bin"`. |
-| Intérprete | el fichero indicado por `interpreter=` (por defecto `msci.asm`) | Un fichero de **ensamblador Z80** que implementa la máquina virtual, especializado a los opcodes que tu script usa realmente. |
+| Intérprete | el fichero indicado por `interpreter=` (por defecto `msci.asm`) | Un fichero de **ensamblador Z80** que implementa la máquina virtual, especializado a los opcodes que tu script usa realmente. Sale de la plantilla `msc4/targets/z80.tpl` (o `gb.tpl` con `target=gb`). |
 
-El intérprete es *generado*, no fijo: el compilador mantiene una tabla de qué
+**[v3.100]** Con `v=3_100 output=c` las salidas son otras: el `.bin` de cada
+script, `msc-config.h` y `msc-scripts.h` (ver [§19](#19-mk1-v3100-el-intérprete-en-c)).
+
+El intérprete (en MK1 v3.2) es *generado*, no fijo: el compilador mantiene una tabla de qué
 opcodes de condición y de acción se han usado, y emite código máquina
 **sólo para esos**. Un script que nunca use `DIALOG` no contendrá ni un solo
 byte de código de diálogo. Ésta es la razón principal de que los scripts de
@@ -126,19 +139,26 @@ Spectrum y a `_cpc_UpdateNow` en CPC.
 ## 3. Línea de comandos
 
 ```
-msc4.exe in=f1.spt[,f2.spt,...] v=3 target=cpc|zx rooms=N [text=text.bin]
-         [interpreter=msci.asm] [noindexed] [fastnpant] [jumptable]
-         [debug] [textdebug]
+msc4.exe in=f1.spt[,f2.spt,...] v=3 target=cpc|zx|gb rooms=N [text=text.bin]
+         [interpreter=msci.asm] [template=fichero.tpl] [noindexed] [fastnpant]
+         [jumptable] [allopcodes] [debug] [textdebug]
+
+msc4.exe in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]
+         [interpreter=msc-config.h] [scripts=msc-scripts.h] [allopcodes] [debug]
 ```
 
 | Opción | Obligatoria | Significado |
 |---|---|---|
 | `in=` | sí | Lista de ficheros `.spt` de entrada, separados por comas. Se produce un `.bin` por fichero de entrada. |
-| `v=` | sí | Versión base de MK1 del juego destino. Para este motor, siempre `v=3`. De momento sólo se usa como bookkeeping. |
-| `target=` | sí | `cpc` o `zx`. Elige la implementación de `SHOW`. |
+| `v=` | sí | Versión base de MK1 del juego destino. `v=3` para MK1 v3.2 (sólo bookkeeping); `v=3_100` para MK1 v3.100, que exige `output=c`. |
+| `target=` | sí (salvo `output=c`) | `cpc`, `zx` o `gb`. Elige la plantilla del intérprete (`z80.tpl` o `gb.tpl`) y, dentro de ella, la implementación de `SHOW`. |
+| `output=c` | no | **[v3.100]** No genera intérprete: escribe `msc-config.h` y `msc-scripts.h` para el intérprete en C de `src/dev/msc.h`. Sólo con `v=3_100`; incompatible con `jumptable`. |
+| `scripts=` | no | **[v3.100]** Nombre de `msc-scripts.h`. |
+| `template=` | no | Plantilla del intérprete en ensamblador (por defecto `targets/z80.tpl` o `targets/gb.tpl`, junto al ejecutable). |
+| `allopcodes` | no | Genera el intérprete (o `msc-config.h`) con **todos** los opcodes, uses o no. Para pruebas. |
 | `rooms=N` | no | Número de pantallas del mapa. **Necesario** salvo que el script contenga `ROOMS = N` o se use la opción `jumptable`. |
 | `text=` | no | Nombre del fichero con el pool de textos. Por defecto `text.bin`. |
-| `interpreter=` | no | Nombre del fichero del intérprete generado. Por defecto `msci.asm`. |
+| `interpreter=` | no | Nombre del fichero del intérprete generado. Por defecto `msci.asm` (con `output=c`, `msc-config.h`). |
 | `noindexed` | no | Tu juego no usará las secciones por pantalla. |
 | `fastnpant` | no | Emite un opcode dedicado para `IF NPANT = N` (más rápido, algo más grande). |
 | `jumptable` | no | Usa una tabla de saltos en código en lugar del índice para las secciones por pantalla. |
@@ -176,9 +196,9 @@ misma información se guarda en `msc.txt` en la compilación de papaya.
 
 Si una línea empieza por `ON ` (sin distinguir mayúsculas), se quitan esos tres
 caracteres antes de analizarla. Existe para que una sección pueda escribirse
-`ON TILE PUSHED` en vez de `TILE PUSHED`. (Secciones como `TILE PUSHED` están
-reservadas pero *no están implementadas* en esta versión del compilador; ver
-[§16](#16-trucos-y-errores-corregidos).)
+`ON TILE PUSHED` en vez de `TILE PUSHED` (o `ON PLAYER KILLS ENEMY`, `ON TIMER
+ZERO`…). Vale para las cabeceras de sección y para las condiciones
+(`ON IF …` no tiene mucho sentido, pero se acepta).
 
 ### 4.2 Las cabeceras de sección se buscan de forma flexible
 
@@ -245,12 +265,14 @@ cláusulas.
 | `PLAYER GOT SOMETHING` | 3 | El jugador recoge un hotspot (un objeto / una moneda, según el juego). |
 | `PLAYER KILLS ENEMY` | 4 | Muere un enemigo. |
 | `SPECIAL TILE TOUCHED` | 5 | El jugador está sobre un tile cuyo comportamiento tiene el bit 7 puesto (comportamiento `128 + n`). |
+| `TIMER ZERO` | 6 | **[v3.100]** El temporizador llega a 0. |
+| `TILE PUSHED` | 7 | **[v3.100]** El jugador empuja un bloque (tile 14). `MOVED_TILE`, `MOVED_X` y `MOVED_Y` dicen qué tile tapó y dónde quedó; `TX`, `TY` son esas mismas coordenadas. |
 | `ENEMY TOUCHED` | 8 | El jugador choca con un enemigo. |
+| `TILE DESTROYED` | 9 | **[v3.100]** Se rompe un tile (`BREAKABLE_WALLS`); `TX`, `TY` son sus coordenadas. |
 
-Los índices 6, 7 y 9 están reservados en el layout del índice (`TIMER ZERO`,
-`TILE PUSHED`, `TILE DESTROYED`) pero **no** los reconoce esta versión del
-compilador: son funcionalidades *planificadas* (ver
-[§16.3](#163-secciones-planificadas-pero-no-implementadas)).
+El compilador reconoce las secciones 6, 7 y 9, pero sólo el motor MK1 v3.100
+las lanza. En un juego de MK1 v3.2 quedarían en el índice sin ejecutarse
+nunca.
 
 `PLAYER GOT SOMETHING` es el nombre canónico de la sección 3. (El
 `PLAYER GETS COIN` que menciona el borrador antiguo de `msc4/msc4.md` no
@@ -281,7 +303,8 @@ protege el particular con un flag (mira la subrutina `PLACEBOX` en
 
 ### 6.3 ¿Qué tecla es "FIRE"?
 
-La tecla de acción se configura en el `config.h` del motor:
+La tecla de acción se configura en el `config.h` del motor (igual en MK1 v3.2
+y en v3.100):
 
 ```c
 #define ACTIVATE_SCRIPTING     // activa el motor de scripting
@@ -477,8 +500,12 @@ como pseudo-flags en el rango `$E6 … `$FE`.
 | `TY` | `$F7` | Tile Y del centro del jugador. | ✔ | ✘ |
 | `TN` | `$F6` | El tile en el que está el centro del jugador. | ✔ | ✘ |
 | `HOTSPOT` | `$F5` | El tipo del hotspot que el jugador acaba de tocar. | ✔ | ✘ |
-| `HIDE_HOTSPOTS` | `$F0` | `scenery_info.hide_hotspots`. | ✔ | ✔ |
-| `DONT_MAKE_FANTIES` | `$EF` | `scenery_info.dont_make_fanties`. | ✔ | ✔ |
+| `MOVED_TILE` | `$F4` | **[v3.100]** El tile que tapó el último bloque empujado. | ✔ | ✘ |
+| `MOVED_X` | `$F3` | **[v3.100]** X (tile) donde quedó el último bloque empujado. | ✔ | ✘ |
+| `MOVED_Y` | `$F2` | **[v3.100]** Y (tile) donde quedó el último bloque empujado. | ✔ | ✘ |
+| `TIMER` | `$F1` | **[v3.100]** El valor del temporizador (`ctimer.t`; necesita `TIMER_ENABLE`). | ✔ | ✔ |
+| `HIDE_HOTSPOTS` | `$F0` | `scenery_info.hide_hotspots`. **[v3.100]** Si vale distinto de 0, el objeto de la pantalla no se pinta ni se puede coger; vuelve a 0 al entrar en cada pantalla, así que se pone en `ENTERING`. | ✔ | ✔ |
+| `DONT_MAKE_FANTIES` | `$EF` | `scenery_info.dont_make_fanties`. **[v3.100]** Con `ENABLE_RANDOM_RESPAWN`, si vale distinto de 0 no salen fanties; vuelve a 0 al entrar en cada pantalla. | ✔ | ✔ |
 | `EN_T` | `$EE` | El **tipo** del enemigo que se está tocando (1, 2, 3…). | ✔ | ✔ |
 | `EN_N` | `$ED` | El **id** del enemigo que se está tocando. Se lee de la global `enit` del motor, que contiene el índice del enemigo en proceso (0, 1, 2… en la configuración por defecto). | ✔ | ✘ |
 | `EN_X` | `$EC` | X del enemigo (píxeles). | ✔ | ✔ |
@@ -498,7 +525,17 @@ Notas:
   comprueban `OPANT < 60` antes de fiarse de él (mira `games/ababol`).
 * `EN_N` lee la global `enit` del motor. En MK1 v3.2 `enit` es el índice del
   enemigo en proceso, así que `EN_N` vale 0, 1, 2… — *no* es el tipo de
-  enemigo (eso es `EN_T`).
+  enemigo (eso es `EN_T`). **[v3.100]** Es `gpit`, el índice del enemigo en
+  proceso (0, 1 o 2).
+* **[v3.100]** `TX`, `TY` no se calculan cada frame: el motor los fija antes
+  de lanzar cada sección. Para las de pantalla y FIRE son el tile del centro
+  del jugador; para `SPECIAL TILE TOUCHED` el tile especial; para
+  `TILE PUSHED` dónde quedó el bloque; para `TILE DESTROYED` el tile roto.
+  `TN` se lee en el momento (el tile que hay ahora en `TX`, `TY`).
+* **[v3.100]** Escribir `PX` o `PY` coloca al jugador (`set_player_at`), y
+  escribir `NPANT` le cambia de pantalla en el siguiente frame (como `WARP TO`).
+* **[v3.100]** `HOTSPOT` es el tipo del último objeto cogido (3 si era una
+  recarga de vida que aparece sola sin `USE_HOTSPOTS_TYPE_3`).
 
 ---
 
@@ -610,8 +647,10 @@ vale 0 da 255.
 |---|---|
 | `SET TILE (x, y) = t` | Pone el tile `t` en las coordenadas de pantalla dadas. El comportamiento del tile se toma de la tabla `comportamiento_tiles`. |
 | `SET BEH (x, y) = b` | Cambia el *comportamiento* del tile en `(x, y)` sin tocar el tile en sí. |
-| `PRINT TILE (x, y) = t` | Dibuja un tile de color sobre la pantalla en `(x, y)` (overlay, no toca el mapa). |
+| `PRINT TILE (x, y) = t` | Dibuja un tile de color sobre la pantalla en `(x, y)` (overlay, no toca el mapa). `x`, `y` son coordenadas de **carácter** de la pantalla (para pintar en el marcador), no de tile. |
 | `WARP TO n, x, y` | Teletransporta al jugador a la pantalla `n`, posición en píxeles `(x*16, y*16)`. |
+| `SET FIRE ZONE x1, y1, x2, y2` | **[v3.100]** Define una zona (en píxeles) en la que estar equivale a pulsar la tecla de acción: se ejecutan `PRESS FIRE AT ANY` y `PRESS FIRE AT SCREEN n` cada frame mientras el jugador esté dentro. Se apaga al cambiar de pantalla, así que se define en `ENTERING`. Opcode `$51`. |
+| `SET FIRE ZONE TILES x1, y1, x2, y2` | **[v3.100]** Lo mismo con coordenadas de tile (la zona va de la esquina del tile `(x1, y1)` al final del tile `(x2, y2)`). Opcode `$52`. |
 
 ### 11.3 El jugador
 
@@ -625,8 +664,8 @@ vale 0 da 255.
 
 | Se escribe | Efecto |
 |---|---|
-| `SOUND n` | Toca el efecto de sonido `n` (`peta_el_beaper`). |
-| `TEXT "…"` | Dibuja una línea corta de texto en el marcador (en `TEXT_X`/`TEXT_Y`). La cadena se guarda **literalmente** en el bytecode. |
+| `SOUND n` | Toca el efecto de sonido `n` (`peta_el_beaper`). **[v3.100]** `PLAY_SFX (n)`: beeper en 48K, WYZ en 128K y CPC. |
+| `TEXT "…"` | Dibuja una línea corta de texto en el marcador (en `TEXT_X`/`TEXT_Y`). La cadena se guarda **literalmente** en el bytecode. **[v3.100]** Se escribe en `LINE_OF_TEXT_X`, `LINE_OF_TEXT` con el color `LINE_OF_TEXT_ATTR`; la línea se borra al entrar en cada pantalla. |
 | `TEXT BOX "…"` | Muestra una caja de texto completa. La cadena se codifica en 5 bits dentro de `text.bin`. |
 | `EXTERN n, m` | Llama a la `do_extern_action (n, m)` del motor. El segundo parámetro vale 0 por defecto. Esta es la salida hacia tu propio código C. |
 | `PAUSE n` | ver arriba. |
@@ -709,8 +748,13 @@ CALL MIPROCEDIMIENTO
 
 Reglas:
 
-* La subrutina debe estar **definida antes de ser llamada** (el compilador
-  resuelve la dirección cuando ve el `CALL`).
+* La subrutina puede definirse antes o después del `CALL`: el compilador
+  apunta cada `CALL` y rellena su dirección al terminar el script. (Hasta la
+  v4.6 tenía que estar definida antes; un `CALL` a una `SUB` posterior se
+  compilaba, sin aviso, con una dirección equivocada.) Un `CALL` a una `SUB`
+  que no existe es un error.
+* **[v3.100]** Un `BREAK` en la subrutina sale sólo de ella; `WIN GAME`,
+  `GAME OVER` y `RERUN` terminan también la sección que la llamó.
 * El cuerpo de una subrutina es sintácticamente idéntico al de una sección:
   cláusulas con condiciones y acciones.
 * `CALL` se implementa guardando el puntero de script, saltando a la
@@ -790,6 +834,11 @@ Consecuencias:
   recibe las tres cadenas decodificadas (32 bytes cada una) y devuelve la
   opción elegida en `L` (1, 2 o 3).
 * Requiere `ENABLE_DIALOG` en `config.h` (que implica `ENABLE_ENCODED_TEXT`).
+* **[v3.100]** No hace falta ningún interruptor: el intérprete descodifica las
+  opciones en `msc_options [0..2]` (las vacías quedan como `""`), pone en
+  `msc_n_options` cuántas hay y llama a `dialog_box ()` de `extern.h`, que
+  devuelve la elegida. `TEXT BOX` descodifica en `msc_text_buf` y llama a
+  `text_box ()`. Ver [§19.6](#196-extern-h-extern-text-box-y-dialog).
 
 ---
 
@@ -846,9 +895,16 @@ objeto en el marcador cada vez que el hueco cambia:
 `ITEM_FLAG` en `config.h` debe apuntar al mismo flag que `ITEM SLOT` en el
 script.
 
+**[v3.100]** Basta con definir `ITEM_X` e `ITEM_Y` en `config.h`: el motor
+pinta el tile de `flags [MSC_ITEM_SLOT]` (el `ITEM SLOT` del script, que msc4
+pasa en `msc-config.h`) cuando cambia. No hay `ITEM_FLAG`.
+
 ---
 
 ## 15. Integración con el motor
+
+Este capítulo describe la integración con **MK1 v3.2**. La de **MK1 v3.100**
+es distinta y está en el [§19](#19-mk1-v3100-el-intérprete-en-c).
 
 ### 15.1 Los ficheros
 
@@ -1116,19 +1172,18 @@ los scripts correctos:
 * `PLAYER GOT SOMETHING` es el nombre canónico de la sección (el
   `PLAYER GETS COIN` del borrador antiguo de `msc4.md` no existe).
 
-### 16.3 Secciones planificadas pero no implementadas
+### 16.3 Corregido o añadido en la v4.7 (este repositorio)
 
-El índice de secciones reserva tres huecos que el compilador todavía no
-reconoce:
-
-| Hueco | Sección planificada |
-|---|---|
-| 6 | `TIMER ZERO` — se dispara cuando el temporizador del juego llega a 0. |
-| 7 | `TILE PUSHED` — se dispara cuando el jugador empuja un tile. |
-| 9 | `TILE DESTROYED` — se dispara cuando se destruye un tile. |
-
-Escribir hoy una de esas cabeceras hace que el compilador diga "Wrong section
-at N" y que la sección se ignore.
+| # | Problema / novedad | Ahora |
+|---|---|---|
+| 1 | Un `CALL` a una `SUB` definida más abajo se compilaba con una dirección equivocada, sin aviso. | Las direcciones de los `CALL` se resuelven al final del script. Un `CALL` a una `SUB` inexistente es un error. |
+| 2 | Las `SUB` de un script seguían visibles al compilar el siguiente de `in=`. | Cada script empieza con la lista de subrutinas vacía. |
+| 3 | Una cláusula de 255 bytes o más se codificaba mal (el tamaño va en un byte y `$FF` marca el fin de sección). | Error. |
+| 4 | Una sección `ENTERING SCREEN n` / `PRESS FIRE AT SCREEN n` con `n >= ROOMS` caía fuera del índice. | Error. |
+| 5 | `TIMER ZERO`, `TILE PUSHED` y `TILE DESTROYED` no se reconocían. | Se reconocen (índices 6, 7 y 9). |
+| 6 | — | Variables `TIMER`, `MOVED_TILE`, `MOVED_X`, `MOVED_Y`; `SET FIRE ZONE [TILES]` (sólo `output=c`). |
+| 7 | El intérprete estaba dentro de `msc4.bas`. | Está en plantillas (`msc4/targets/z80.tpl`, `gb.tpl`); `target=gb`, `template=`, `allopcodes`. |
+| 8 | — | `v=3_100 output=c` para MK1 v3.100 (§19). |
 
 ---
 
@@ -1437,11 +1492,12 @@ sección:
 | 3 | `PLAYER GOT SOMETHING` |
 | 4 | `PLAYER KILLS ENEMY` |
 | 5 | `SPECIAL TILE TOUCHED` |
-| 6 | *(reservado: `TIMER ZERO`)* |
-| 7 | *(reservado: `TILE PUSHED`)* |
+| 6 | `TIMER ZERO` |
+| 7 | `TILE PUSHED` |
 | 8 | `ENEMY TOUCHED` |
-| 9 | *(reservado: `TILE DESTROYED`)* |
-| 10…15 | reservados |
+| 9 | `TILE DESTROYED` |
+| 10…14 | reservados |
+| 15 | reservado; **[v3.100]** con `output=c` guarda el número de pantallas del índice (`ROOMS`), para que el intérprete no lea fuera de él |
 | 16 + 2n | `ENTERING SCREEN n` |
 | 17 + 2n | `PRESS FIRE AT SCREEN n` |
 
@@ -1505,6 +1561,8 @@ y una cláusula es:
 | `$22` | lista de `DECOS` |
 | `$30` | `GET ITEM SET $f` |
 | `$50` | `PRINT TILE (x, y) = t` |
+| `$51` | **[v3.100]** `SET FIRE ZONE x1, y1, x2, y2` |
+| `$52` | **[v3.100]** `SET FIRE ZONE TILES x1, y1, x2, y2` |
 | `$6D` | `WARP TO n, x, y` |
 | `$E0` | `SOUND n` |
 | `$E1` | `SHOW` |
@@ -1538,6 +1596,11 @@ Como el compilador sólo emite los handlers de los opcodes que tu script usa,
 el intérprete es tan pequeño como tu script permita. Si usas un opcode nuevo,
 regenera el intérprete: el juego no funcionará con uno viejo.
 
+**[v3.100]** El intérprete en C (`src/dev/msc.h`) tiene la misma estructura
+(`msc_run` → `msc_clausules` → `msc_conditions` / `msc_actions`, y
+`msc_value` para los valores), pero no se genera: cada opcode está bajo su
+`#ifdef MSC_CU_xx` / `MSC_AU_xx` y `msc-config.h` dice cuáles se compilan.
+
 ### 18.5 Reconstruir el compilador
 
 El compilador está escrito en FreeBASIC. Para reconstruirlo:
@@ -1546,6 +1609,9 @@ El compilador está escrito en FreeBASIC. Para reconstruirlo:
 fbc msc4.bas mtparser.bas cmdlineparser.bas mt5bitEsc.bas
 ```
 
+En Linux, `src/utils/build-linux.sh` lo compila junto con las demás
+utilidades (deja `msc4` y las plantillas en `src/utils/linux/`).
+
 Los cuatro ficheros hay que compilarlos juntos (los `.bi` son las
 declaraciones). Sirve cualquier versión reciente de FreeBASIC; el compilador
 se desarrolló con la 1.08.1.
@@ -1553,3 +1619,193 @@ se desarrolló con la 1.08.1.
 Tras reconstruirlo, recuerda copiar el nuevo `msc4.exe` a la carpeta `utils`
 de los juegos que lo usen, y regenerar los intérpretes (`.asm`) y el bytecode
 (`.bin`) de esos juegos.
+
+---
+
+## 19. MK1 v3.100: el intérprete en C
+
+En MK1 v3.100 el intérprete no se genera: es `src/dev/msc.h`, C normal y
+comentado que compila igual con z88dk para ZX Spectrum (48K y 128K) y Amstrad
+CPC, y que está pensado para poder llevarse a otros compiladores (SDCC/GBDK).
+msc4 se limita a compilar los scripts y a decirle al intérprete qué partes
+necesitan.
+
+### 19.1 Compilar los scripts
+
+```
+msc4 in=script.spt v=3_100 output=c rooms=30
+msc4 in=nivel1.spt,nivel2.spt,nivel3.spt v=3_100 output=c
+```
+
+No hace falta llamarlo a mano: `comp-zx.sh` y `comp-cpc.sh` lo hacen si
+`config.h` define `ACTIVATE_SCRIPTING`. Compilan `../script/script.spt` o, si
+en `dev/` hay un `scripts.txt`, la lista de scripts que trae (una ruta por
+línea, `#` para comentarios). `rooms=` se calcula de `MAP_W * MAP_H`; cada
+script puede poner el suyo con `ROOMS = n`. Los avisos de msc4 se muestran; los
+errores paran la compilación.
+
+Salidas:
+
+| Fichero | Contenido |
+|---|---|
+| `<script>.spt.bin` | El bytecode de cada script (junto al `.spt`). Con niveles, se comprime y va como recurso. |
+| `msc-config.h` | Lo que necesitan **todos** los scripts juntos: `MSC_CU_xx` y `MSC_AU_xx` (condiciones y acciones usadas), `MSC_RV_xx` / `MSC_LV_xx` (variables especiales leídas / escritas), `MSC_SECT_*` (secciones que existen en algún script), `MSC_FLAGS` (número de flags), `MSC_SCRIPT_MAX_SIZE`, `MSC_ITEM_SLOT`, `MSC_ITEM_EMPTY`, `MSC_TEXTS`, `MSC_TEXT_MAX_LEN`, `MSC_TEXT_WIDTH` y un `SCRIPT_<NOMBRE>` por script. |
+| `msc-scripts.h` | El bytecode como arrays de C (`script_<nombre>` y `msc_scripts []`, indexado por `SCRIPT_<NOMBRE>`) y los textos (`msc_texts`). Con niveles (`MSC_SCRIPTS_AS_RESOURCES`) los arrays de los scripts no se compilan y sólo quedan los textos. |
+
+Como todos los scripts se compilan juntos, el intérprete tiene lo que necesita
+cualquiera de ellos: un nivel puede usar `DIALOG` aunque los demás no lo usen.
+
+Con errores no se escribe nada (ni `.bin`, ni `msc-config.h`) y msc4 sale con
+código 1.
+
+### 19.2 Qué se activa solo
+
+Lo que en otras versiones eran interruptores de `config.h` ahora lo decide el
+script a través de `msc-config.h`:
+
+| Si el script usa… | …el motor incluye |
+|---|---|
+| `EXTERN`, `TEXT BOX`, `DIALOG` | `extern.h` (ver [§19.6](#196-extern-h-extern-text-box-y-dialog)) |
+| `SET FIRE ZONE` | la zona de fuego (`FIRE_ZONE`) |
+| `TILE PUSHED`, `MOVED_*` | las variables del bloque empujado (`PUSHED_SCRIPTING`) |
+| `TIMER ZERO` | la llamada a la sección al llegar el temporizador a 0 (necesita `TIMER_ENABLE`) |
+| `TEXT BOX`, `DIALOG` | `redraw_scr ()`, para que `extern.h` pueda borrar sus recuadros |
+| `GET ITEM SET` | con `ITEM_X` / `ITEM_Y` en `config.h`, el objeto en el marcador |
+| cualquier sección | sólo las llamadas a las secciones que existen |
+
+Y el tamaño de `flags []` es `MSC_FLAGS` (el flag más alto que aparece en los
+scripts, más uno), salvo que `config.h` defina `MAX_FLAGS`. Ojo con las
+indirecciones (`$$3`): si el flag 3 puede valer más que `MSC_FLAGS - 1`, define
+`MAX_FLAGS`. Leer un flag fuera de rango da 0 y escribirlo no hace nada.
+
+`config.h` sólo tiene, para el scripting:
+
+```c
+#define ACTIVATE_SCRIPTING          // Activa el scripting
+//#define SCRIPTING_DOWN            // Tecla de acción: abajo
+//#define SCRIPTING_KEY_M           // Tecla de acción: M (si no, FIRE)
+//#define MAX_FLAGS     32          // Más flags de los que usan los scripts
+//#define ITEM_X        28          // GET ITEM: tile del objeto en el marcador
+//#define ITEM_Y        1
+//#define LINE_OF_TEXT  1           // TEXT "...": fila,
+//#define LINE_OF_TEXT_X 1          // columna
+//#define LINE_OF_TEXT_ATTR 71      // y color
+```
+
+Ya no existen `ENABLE_EXTERN_CODE`, `ENABLE_FIRE_ZONE`, `TIMER_SCRIPT_0`,
+`ENABLE_PUSHED_SCRIPTING`, `MOVED_*_FLAG` ni `MSC_MAXITEMS` (el inventario de
+msc3).
+
+### 19.3 Dónde se lanza cada sección
+
+| Sección | Dónde | TX, TY |
+|---|---|---|
+| `ENTERING GAME` | `mainloop.h`, al empezar la partida (con niveles, al empezar cada nivel, con el script de ese nivel), tras `msc_init ()` | — |
+| `ENTERING ANY` + `ENTERING SCREEN n` | `draw_scr ()`, después de pintar la pantalla, de colocar los enemigos y el objeto | centro del jugador |
+| `PRESS FIRE AT ANY` + `PRESS FIRE AT SCREEN n` | `mainloop.h`, al pulsar la tecla de acción, o cada frame dentro de la zona de fuego | centro del jugador |
+| `PLAYER GOT SOMETHING` | `do_hotspots ()`, después de procesar el objeto | — (`HOTSPOT` es su tipo) |
+| `PLAYER KILLS ENEMY` | `enemy_dies ()` (pisotón o disparo) | — (`EN_*`) |
+| `ENEMY TOUCHED` | `mueve_bicharracos ()`, al chocar el jugador con un enemigo, antes del daño | — (`EN_*`) |
+| `SPECIAL TILE TOUCHED` | `mainloop.h`, cada frame que el centro del jugador está en un tile con el bit 7 (128) de comportamiento | el tile especial |
+| `TILE PUSHED` | `mainloop.h`, después de `move ()`, si se ha empujado un bloque | dónde quedó el bloque |
+| `TILE DESTROYED` | `break_wall ()`, al romperse el tile | el tile roto |
+| `TIMER ZERO` | `mainloop.h`, cuando el temporizador llega a 0 (con `SHOW_TIMER_OVER`, después del cartel) | — |
+
+Las secciones de pantalla sólo se ejecutan si `n_pant` es menor que el `ROOMS`
+del script (va en la entrada 15 del índice). `OPANT` vale, durante las
+secciones `ENTERING`, la pantalla de la que se viene (`0xFF` al empezar). Si un
+script de `ENTERING` cambia de pantalla (`WARP TO`, `NPANT = n`), la nueva se
+pinta en el frame siguiente. `PARAM` vale `0xFF` al entrar en una sección.
+
+`WIN GAME` hace que se supere el nivel (o el juego); con
+`HOOK_WIN_CONDITION` en `custom.h` también. `GAME OVER` termina la partida.
+
+### 19.4 Juegos con niveles
+
+Con `COMPRESSED_LEVELS` cada nivel tiene su script. Se compilan todos juntos
+(`scripts.txt`) y cada `.spt.bin` se comprime y se pone en `librarian.txt`
+como un recurso más. La tabla de niveles (`levelset.h`) lleva el recurso del
+script en el último campo:
+
+```c
+LEVEL levels [MAX_LEVELS] = {
+	// bundle      tileset        spriteset      música  script
+	{ RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 2,      RES_SCRIPT1C },
+	{ RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   3,      NO_RESOURCE },
+};
+```
+
+`prepare_level ()` descomprime el script en `msc_buffer`
+(`MSC_SCRIPT_MAX_SIZE` bytes, por debajo de 0xC000); un nivel sin script se
+queda con un índice vacío. Los flags se ponen a 0 al empezar cada nivel.
+`tests/levels` es un ejemplo (`SCRIPTED=1 tests/levels/run.sh`). Ver también
+`docs/formato-niveles.md`.
+
+Sin niveles se usa `msc_scripts [0]`. Un juego con varios scripts pero sin
+niveles puede cambiar `msc_script` desde `custom.h`
+(`msc_script = msc_scripts [SCRIPT_OTRO];`).
+
+### 19.5 Diferencias de comportamiento con MK1 v3.2
+
+* `PRINT TILE` usa coordenadas de carácter de pantalla (como en v3.2).
+* `WARP TO` y escribir `PX`, `PY` colocan al jugador en coma fija 8.8; no hay
+  que actualizar nada a mano.
+* `RECHARGE` pone `player.life = PLAYER_LIFE`.
+* `PAUSE n` espera `n` frames de 1/50 s (en CPC, 6 interrupciones por frame).
+* `SHOW` llama a `sp_UpdateNow ()`.
+* `HIDE_HOTSPOTS` y `DONT_MAKE_FANTIES` son de cada pantalla (vuelven a 0 al
+  entrar).
+* En una `SUB`, `WIN GAME`, `GAME OVER` y `RERUN` terminan también la sección
+  que la llamó (en v3.2 sólo terminaban la `SUB`).
+* No hay modo `jumptable`: el índice tiene siempre `16 + 2 * ROOMS` entradas.
+
+### 19.6 `extern.h`: EXTERN, TEXT BOX y DIALOG
+
+`extern.h` es del juego. El motor lo incluye sólo si algún script usa
+`EXTERN`, `TEXT BOX` o `DIALOG`, y trae las tres funciones vacías:
+
+```c
+#ifdef MSC_AU_E4
+	void do_extern_action (unsigned char n, unsigned char m) {
+		// EXTERN n, m
+	}
+#endif
+
+#ifdef MSC_AU_E6
+	void text_box (void) {
+		// TEXT BOX "...": el texto, en ASCII, está en msc_text_buf, partido
+		// en líneas de MSC_TEXT_WIDTH caracteres con '\n'.
+	}
+#endif
+
+#ifdef MSC_RV_E6
+	unsigned char dialog_box (void) {
+		// $F = DIALOG "A", "B", "C": las opciones están en msc_options [0],
+		// [1] y [2] ("" si no hay) y cuántas hay en msc_n_options.
+		// Devuelve la elegida: 1, 2 o 3.
+		return 1;
+	}
+#endif
+```
+
+Mostrar el texto es cosa del juego: el motor sólo lo descodifica.
+`tests/script/extern.h` es un ejemplo completo: un recuadro centrado en la
+zona de juego, espera a una tecla, opciones que se eligen con 1, 2 o 3 y
+`redraw_scr ()` para borrarlo.
+
+### 19.7 Coste
+
+El intérprete mínimo (una sección, una condición, una acción) ocupa unos
+750 bytes; con todos los opcodes, unos 4 KB. Los textos van en 5 bits por
+carácter. El bytecode, como en v3.2.
+
+### 19.8 Probarlo
+
+* `tests/script/script.spt` (con `tests/script/extern.h`): `ENTERING`, `PRESS
+  FIRE`, `DECOS`, `SET TILE`, `SUB`/`CALL` con `BREAK`, `RERUN` con `PARAM`,
+  `WARP TO`, `TEXT`, `TEXT BOX` y `DIALOG`. `tests/build.sh zx salida.bin
+  @tests/script/script.spt LINE_OF_TEXT=0 LINE_OF_TEXT_X=1 LINE_OF_TEXT_ATTR=71
+  SCRIPTING_KEY_M`.
+* `tests/script/full.spt`: el resto de secciones y comandos (sólo se
+  compila).
+* `tests/matrix.sh all script`: todas las configuraciones con scripts.
