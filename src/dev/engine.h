@@ -10,25 +10,31 @@
 // ---------------------------------------------------------------------------
 
 unsigned char bufidx (unsigned char x, unsigned char y) {
+	// x + 15 * y = x + (16 - 1) * y = x + 16 * y - y = x + (y << 4) - y.
 	return x + (y << 4) - y;
 }
 
-void attr (char x, char y) {
-	// x + 15 * y = x + (16 - 1) * y = x + 16 * y - y = x + (y << 4) - y.
-	if (x < 0 || y < 0 || x > 14 || y > 9) return 0;
-	return map_attr [bufidx (x, y)];	
+// [FIX v3.100] attr y qtile se declaraban "void" pero devolvían un valor, y
+// cm_two_points se declaraba "unsigned char" sin devolver nada. sccz80 lo
+// traga; un compilador de C estándar no.
+// attr recibe coordenadas sin signo: un valor "negativo" (p.ej. x - 1 con
+// x = 0) da la vuelta a 255 y cae fuera del rango igualmente, así que basta
+// con dos comparaciones en lugar de cuatro.
+
+unsigned char attr (unsigned char x, unsigned char y) {
+	if (x > 14 || y > 9) return 0;
+	return map_attr [bufidx (x, y)];
 }
 
-void qtile (unsigned char x, unsigned char y) {
-	// x + 15 * y = x + (16 - 1) * y = x + 16 * y - y = x + (y << 4) - y.
-	return map_buff [bufidx (x, y)];	
+unsigned char qtile (unsigned char x, unsigned char y) {
+	return map_buff [bufidx (x, y)];
 }
 
-unsigned char cm_two_points (void) {
-	if (cx1 > 14 || cy1 > 9) at1 = 0; 
+void cm_two_points (void) {
+	if (cx1 > 14 || cy1 > 9) at1 = 0;
 	else at1 = map_attr [bufidx (cx1, cy1)];
 
-	if (cx2 > 14 || cy2 > 9) at2 = 0; 
+	if (cx2 > 14 || cy2 > 9) at2 = 0;
 	else at2 = map_attr [bufidx (cx2, cy2)];
 }
 
@@ -97,12 +103,22 @@ signed int addsign (signed int n, signed int value) {
 // Funciones para la disparasión
 // ---------------------------------------------------------------------------
 
+#ifdef BREAKABLE_WALLS
+	// [FIX v3.100] Prototipo: break_wall se usa en mueve_bullets antes de
+	// estar definida.
+	void break_wall (unsigned char x, unsigned char y);
+#endif
+
+#if defined PAUSE_ABORT || defined GET_X_MORE
+	void redraw_scr (void);
+#endif
+
 #ifdef PLAYER_CAN_FIRE
 	void init_bullets (void) {
 		// Inicializa las balas
+		// [FIX v3.100] Sobraba una "}" que cerraba la función antes de tiempo.
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
 			bullets_estado [gpit] = 0;
-		}
 	}
 
 	void fire_bullet (void) {
@@ -293,7 +309,8 @@ void do_hotspots (void) {
 					case 1:
 						#ifdef ONLY_ONE_OBJECT
 							if (player.objs == 0) {
-								player.objs = 1
+								// [FIX v3.100] Faltaba el ";" (sccz80 lo aceptaba en silencio).
+								player.objs = 1;
 								PLAY_SFX (7);
 							} else {
 								PLAY_SFX (4);
@@ -309,15 +326,17 @@ void do_hotspots (void) {
 							PLAY_SFX (7);
 
 							#ifdef GET_X_MORE
-								if (level_data.max_objs > player.objs) {
+								// [FIX v3.100] Usaba level_data.max_objs, que solo existía en
+								// 128K. LEVEL_MAX_OBJS vale para todos los modos.
+								if (LEVEL_MAX_OBJS > player.objs) {
 									print_str (10, 11, 79, spacer);
-									getxmore [5] = '0' + level_data.max_objs - player.objs;
+									getxmore [5] = '0' + LEVEL_MAX_OBJS - player.objs;
 									print_str (10, 12, 79, getxmore);
 									print_str (10, 13, 79, spacer);
 									sp_UpdateNow ();
 									sp_WaitForNoKey ();
 									espera_activa (100);
-									draw_scr_background ();
+									redraw_scr ();		// [FIX v3.100] antes draw_scr_background ()
 								}
 							#endif	
 						#endif
@@ -333,9 +352,11 @@ void do_hotspots (void) {
 
 				#ifdef USE_HOTSPOTS_TYPE_3
 					case 3:
+						// [FIX v3.100] Faltaba cerrar la "{" del if.
 						player.life += PLAYER_REFILL;
 						if (player.life > PLAYER_LIFE) {
 							player.life = PLAYER_LIFE;
+						}
 						PLAY_SFX (9);
 						break;
 				#endif
@@ -351,7 +372,8 @@ void do_hotspots (void) {
 						break;
 				#endif
 
-				#ifdef TIMER_ENABLE
+				// [FIX v3.100] Solo hay recargas de tiempo si se define TIMER_REFILL.
+				#if defined TIMER_ENABLE && defined TIMER_REFILL
 					case 5:
 						if (99 - ctimer.t > TIMER_REFILL) {
 							ctimer.t += TIMER_REFILL;
@@ -385,6 +407,9 @@ void do_hotspots (void) {
 			// Lo quitamos de la pantalla
 			set_map_tile (rdx, rdy, 0, 0);
 
+			// [FIX v3.100] Abrir un cerrojo no gastaba la llave.
+			player.keys --;
+
 			// Buscamos y borramos
 			for (gpit = 0; gpit < MAX_CERROJOS; gpit ++) {
 				if (cerrojos [gpit].np == n_pant &&
@@ -400,11 +425,30 @@ void do_hotspots (void) {
 #endif
 
 #ifdef PLAYER_PUSH_BOXES
+	// [FIX v3.100] x0, y0, x1, y1 no estaban declaradas en ninguna parte.
+	unsigned char x0, y0, x1, y1;
+
 	void move_tile_with_check (void) {
 		// Moves to x0, y0 to x1, y1 if x1, y1 is walkable
-		if ((attr (x1, y1) & 8) == 0) {
+		// [FIX v3.100] El destino tiene que estar dentro de la pantalla: attr ()
+		// devuelve 0 fuera de ella y la caja se salía del mapa.
+		if (x1 < 15 && y1 < 10 && (attr (x1, y1) & 8) == 0) {
+			#if defined ACTIVATE_SCRIPTING && defined ENABLE_PUSHED_SCRIPTING
+				// [FIX v3.100] Los flags de ENABLE_PUSHED_SCRIPTING no se rellenaban.
+				flags [MOVED_TILE_FLAG] = qtile (x1, y1);
+				flags [MOVED_X_FLAG] = x1;
+				flags [MOVED_Y_FLAG] = y1;
+				just_pushed = 1;
+			#endif
 			set_map_tile (x0, y0, 0, 0);
-			set_map_tile (x1, y1, 14, 8);
+			// [FIX v3.100] La caja recupera el comportamiento del tile 14 en lugar de
+			// un 8 fijo (config.h dice que debe ser 10).
+			set_map_tile (x1, y1, 14, comportamiento_tiles [14]);
+			#ifdef FIRE_TO_PUSH
+				// [FIX v3.100] pushed_any nunca se ponía a 1, así que empujar con
+				// FIRE también disparaba.
+				pushed_any = 1;
+			#endif
 			PLAY_SFX (2);
 		}
 	}
@@ -459,8 +503,10 @@ void draw_scr_background (void) {
 
 		#ifdef ENABLE_TILANIMS
 			// Detect tilanims
+			// [FIX v3.100] Se llamaba con (rdx >> 1, rdy >> 1), pero rdx y rdy ya son
+			// coordenadas de tile: los tiles animados salían en la mitad de su sitio.
 			if (rdd >= ENABLE_TILANIMS) {
-				add_tilanim (rdx >> 1, rdy >> 1, rdd);	
+				add_tilanim (rdx, rdy, rdd);
 			}
 		#endif
 			
@@ -502,6 +548,21 @@ void draw_scr_background (void) {
 	#endif
 }
 
+#if defined PAUSE_ABORT || defined GET_X_MORE
+	// [v3.100] Repinta la pantalla actual desde map_buff, sin reiniciar nada.
+	// Antes la pausa usaba draw_scr () y GET_X_MORE draw_scr_background (), que
+	// reconstruyen la pantalla desde el mapa: volvían los muros rotos y las cajas
+	// empujadas, se reiniciaban los enemigos y se repetían los scripts de entrada,
+	// y GET_X_MORE volvía a pintar el objeto recién cogido.
+	void redraw_scr (void) {
+		rdx = rdy = 0;
+		for (gpit = 0; gpit < 150; gpit ++) {
+			draw_coloured_tile (VIEWPORT_X + (rdx << 1), VIEWPORT_Y + (rdy << 1), map_buff [gpit]);
+			rdx ++; if (rdx == 15) { rdx = 0; rdy ++; }
+		}
+	}
+#endif
+
 void draw_scr (void) {
 	#ifdef ENABLE_TILANIMS
 		max_tilanims = 0; 		// Reset animated tiles
@@ -517,9 +578,13 @@ void draw_scr (void) {
 	
 	// Movemos y cambiamos a los enemigos según el tipo que tengan
 
-	enoffsmasi = enoffs = n_pant * 3;
+	enoffs = n_pant * 3;
 
 	for (gpit = 0; gpit < 3; gpit ++) {
+		// [FIX v3.100] enoffsmasi se incrementaba de 3 en 3 dentro de este bucle,
+		// así que RESPAWN_ON_ENTER y el tipo 6 tocaban enemigos de otras pantallas.
+		enoffsmasi = enoffs + gpit;
+
 		en_an_frame [gpit] = 0;
 		en_an_count [gpit] = 3;
 		en_an_state [gpit] = 0;
@@ -533,21 +598,18 @@ void draw_scr (void) {
 		#ifdef RESPAWN_ON_ENTER
 			malotes [enoffsmasi].t &= ~16;
 
-			#ifdef PLAYER_CAN_FIRE
-				#if defined (COMPRESSED_LEVELS) && defined (MODE_128K)
-					malotes [enoffsmasi].life = level_data.enems_life;
-				#else
-					malotes [enoffsmasi].life = ENEMS_LIFE_GAUGE;
-				#endif
+			// [FIX v3.100] Solo si la estructura MALOTE tiene el campo life.
+			#ifdef MALOTE_HAS_LIFE
+				malotes [enoffsmasi].life = LEVEL_ENEMS_LIFE;
 			#endif
 		#endif
 
-		switch (malotes [enoffs + gpit].t) {
+		switch (malotes [enoffsmasi].t) {
 			case 1:
 			case 2:
 			case 3:
 			case 4:
-				en_an_base_frame [gpit] = (malotes [enoffs + gpit].t - 1) << 1;
+				en_an_base_frame [gpit] = (malotes [enoffsmasi].t - 1) << 1;
 				break;
 
 			#ifdef ENABLE_RANDOM_RESPAWN
@@ -577,8 +639,6 @@ void draw_scr (void) {
 			default:
 				en_an_next_frame [gpit] = sprite_18_a;
 		}
-
-		enoffsmasi = enoffsmasi + 3;
 	}
 	
 	// Scripting
@@ -664,7 +724,7 @@ void init_player (void) {
 
 	#ifdef MAX_AMMO
 		#ifdef INITIAL_AMMO
-			player.ammo = INITIAL_AMMO
+			player.ammo = INITIAL_AMMO;		// [FIX v3.100] Faltaba el ";"
 		#else
 			player.ammo = MAX_AMMO;
 		#endif
@@ -694,13 +754,18 @@ void kill_player (unsigned char sound) {
 	player.life --;
 	PLAY_SFX (sound);
 	#ifdef CP_RESET_WHEN_DYING
-		#ifdef CP_RESET_ALSO_FLAGS
-			mem_load ();
-		#else
-			n_pant = sg_pool [MAX_FLAGS];
-			player.x = sg_pool [MAX_FLAGS + 1] << 10;
-			player.y = sg_pool [MAX_FLAGS + 2] << 10;
-		#endif	
+		// [FIX v3.100] Si aún no se ha tocado ningún checkpoint, sg_pool está a
+		// cero y el jugador acababa en la pantalla 0, posición (0, 0).
+		if (sg_saved) {
+			#ifdef CP_RESET_ALSO_FLAGS
+				mem_load ();
+			#else
+				n_pant = sg_pool [SG_NFLAGS];
+				player.x = sg_pool [SG_NFLAGS + 1] << 10;
+				player.y = sg_pool [SG_NFLAGS + 2] << 10;
+			#endif
+			player.vx = player.vy = 0;
+		}
 	#endif
 }
 
@@ -726,7 +791,12 @@ void kill_player (unsigned char sound) {
 				} else {
 					x1 = x0 - 1;
 				}
-	
+
+				// [FIX v3.100] FIRE_TO_PUSH no estaba implementado: había que
+				// comprobar que se pulsa FIRE.
+				#ifdef FIRE_TO_PUSH
+					if ((pad0 & sp_FIRE) == 0)
+				#endif
 				move_tile_with_check ();
 			}
 		#endif
@@ -750,7 +820,10 @@ void kill_player (unsigned char sound) {
 				} else {
 					y1 = y0 - 1;
 				}
-	
+
+				#ifdef FIRE_TO_PUSH
+					if ((pad0 & sp_FIRE) == 0)
+				#endif
 				move_tile_with_check ();
 			}
 		#endif
@@ -763,9 +836,16 @@ void kill_player (unsigned char sound) {
 	}
 #endif
 
-unsigned char move (void) {
+// [FIX v3.100] Se declaraba "unsigned char" pero no devuelve nada.
+void move (void) {
 	
 	pad_read ();			// Leemos el controlador seleccionado.
+
+	// [FIX v3.100] pushed_any se ponía a 0 *después* de las colisiones (que es
+	// donde se empuja), así que nunca valía 1 al llegar al disparo.
+	#ifdef FIRE_TO_PUSH
+		pushed_any = 0;
+	#endif
 	
 	// ---------------------------------------------------------------------------
 	// EJE VERTICAL
@@ -777,7 +857,8 @@ unsigned char move (void) {
 		// La pulsación de las direcciones acelera. Si no se pulsa nada, se decelera.
 
 		//if ( ! ((pad0 & sp_UP) == 0 || (pad0 & sp_DOWN) == 0)) {
-		if ( (pad0 & sp_UP) && (pad & sp_DOWN) ) {
+		// [FIX v3.100] Ponía "pad" en lugar de "pad0".
+		if ( (pad0 & sp_UP) && (pad0 & sp_DOWN) ) {
 			player.facing_v = 0xff;		// Señal de que no pulsamos una dirección vertical
 			if (player.vy > 0) {
 				player.vy -= PLAYER_RX;
@@ -1220,13 +1301,8 @@ unsigned char move (void) {
 		#endif	
 	#endif
 
-	// Establecemos este flag que dice si se empujó algo.
-	// Es necesario si hay que pulsar FIRE para emujar, para que
-	// el jugador no dispare en ese supuesto.
-
-	#ifdef FIRE_TO_PUSH	
-		pushed_any = 0;
-	#endif
+	// pushed_any (FIRE_TO_PUSH) dice si se empujó algo en este frame, para no
+	// disparar a la vez. Ahora se pone a 0 al principio de move ().
 
 	// Disparos
 
@@ -1404,14 +1480,20 @@ unsigned char move (void) {
 // Funciones de los bicharracos
 // ---------------------------------------------------------------------------
 
-#if !defined COMPRESSED_LEVELS && (defined(PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE))
+// [FIX v3.100] init_malotes:
+//  * Tocaba malotes [].life aunque la estructura no tuviera ese campo (solo
+//    existe con MALOTE_HAS_LIFE), lo que rompía PLAYER_KILLS_ENEMIES.
+//  * Ahora también se usa con niveles comprimidos (tras prepare_level).
+#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE) || defined (ENABLE_RANDOM_RESPAWN)
 	void init_malotes (void) {
 		for (gpit = 0; gpit < MAP_W * MAP_H * 3; gpit ++) {
 			// Clear bit 4
 			malotes [gpit].t &= ~16;
 
 			// Restore life
-			malotes [gpit].life = ENEMS_LIFE_GAUGE;
+			#ifdef MALOTE_HAS_LIFE
+				malotes [gpit].life = LEVEL_ENEMS_LIFE;
+			#endif
 
 			// Autokill type 5s for RANDOM RESPAWN (legacy leftout)
 			#ifdef ENABLE_RANDOM_RESPAWN
@@ -1424,21 +1506,23 @@ unsigned char move (void) {
 // Funciones auxiliares custom
 
 #ifdef WALLS_STOP_ENEMIES
-	unsigned char __FASTCALL__ mons_col_sc_x (void) {
-		gpaux = gpen_xx + (malotes [enoffsmasi].mx > 0);
+	// [FIX v3.100] Se consultaba malotes [enoffsmasi] (posición del frame
+	// anterior) en lugar de las variables de trabajo _en_*.
+	unsigned char mons_col_sc_x (void) {
+		gpaux = gpen_xx + (_en_mx > 0);
 		#ifdef EVERYTHING_IS_A_WALL
-			return (attr (gpaux, gpen_yy) || ((malotes [enoffsmasi].y & 15) && attr (gpaux, gpen_yy + 1)));
-		#else	
-			return (attr (gpaux, gpen_yy) & 8 || ((malotes [enoffsmasi].y & 15) && attr (gpaux, gpen_yy + 1) & 8));
+			return (attr (gpaux, gpen_yy) || ((_en_y & 15) && attr (gpaux, gpen_yy + 1)));
+		#else
+			return ((attr (gpaux, gpen_yy) & 8) || ((_en_y & 15) && (attr (gpaux, gpen_yy + 1) & 8)));
 		#endif
 	}
-		
-	unsigned char __FASTCALL__ mons_col_sc_y (void) {
-		gpaux = gpen_yy + (malotes [enoffsmasi].my > 0);
+
+	unsigned char mons_col_sc_y (void) {
+		gpaux = gpen_yy + (_en_my > 0);
 		#ifdef EVERYTHING_IS_A_WALL
-			return (attr (gpen_xx, gpaux) || ((malotes [enoffsmasi].x & 15) && attr (gpen_xx + 1, gpaux)));
-		#else	
-			return (attr (gpen_xx, gpaux) & 8 || ((malotes [enoffsmasi].x & 15) && attr (gpen_xx + 1, gpaux) & 8));
+			return (attr (gpen_xx, gpaux) || ((_en_x & 15) && attr (gpen_xx + 1, gpaux)));
+		#else
+			return ((attr (gpen_xx, gpaux) & 8) || ((_en_x & 15) && (attr (gpen_xx + 1, gpaux) & 8)));
 		#endif
 	}
 #endif
@@ -1469,42 +1553,78 @@ unsigned char move (void) {
 			if (player.saltando == 0)
 		#endif
 		player.vy = 0;
-		ptgmy = _en_mx * 64;
+		// [FIX v3.100] Ponía _en_mx: el arrastre vertical depende de _en_my.
+		ptgmy = _en_my << 6;
 	}
 #endif
 
+// [FIX v3.100] Un enemigo muere. Antes este código estaba repetido (con
+// diferencias) en la muerte por pisotón y por disparo, y la cuenta de
+// enemigos matados se incrementaba dos veces por disparo.
+#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE)
+void enemy_dies (void) {
+	en_an_next_frame [gpit] = sprite_17_a;		// Explosión
+	en_an_state [gpit] = GENERAL_DYING;
+	en_an_count [gpit] = 8;
+	player.killed ++;
+
+	#ifdef ENABLE_RANDOM_RESPAWN
+		if (en_an_fanty_activo [gpit]) {
+			// Muere el fanty; el enemigo original ya estaba muerto.
+			en_an_fanty_activo [gpit] = 0;
+			return;
+		}
+	#endif
+
+	#ifdef ENABLE_PURSUERS
+		if (_en_t == 7) {
+			// Los perseguidores reaparecen al cabo de un rato.
+			en_an_alive [gpit] = 0;
+			en_an_dead_row [gpit] = DEATH_COUNT_EXPRESSION;
+			return;
+		}
+	#endif
+
+	_en_t |= 16;
+}
+#endif
+
 void mueve_bicharracos (void) {
-	
+
 	// Init some flags
 	tocado = 0; player.gotten = 0;
 
+	// [FIX v3.100] El arrastre de plataformas se ponía a 0 *dentro* del bucle de
+	// enemigos, así que solo funcionaba si la plataforma era el tercer enemigo.
+	ptgmx = ptgmy = 0;
+
 	for (gpit = 0; gpit < 3; gpit ++) {
 
-		// Platforms not carrying player
-		ptgmx = ptgmy = 0;
-		
 		// Enemies that are alive and moving will set active to 1 and will collide, etc
 		active = 0;
 
 		enoffsmasi = enoffs + gpit;
 
 		// Extract values from the array
-		allpurposepuntero = (unsigned char *) malotes + enoffsmasi;
+		// [FIX v3.100] Era "(unsigned char *) malotes + enoffsmasi". sccz80 aplica
+		// la suma antes del cast (multiplica por sizeof (MALOTE)), pero en C
+		// estándar el cast va primero y se suman bytes. Con paréntesis funciona
+		// igual en ambos.
+		allpurposepuntero = (unsigned char *) (malotes + enoffsmasi);
 		_en_x = *allpurposepuntero ++;
 		_en_y = *allpurposepuntero ++;
 		_en_x1 = *allpurposepuntero ++;
 		_en_y1 = *allpurposepuntero ++;
 		_en_x2 = *allpurposepuntero ++;
 		_en_y2 = *allpurposepuntero ++;
-		_en_mx = (signed) *allpurposepuntero ++;
-		_en_my = (signed) *allpurposepuntero ++;
+		// [v3.100] Sin cast: sccz80 aplica "(signed char) *p ++" al puntero (le
+		// extiende el signo al byte bajo) y lo corrompe. La asignación a un
+		// signed char ya hace la conversión, en sccz80 y en C estándar.
+		_en_mx = *allpurposepuntero ++;
+		_en_my = *allpurposepuntero ++;
 		_en_t = *allpurposepuntero ++;
-		#if ((defined PLAYER_CAN_FIRE || defined ENABLE_SWORD) && ENEMS_LIFE_GAUGE > 1) || defined FORCE_ENEMS_LIFE
+		#ifdef MALOTE_HAS_LIFE
 			_en_life = *allpurposepuntero;
-		#endif
-
-		#ifdef ENABLE_RANDOM_RESPAWN
-			if (en_an_fanty_activo [gpit]) _en_t = 5;
 		#endif
 
 		// Make explosion
@@ -1514,14 +1634,23 @@ void mueve_bicharracos (void) {
 			if (en_an_count [gpit] == 0) {
 				en_an_state [gpit] = 0;
 				en_an_next_frame [gpit] = sprite_18_a;
-				continue;
 			}
+			continue;
 		}
+
+		#ifdef ENABLE_RANDOM_RESPAWN
+			// [FIX v3.100] Antes se hacía _en_t = 5 y luego se guardaba en el
+			// array, perdiendo el tipo (y el "muerto") del enemigo original.
+			// Ahora el fanty usa rdt como tipo efectivo y _en_t no se toca.
+			rdt = en_an_fanty_activo [gpit] ? 5 : _en_t;
+		#else
+			#define rdt _en_t
+		#endif
 
 		// Update enemies upon type
 		// gpen_cx / gpen_cy will be used for collision later on
 
-		switch (_en_t) {
+		switch (rdt) {
 
 			// Linear enemies
 
@@ -1538,7 +1667,7 @@ void mueve_bicharracos (void) {
 				gpen_xx = _en_x >> 4;
 				gpen_yy = _en_y >> 4;
 
-				// Turn around? 
+				// Turn around?
 
 				if (_en_x == _en_x1 || _en_x == _en_x2
 					#ifdef WALLS_STOP_ENEMIES
@@ -1566,7 +1695,7 @@ void mueve_bicharracos (void) {
 			#ifdef ENABLE_RANDOM_RESPAWN
 				case 5:
 					active = 1;
-					
+
 					if (player_hidden ()) {
 						en_an_vx [gpit] = limit (
 							en_an_vx [gpit] + addsign (en_an_x [gpit] - player.x, FANTY_A >> 1),
@@ -1582,20 +1711,24 @@ void mueve_bicharracos (void) {
 							en_an_vy [gpit] + addsign (player.y - en_an_y [gpit], FANTY_A),
 							-FANTY_MAX_V, FANTY_MAX_V);
 					}
-									
+
 					en_an_x [gpit] = limit (en_an_x [gpit] + en_an_vx [gpit], 0, 14336);
 					en_an_y [gpit] = limit (en_an_y [gpit] + en_an_vy [gpit], 0, 9216);
 
 					gpen_cx = en_an_x [gpit] >> 6;
 					gpen_cy = en_an_y [gpit] >> 6;
-								
+
 					break;
 			#endif
 
 			#ifdef ENABLE_CUSTOM_TYPE_6
-				case 6:	
+				case 6:
 					active = 1;
-					rdd = distance (gpx, gpy, en_an_x [gpit] >> 6, en_an_y [gpit] >> 6);
+					// [FIX v3.100] gpen_cx / gpen_cy se usaban en "retreating" antes de
+					// calcularlos, con el valor del enemigo anterior.
+					gpen_cx = en_an_x [gpit] >> 6;
+					gpen_cy = en_an_y [gpit] >> 6;
+					rdd = distance (gpx, gpy, gpen_cx, gpen_cy);
 
 					switch (en_an_state [gpit]) {
 						case TYPE_6_IDLE:
@@ -1612,25 +1745,26 @@ void mueve_bicharracos (void) {
 								en_an_vy [gpit] = limit (
 									en_an_vy [gpit] + addsign (player.y - en_an_y [gpit], FANTY_A),
 									-FANTY_MAX_V, FANTY_MAX_V);
-									
+
 								en_an_x [gpit] = limit (en_an_x [gpit] + en_an_vx [gpit], 0, 14336);
 								en_an_y [gpit] = limit (en_an_y [gpit] + en_an_vy [gpit], 0, 9216);
 							}
 							break;
 						case TYPE_6_RETREATING:
-							en_an_x [gpit] += addsign (_en_x - gpen_cx, 64);
-							en_an_y [gpit] += addsign (_en_y - gpen_cy, 64);
-							
+							// Vuelve a su posición original (_en_x, _en_y)
+							if (gpen_cx != _en_x) en_an_x [gpit] += addsign (_en_x - gpen_cx, 64);
+							if (gpen_cy != _en_y) en_an_y [gpit] += addsign (_en_y - gpen_cy, 64);
+
 							if (rdd <= SIGHT_DISTANCE)
 								en_an_state [gpit] = TYPE_6_PURSUING;
-							break;						
+							break;
 					}
 					gpen_cx = en_an_x [gpit] >> 6;
 					gpen_cy = en_an_y [gpit] >> 6;
-					if (en_an_state [gpit] == TYPE_6_RETREATING && 
-						gpen_cx == _en_x && 
+					if (en_an_state [gpit] == TYPE_6_RETREATING &&
+						gpen_cx == _en_x &&
 						gpen_cy == _en_y
-						) 
+						)
 						en_an_state [gpit] = TYPE_6_IDLE;
 					break;
 			#endif
@@ -1638,36 +1772,37 @@ void mueve_bicharracos (void) {
 			#ifdef ENABLE_PURSUERS
 				case 7:
 					switch (en_an_alive [gpit]) {
-						
+
 						// State: Dead
 						case 0:
 							if (en_an_dead_row [gpit] == 0) {
 								_en_x = _en_x1;
 								_en_y = _en_y1;
-								
+
 								en_an_alive [gpit] = 1;
 								en_an_rawv [gpit] = 1 << (rand () % 5);
-								
+
 								if (en_an_rawv [gpit] > 4) en_an_rawv [gpit] = 2;
 								en_an_dead_row [gpit] = 11 + (rand () & 7);
-								
-								#if defined(PLAYER_KILLS_ENEMIES) || defined(PLAYER_CAN_FIRE)							
-									malotes [enoffsmasi].life = ENEMS_LIFE_GAUGE;
-								#endif							
+
+								// [FIX v3.100] Solo si la estructura tiene el campo life.
+								#ifdef MALOTE_HAS_LIFE
+									_en_life = LEVEL_ENEMS_LIFE;
+								#endif
 							} else {
 								en_an_dead_row [gpit] --;
 							}
 							break;
-						
+
 						// State: Appearing
 						case 1:
 
 							if (en_an_dead_row [gpit] == 0) {
 								#ifdef TYPE_7_FIXED_SPRITE
 									en_an_base_frame [gpit] = (TYPE_7_FIXED_SPRITE - 1) << 1;
-								#else							
+								#else
 									en_an_base_frame [gpit] = (rand () & 3) << 1;
-								#endif							
+								#endif
 								en_an_alive [gpit] = 2;
 							} else {
 								en_an_dead_row [gpit] --;
@@ -1679,41 +1814,46 @@ void mueve_bicharracos (void) {
 						case 2:
 							active = 1;
 							if (player.estado == EST_NORMAL) {
+								// [FIX v3.100] Con WALLS_STOP_ENEMIES se hacía "_en_x = _en_x"
+								// (no hacía nada) y "_en_y = _em_y" (no compilaba). Ahora se
+								// deshace el movimiento si choca.
+								rda = _en_x;
 								_en_mx = (signed char) (addsign ((gpx & 0xFC) - _en_x, en_an_rawv [gpit]));
 								_en_x += _en_mx;
-								
+
 								gpen_xx = _en_x >> 4;
 								gpen_yy = _en_y >> 4;
 								#ifdef WALLS_STOP_ENEMIES
-									if (mons_col_sc_x ()) _en_x = _en_x;
+									if (mons_col_sc_x ()) _en_x = rda;
 								#endif
-								
+
+								rda = _en_y;
 								_en_my = (signed char) (addsign ((gpy & 0xFC) - _en_y, en_an_rawv [gpit]));
 								_en_y += _en_my;
 								gpen_xx = _en_x >> 4;
 								gpen_yy = _en_y >> 4;
 								#ifdef WALLS_STOP_ENEMIES
-									if (mons_col_sc_y ()) _en_y = _em_y;
+									if (mons_col_sc_y ()) _en_y = rda;
 								#endif
-
-								en_cx = _en_x;
-								en_cy = _en_y;
 							}
+							// [FIX v3.100] Ponía en_cx / en_cy, que no existen.
+							gpen_cx = _en_x;
+							gpen_cy = _en_y;
 					}
-					break;	
+					break;
 			#endif
 		}
-		
-		if (active) {			
+
+		if (active) {
 			// Animate
 			if((maincounter & 3) == 0) en_an_frame [gpit] ^= 1;
 			en_an_next_frame [gpit] = enem_frames [en_an_base_frame [gpit] + en_an_frame [gpit]];
-			
+
 			// Collide with player
-			
+
 			// Plataformas móviles
 			#ifndef PLAYER_MOGGY_STYLE
-				if (_en_t == 4) {
+				if (rdt == 4) {
 					// If (horizontally) within range...
 					if (gpx + 15 >= _en_x && gpx <= _en_x + 15) {
 
@@ -1732,43 +1872,42 @@ void mueve_bicharracos (void) {
 						}
 
 						// Horizontal
-						if (_en_mx != 0 && gpy >= _en_y - 16 && gpy <= _en_y - 11 && player.vy >= 0) {
+						if (_en_mx != 0 && gpy + 16 >= _en_y && gpy + 11 <= _en_y && player.vy >= 0) {
 							platform_get_player ();
-							ptgmx = _en_x * 64;
+							// [FIX v3.100] Ponía _en_x * 64 (la posición, no la velocidad).
+							ptgmx = _en_mx << 6;
 						}
 					}
 				} else
 			#endif
-			{	
+			{
 				// In genital, _en_t = any; in lateral, _en_t != 4
 				if (!tocado && collide (gpx, gpy, gpen_cx, gpen_cy) && player.estado == EST_NORMAL) {
 
 					// Colisión especial: pisar enemigo
 
 					#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_STOMPS_ON_ENEMIES
+						// [FIX v3.100] Se comparaba con _en_y en lugar de gpen_cy, que es
+						// la posición real (distinta para fanties y tipo 6).
 						if (
-							gpy < _en_y - 2 && player.vy >= 0 
+							gpy + 2 < gpen_cy && player.vy >= 0
 							#ifdef PLAYER_MIN_KILLABLE
-								&& _en_t >= PLAYER_MIN_KILLABLE
+								&& rdt >= PLAYER_MIN_KILLABLE
 							#endif
 							#ifdef PLAYER_CAN_KILL_FLAG
 								&& flags [PLAYER_CAN_KILL_FLAG]
 							#endif
 						) {
 							#ifdef PLAYER_KILLS_ENEMIES
-								en_an_next_frame [gpit] = sprite_17_a;
+								enemy_dies ();
 								update_this_enemy ();
-								sp_UpdateNow ();			
+								sp_UpdateNow ();
 								PLAY_SFX (5); 				// Spectrum 48K friendly (pause)
-								en_an_state [gpit] = GENERAL_DYING;
-								en_an_count [gpit] = 8;
-								_en_t |= 16;
-								player.killed ++;
-							#else 
+							#else
 								PLAY_SFX (3);
 							#endif
 
-							gpy = _en_y >= 16 ? _en_y - 16 : 0;
+							gpy = gpen_cy >= 16 ? gpen_cy - 16 : 0;
 							player.y = gpy << 6;
 							player.vy = -256;
 
@@ -1804,10 +1943,10 @@ void mueve_bicharracos (void) {
 									player.vy = addsign (gpy - gpen_cy, abs (_en_my) << 8);
 								}
 							#else
-								#ifdef RANDOM_RESPAWN
-									if (en_an_fanty_activo [gpit]) {
+								#ifdef ENEMS_HAVE_FREE_COORDS
+									if (rdt == 5 || rdt == 6) {
 										player.vx = en_an_vx [gpit] + en_an_vx [gpit];
-										player.vy = en_an_vy [gpit] + en_an_vy [gpit];	
+										player.vy = en_an_vy [gpit] + en_an_vy [gpit];
 									} else
 								#endif
 								{
@@ -1831,82 +1970,69 @@ void mueve_bicharracos (void) {
 			#ifdef PLAYER_CAN_FIRE
 
 				#ifdef FIRE_MIN_KILLABLE
-					if (_en_t >= FIRE_MIN_KILLABLE)
+					if (rdt >= FIRE_MIN_KILLABLE)
 				#endif
-				{				
+				{
 					for (gpjt = 0; gpjt < MAX_BULLETS; gpjt ++) {
 						if (bullets_estado [gpjt]) {
-							blx = bullets_x [gpjt] + 3; 
+							blx = bullets_x [gpjt] + 3;
 							bly = bullets_y [gpjt] + 3;
 							if (blx >= gpen_cx && blx <= gpen_cx + 15 && bly >= gpen_cy && bly <= gpen_cy + 15) {
-								#ifdef RANDOM_RESPAWN		
-									if (en_an_fanty_activo [gpit]) {
-										en_an_vx [gpit] += addsign (bullets_mx [gpjt], 128);
-									}
-								#endif
-								#ifdef ENABLE_CUSTOM_TYPE_6
-									if (malotes [enoffsmasi].t == 6) {
-										en_an_vx [gpit] += addsign (bullets_mx [gpjt], 128);
-									}
-								#endif
-
-								en_an_morido [gpit] = 1;
 								bullets_estado [gpjt] = 0;
+								en_an_morido [gpit] = 1;		// Suena al final del frame
 
-								en_an_next_frame [gpit] = sprite_17_a;
-								
-								en_an_state [gpit] = GENERAL_DYING;
-								en_an_count [gpit] = 8;
-								_en_t |= 16;
-								player.killed ++;
-
-								#ifndef PLAYER_MOGGY_STYLE							
-									if (malotes [enoffsmasi].t != 4) 
+								// Los que se mueven libremente reculan
+								#ifdef ENEMS_HAVE_FREE_COORDS
+									if (rdt == 5 || rdt == 6) {
+										en_an_vx [gpit] += addsign (bullets_mx [gpjt], 128);
+									}
 								#endif
-								malotes [enoffsmasi].life --;
-							
-								if (malotes [enoffsmasi].life == 0) {
-									update_this_enemy ();
-									sp_UpdateNow ();
 
-									PLAY_SFX (5);
-
-									en_an_next_frame [gpit] = sprite_18_a;
-									if (_en_t != 7) malotes [enoffsmasi].t |= 16;
-									player.killed ++;
-									
-									#ifdef RANDOM_RESPAWN								
-										en_an_fanty_activo [gpit] = 0;
-										malotes [enoffsmasi].life = FANTIES_LIFE_GAUGE;
+								// [FIX v3.100] Antes cada impacto mataba al enemigo (lo ponía
+								// en GENERAL_DYING y marcaba t |= 16) antes de mirar su vida,
+								// así que ENEMS_LIFE_GAUGE no servía de nada; y el life--
+								// se hacía sobre el array y luego se machacaba con _en_life.
+								// Las plataformas (tipo 4, vista lateral) son invulnerables.
+								#ifndef PLAYER_MOGGY_STYLE
+									if (rdt != 4)
+								#endif
+								{
+									#ifdef MALOTE_HAS_LIFE
+										if (_en_life) _en_life --;
+										if (_en_life == 0)
 									#endif
-									#ifdef ENABLE_PURSUERS
-										if (_en_t == 7) {
-											en_an_alive [gpit] = 0;
-											en_an_dead_row [gpit] = DEATH_COUNT_EXPRESSION;
-										}
-									#endif
+									{
+										enemy_dies ();
+									}
 								}
+								break;
 							}
 						}
 					}
 				}
 			#endif
+		}
 
-			#ifdef RANDOM_RESPAWN
-				// Activar fanty
-
-				if (malotes [enoffsmasi].t > 15 && en_an_fanty_activo [gpit] == 0 && (rand () & 31) == 1) {
-					en_an_fanty_activo [gpit] = 1;
-					if (player.y > 5120) en_an_y [gpit] = -1024; else en_an_y [gpit] = 10240;
-					en_an_x [gpit] = (rand () % 240 - 8) << 6;
-					en_an_vx [gpit] = en_an_vy [gpit] = 0;
-					en_an_base_frame [gpit] = 4;
-				}
-			#endif
-		} 
+		#ifdef ENABLE_RANDOM_RESPAWN
+			// Activar fanty
+			// [FIX v3.100] Esto estaba dentro de "if (active)", pero un enemigo
+			// muerto nunca está activo, así que los fanties no aparecían nunca.
+			if (_en_t > 15 && en_an_fanty_activo [gpit] == 0 && en_an_state [gpit] != GENERAL_DYING && (rand () & 31) == 1) {
+				en_an_fanty_activo [gpit] = 1;
+				if (player.y > 5120) en_an_y [gpit] = -1024; else en_an_y [gpit] = 10240;
+				en_an_x [gpit] = (rand () % 240 - 8) << 6;
+				en_an_vx [gpit] = en_an_vy [gpit] = 0;
+				en_an_base_frame [gpit] = 4;
+				#ifdef MALOTE_HAS_LIFE
+					_en_life = FANTIES_LIFE_GAUGE;
+				#endif
+			}
+		#else
+			#undef rdt
+		#endif
 
 		// Put stuff back into the array
-		allpurposepuntero = (unsigned char *) malotes + enoffsmasi;
+		allpurposepuntero = (unsigned char *) (malotes + enoffsmasi);
 		*allpurposepuntero ++ = _en_x;
 		*allpurposepuntero ++ = _en_y;
 		*allpurposepuntero ++ = _en_x1;
@@ -1916,7 +2042,7 @@ void mueve_bicharracos (void) {
 		*allpurposepuntero ++ = _en_mx;
 		*allpurposepuntero ++ = _en_my;
 		*allpurposepuntero ++ = _en_t;
-		#if ((defined PLAYER_CAN_FIRE || defined ENABLE_SWORD) && ENEMS_LIFE_GAUGE > 1) || defined FORCE_ENEMS_LIFE
+		#ifdef MALOTE_HAS_LIFE
 			*allpurposepuntero = _en_life;
 		#endif
 	}

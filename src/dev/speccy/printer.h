@@ -99,6 +99,10 @@ void system_init (void) {
 #else
 	// Draw packed tile (with special effects)
 
+	#if defined USE_AUTO_SHADOWS && defined USE_AUTO_TILE_SHADOWS
+		#error "USE_AUTO_SHADOWS y USE_AUTO_TILE_SHADOWS son incompatibles"
+	#endif
+
 	void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
 		px = x; py = y; pt = t;
 		
@@ -112,7 +116,9 @@ void system_init (void) {
 				sp_PrintAtInv (py, px + 1, attr (pxx, pyy - 1) == 8 ? (pptr[1] & 7)-1 : pptr [1], pt + 1);
 				sp_PrintAtInv (py + 1, px, attr (pxx - 1, pyy) == 8 ? (pptr[2] & 7)-1 : pptr [2], pt + 2);
 				sp_PrintAtInv (py + 1, px + 1, pptr [3], pt + 3);
-			} else {
+			// [FIX v3.100] Ponía "} else {" y esa llave no se cerraba nunca: el bloque
+			// por defecto de abajo ya es la rama else.
+			} else
 		#endif
 
 		#ifdef USE_AUTO_TILE_SHADOWS
@@ -221,8 +227,15 @@ void render_sprites (void) {
 	// Render enemies
 
 	for (gpit = 0; gpit < 3; gpit ++) {
-		#if defined (RANDOM_RESPAWN) || defined (ENABLE_CUSTOM_TYPE_6)
-			if (en_an_fanty_activo [gpit] || malotes [enoffs + gpit].t == 6) {
+		// [FIX v3.100] Usaba RANDOM_RESPAWN (que nadie define) y miraba
+		// en_an_fanty_activo aunque solo existe con ENABLE_RANDOM_RESPAWN.
+		#ifdef ENEMS_HAVE_FREE_COORDS
+			if (
+				#ifdef ENABLE_RANDOM_RESPAWN
+					en_an_fanty_activo [gpit] ||
+				#endif
+				(malotes [enoffs + gpit].t & 15) == 6	// también muerto (explosión en su sitio)
+			) {
 				_en_x = en_an_x [gpit] >> 6;
 				_en_y = en_an_y [gpit] >> 6;
 			} else 

@@ -13,9 +13,13 @@
 #define BASE_TILEMAP 		0x0100
 #define WYZ_SONG_BUFFER 	0x8800
 #define BASE_SUPERBUFF  	0x9000
+// Colocación de variables en direcciones fijas (extensión de sccz80).
+#define AT(a)				@ (a)
+
 #define BASE_ROOM_BUFFERS	0xC000 + 0x600
 #define BASE_DIRTY_CELLS 	0xC800 + 0x600
 #define BASE_ARRAYS 		0xD000 + 0x600
+#define BASE_BRK_BUFF		0xD080 + 0x600	// muros rompibles: 150 bytes
 #define BASE_WYZ 			0xDF80
 #define BASE_SPRITES 		0xE000 + 0x600
 #define BASE_CUSTOM 		0xF000 + 0x600
@@ -152,7 +156,18 @@ extern unsigned char def_keys_joy [0];
 
 // Handy defines
 
+// [v3.100] Formato: ((0x40 | línea de la matriz) << 8) | bit
+#ifdef USE_TWO_BUTTONS
+	// [FIX v3.100] En CPC no estaban definidas (USE_TWO_BUTTONS no compilaba).
+	// Teclas fijas: saltar = Q, disparar = ESPACIO.
+	unsigned int key_jump = 0x4808;
+	unsigned int key_fire = 0x4580;
+#endif
+
 #define KEY_M 0x4440
+#define KEY_H 0x4510
+#define KEY_Y 0x4508
+#define KEY_Z 0x4880
 #define KEY_S 0x4710
 
 #define KEY_1 0x4801
@@ -195,5 +210,5 @@ typedef struct sprite {
 
 // Main sprite array. Can contain as many as 16 sprites.
 
-SPR sp_sw [SW_SPRITES_ALL] 					@ BASE_SPRITES;
+SPR sp_sw [SW_SPRITES_ALL] 					AT (BASE_SPRITES);
 

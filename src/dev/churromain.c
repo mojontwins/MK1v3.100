@@ -129,11 +129,13 @@
 	#include "tilanim.h"
 #endif
 
-#include "engine.h"
-
+// [FIX v3.100] savegame.h iba después de engine.h, pero kill_player (en
+// engine.h) usa sg_saved y sg_pool.
 #ifdef ENABLE_CHECKPOINTS
 	#include "savegame.h"
 #endif
+
+#include "engine.h"
 
 #include "mainloop.h"
 

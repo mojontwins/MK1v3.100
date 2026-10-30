@@ -522,7 +522,8 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
 
 #ifndef DEACTIVATE_OBJECTS
 	void draw_objs () {
-		#ifdef ONLY_ONE_OBJECT
+		// [FIX v3.100] Como en ZX: el icono y flags [OBJECT_COUNT] solo con scripting.
+		#if defined(ONLY_ONE_OBJECT) && defined(ACTIVATE_SCRIPTING)
 			if (player.objs) {
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X, 135, 132);
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X + 1, 135, 133);
@@ -606,8 +607,15 @@ void render_sprites (void) {
 	// Render enemies
 
 	for (gpit = 0; gpit < 3; gpit ++) {
-		#if defined (RANDOM_RESPAWN) || defined (ENABLE_CUSTOM_TYPE_6)
-			if (en_an_fanty_activo [gpit] || malotes [enoffs + gpit].t == 6) {
+		// [FIX v3.100] Usaba RANDOM_RESPAWN (que nadie define) y miraba
+		// en_an_fanty_activo aunque solo existe con ENABLE_RANDOM_RESPAWN.
+		#ifdef ENEMS_HAVE_FREE_COORDS
+			if (
+				#ifdef ENABLE_RANDOM_RESPAWN
+					en_an_fanty_activo [gpit] ||
+				#endif
+				(malotes [enoffs + gpit].t & 15) == 6	// también muerto (explosión en su sitio)
+			) {
 				_en_x = en_an_x [gpit] >> 6;
 				_en_y = en_an_y [gpit] >> 6;
 			} else 
@@ -683,6 +691,19 @@ void select_joyfunc (void) {
 
 void unpack_screen (unsigned char *src) {
 	unpack (src, (unsigned char *)(BASE_SUPERBUFF));
+}
+
+// [v3.100] sp_KeyPressed no existía en CPC, así que SCRIPTING_KEY_M,
+// PAUSE_ABORT, MSC_MAXITEMS y los checkpoints no compilaban.
+// key = ((0x40 | línea) << 8) | bit. Devuelve distinto de 0 si está pulsada.
+unsigned int __FASTCALL__ sp_KeyPressed (unsigned int key) {
+	#asm
+			ld  a, h
+			call cpc_TestKeyboard 	; A = bits pulsados de la línea (1 = pulsada)
+			and l
+			ld  l, a
+			ld  h, 0
+	#endasm
 }
 
 void sp_WaitForNoKey () {

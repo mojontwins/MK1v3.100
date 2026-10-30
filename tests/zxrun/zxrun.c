@@ -13,6 +13,7 @@
  *     -o PREFIJO    prefijo de las capturas: PREFIJO_FFFFF.png (shot)
  *     -h            imprimir hash de pantalla en cada captura
  *     -p PC         avisa si la CPU ejecuta en esta dirección (detector de "colgado")
+ *     -d DIR,LEN    al terminar, vuelca LEN bytes de memoria desde DIR (repetible)
  *
  * Teclas: un carácter (0-9, a-z, ' '=espacio, '\n'=enter escrito como "ent"),
  * seguido de + (pulsar) o - (soltar). Ejemplo: "60:1+,62:1-,100:p+,140:p-".
@@ -89,6 +90,7 @@ static void parse_keys(const char *s) {
 }
 
 int main(int argc, char **argv) {
+	int dumps[64][2], ndumps = 0;
 	const char *bin = NULL, *prefix = "shot"; int addr = 24200, frames = 500, hash = 0, watch = -1;
 	for (int i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-a")) addr = atoi(argv[++i]);
@@ -97,6 +99,7 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[i], "-s")) { char *p = argv[++i]; while (*p) { shots[nshots++] = atoi(p); while (*p && *p != ',') p++; if (*p) p++; } }
 		else if (!strcmp(argv[i], "-o")) prefix = argv[++i];
 		else if (!strcmp(argv[i], "-h")) hash = 1;
+		else if (!strcmp(argv[i], "-d")) { char *c; dumps[ndumps][0] = (int)strtol(argv[++i], &c, 0); dumps[ndumps][1] = (*c == ',') ? (int)strtol(c + 1, NULL, 0) : 16; ndumps++; }
 		else if (!strcmp(argv[i], "-p")) watch = (int)strtol(argv[++i], NULL, 0);
 		else bin = argv[i];
 	}
@@ -133,5 +136,12 @@ int main(int argc, char **argv) {
 		}
 	}
 	(void)si;
+	for (int d = 0; d < ndumps; d++) {
+		for (int a = 0; a < dumps[d][1]; a++) {
+			if ((a & 15) == 0) printf("%s%04X:", a ? "\n" : "", (dumps[d][0] + a) & 0xffff);
+			printf(" %02X", rd((uint16_t)(dumps[d][0] + a)));
+		}
+		printf("\n");
+	}
 	return 0;
 }

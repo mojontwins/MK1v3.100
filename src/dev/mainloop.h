@@ -354,9 +354,10 @@ void main (void) {
 						#endif				
 						saca_a_todo_el_mundo_de_aqui ();
 						pause_screen ();
-						while (!sp_KeyPressed (key_h));
+						// [FIX v3.100] Ponía key_h (en minúsculas), que no existe.
+						while (!sp_KeyPressed (KEY_H));
 						sp_WaitForNoKey ();
-						draw_scr ();
+						redraw_scr ();		// [FIX v3.100] antes draw_scr ()
 						
 						#ifdef MODE_128K
 							#ifdef COMPRESSED_LEVELS

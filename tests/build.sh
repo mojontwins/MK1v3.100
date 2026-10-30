@@ -22,8 +22,9 @@ for d in "$@"; do
 		sed -i -E "s@^([ \t]*)#define[ \t]+$u\b@\1//#define $u@" "$cfg"
 	else
 		k=${d%%=*}; v=""; [[ $d == *=* ]] && v=${d#*=}
+		vs=${v//&/\\&}		# & es especial en el reemplazo de sed
 		if grep -qE "^[ \t]*//[ \t]*#define[ \t]+$k\b" "$cfg"; then
-			sed -i -E "0,/^[ \t]*\/\/[ \t]*#define[ \t]+$k\b.*/s@@#define $k $v@" "$cfg"
+			sed -i -E "0,/^[ \t]*\/\/[ \t]*#define[ \t]+$k\b.*/s@@#define $k $vs@" "$cfg"
 		elif ! grep -qE "^[ \t]*#define[ \t]+$k\b" "$cfg"; then
 			extra="$extra#define $k $v"$'\n'
 		fi

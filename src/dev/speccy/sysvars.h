@@ -11,8 +11,16 @@
 	#define PLAY_SFX(n)		peta_el_beeper(n)
 #endif
 
-#define BASE_ROOM_BUFFERS	23300
-#define BASE_ARRAYS 		23600
+// Colocación de variables en direcciones fijas. En sccz80 se usa la extensión
+// "@ dirección"; un compilador estándar ignorará la dirección (ver AT ()).
+#define AT(a)				@ (a)
+
+// Mapa de memoria baja (el juego empieza en 24200 y BASIC ya no se usa).
+// Las interrupciones están deshabilitadas durante el juego en 48K, así que
+// la ROM no escribe en las variables del sistema que pisamos.
+#define BASE_ROOM_BUFFERS	23300		// map_attr + map_buff: 300 bytes
+#define BASE_ARRAYS 		23600		// arrays de enemigos/balas: 69 + 6 * MAX_BULLETS
+#define BASE_BRK_BUFF		23728		// muros rompibles: 150 bytes (hasta 23877)
 
 #ifdef USE_TWO_BUTTONS
 	// Define here if you selected the TWO BUTTONS configuration
@@ -39,10 +47,14 @@
 	};
 #endif
 
+// [FIX v3.100] KEY_H, KEY_Y y KEY_Z terminaban en ";", lo que rompía
+// sp_KeyPressed (KEY_H) y PAUSE_ABORT.
 #define KEY_M 0x047f
-#define KEY_H 0x10bf;
-#define KEY_Y 0x10df;
-#define KEY_Z 0x02fe;
+#define KEY_H 0x10bf
+#define KEY_Y 0x10df
+#define KEY_Z 0x02fe
+#define KEY_1 0x01f7
+#define KEY_2 0x02f7
 
 // Puntero a la función de manejo seleccionada.
 
