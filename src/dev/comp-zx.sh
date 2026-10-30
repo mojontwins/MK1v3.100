@@ -46,6 +46,13 @@ echo "### COMPILANDO SCRIPT ###"
 # no olvides cambiar NPANT por el nº de pantallas
 # $U/msc ../script/script.spt msc.h 30
 
+# Paso propio del juego para construir niveles (bundles, tilesets...). Ver
+# docs/formato-niveles.md. Se ejecuta antes de librarian.
+if [ -x ./levels.sh ]; then
+	echo "### CONSTRUYENDO NIVELES ###"
+	./levels.sh || { echo "ERROR en levels.sh"; exit 1; }
+fi
+
 if [ $mode128 = 1 ]; then
 	echo "### 128K: WYZ PLAYER Y RECURSOS ###"
 	# Reproductor + datos del juego: instrumentos.asm, canciones.asm, los .mus
