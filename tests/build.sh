@@ -35,6 +35,7 @@ if [ -n "$extra" ]; then printf '%s' "$extra" | cat - "$cfg" > "$cfg.new"; mv "$
 cd "$T/src/dev"
 if ./comp-$target.sh noclean > "$out.log" 2>&1 && [ -f bootee.bin ]; then
 	cp bootee.bin "$out"
+	[ -f bootee.sna ] && cp bootee.sna "${out%.bin}.sna"	# CPC: para tests/cpcrun
 	cp config.h "$out.config.h"
 else
 	cp config.h "$out.config.h"

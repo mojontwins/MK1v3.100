@@ -49,9 +49,13 @@ if [ ! -x "$Z/bin/zcc" ]; then
 	)
 fi
 
-# crt0 recortado de MK1 (solo coloca la pila y salta a main)
+# crt0 recortado de MK1 (solo coloca la pila y salta a main), para ZX y CPC
 [ -f "$Z/lib/spec_crt0.asm.stock" ] || cp "$Z/lib/spec_crt0.asm" "$Z/lib/spec_crt0.asm.stock"
 cp "$REPO/lib/spec_crt0.asm" "$Z/lib/spec_crt0.asm"
+# El de CPC es igual (ld sp, $FFFF / jp _main); el de serie de z88dk guarda
+# el estado del firmware y baja la pila 6,5K, lo que choca con el mapa de MK1.
+[ -f "$Z/lib/cpc_crt0.asm.stock" ] || cp "$Z/lib/cpc_crt0.asm" "$Z/lib/cpc_crt0.asm.stock"
+sed 's/MODULE  zx82_crt0/MODULE  cpc_crt0/' "$REPO/lib/spec_crt0.asm" > "$Z/lib/cpc_crt0.asm"
 
 # Librerías de los backends
 cp "$REPO/lib/splib2/splib2f.lib" "$Z/lib/clibs/splib2f.lib"

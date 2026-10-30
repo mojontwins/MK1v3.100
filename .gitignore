@@ -2,3 +2,4 @@ src/utils/linux/
 *.tap.part
 tests/zxrun/zxrun
 tests/out/
+tests/cpcrun/cpcrun
