@@ -9,10 +9,12 @@
 // Funciones generales
 // ---------------------------------------------------------------------------
 
-unsigned char bufidx (unsigned char x, unsigned char y) {
-	// x + 15 * y = x + (16 - 1) * y = x + 16 * y - y = x + (y << 4) - y.
-	return x + (y << 4) - y;
-}
+// [OPT v3.100] bufidx era una función que calculaba x + 15 * y con
+// desplazamientos en cada consulta (colisiones, tiles, hotspots): un 3,4% del
+// tiempo de juego entre bufidx, attr y cm_two_points. Ahora es una macro que
+// suma x a una tabla de 10 entradas con 15 * y.
+unsigned char mul15 [] = { 0, 15, 30, 45, 60, 75, 90, 105, 120, 135 };
+#define bufidx(x, y) ((x) + mul15 [(y)])
 
 // [FIX v3.100] attr y qtile se declaraban "void" pero devolvían un valor, y
 // cm_two_points se declaraba "unsigned char" sin devolver nada. sccz80 lo
