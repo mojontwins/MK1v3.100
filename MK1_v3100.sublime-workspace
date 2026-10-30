@@ -1,0 +1,456 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ENABLE_CUSO",
+				"ENABLE_CUSTOM_FLICK	(README.md)"
+			],
+			[
+				"VIEW",
+				"VIEWPORT_Y	abc"
+			],
+			[
+				"VIE",
+				"VIEWPORT_X	abc"
+			],
+			[
+				"_run",
+				"_run_text_box	abc"
+			],
+			[
+				"_A",
+				"_addr1	(msc4.bas)"
+			],
+			[
+				"clear",
+				"clear_papayas_subloop	abc"
+			],
+			[
+				"shift",
+				"shiftTokens	abc"
+			],
+			[
+				"DEACTIVATE",
+				"DEACTIVATE_MOVING_PLATFORMS	abc"
+			],
+			[
+				"m_vert",
+				"m_vert_jump_down_done	abc"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 375.0,
+		"selected_items":
+		[
+			[
+				"package",
+				"Preferences: Browse Packages"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: insta",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 495.0
+	},
+	"console":
+	{
+		"height": 491.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/git/MK1v32/docs/msc4.md",
+		"/C/git/MK1v32/docs/manual_32.md",
+		"/C/git/MK1v32/msc4/msc4.md",
+		"/C/git/MK1v32/msc4/msc4i.bas",
+		"/C/git/MK1v32/msc4/jumptable_msc.asm",
+		"/C/git/MK1v32/msc4/msci.asm",
+		"/C/git/MK1v32/msc4/msc4i.asm",
+		"/C/git/MK1v32/src/utils/gui.bas",
+		"/C/git/MK1v32/src/utils/gui.bi",
+		"/C/git/MK1v32/src/utils/printsize.bas",
+		"/C/git/MK1v32/src/utils/png2scr.bas",
+		"/C/git/MK1v32/msc4/decodeFromTextBin.bas",
+		"/C/git/mk1v4/src_old/diary.md",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/User/JSON.sublime-settings",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/User/Distraction Free.sublime-settings",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/User/Markdown.sublime-settings",
+		"/C/git/mk1v4/src_zx/dev/definitions.h",
+		"/C/git/mk1v4/src_old/dev/engine.h",
+		"/C/git/mk1v4/src_old/dev/config.h",
+		"/C/git/mk1v4/src_zx/dev/engine.h",
+		"/C/git/mk1v4/games_old/ababol/dev/comp.bat",
+		"/C/git/mk1v4/games_old/papaya/dev/mainloop.h",
+		"/C/git/mk1v4/games_old/papaya/dev/extern.h",
+		"/C/git/mk1v4/games_old/papaya/README.md",
+		"/C/git/mk1v4/games_old/papaya/script/script.spt",
+		"/C/git/mk1v4/games_old/papaya/dev/config.h",
+		"/C/git/mk1v4/games_old/papaya/dev/churromain.c",
+		"/C/git/mk1v4/games_old/papaya/dev/custom_flick.h",
+		"/C/git/mk1v4/games_old/papaya/dev/custom.h",
+		"/C/git/mk1v4/games_zx/calavera/dev/custom.h",
+		"/C/git/mk1v4/games_old/papaya/dev/cpc.h",
+		"/C/git/mk1v4/games_old/papaya/dev/speccy.h",
+		"/C/git/mk1v4/games_old/papaya/dev/msc4i.h",
+		"/C/git/mk1v4/games_old/ababol/dev/engine.h",
+		"/C/git/mk1v4/games_old/ababol/dev/mainloop.h",
+		"/C/git/mk1v4/tests/msc4/script.spt",
+		"/C/git/mk1v4/tests/msc4/msc4i.asm",
+		"/C/git/mk1v4/tests/msc4/msc4i.bas",
+		"/C/git/mk1v4/games_old/papaya/dev/papaya.map",
+		"/C/git/mk1v4/tests/msc4/LANGSPECS.md",
+		"/C/git/mk1v4/tests/msc4/msc4.bas",
+		"/C/git/mk1v4/games_old/papaya/dev/msc.txt",
+		"/C/git/mk1v4/games_old/papaya/dev/definitions.h",
+		"/C/git/mk1v4/tests/msc4/mtparser.bas",
+		"/C/git/mk1v4/tests/msc4/mtparser.bi",
+		"/C/git/mk1v4/games_old/papaya/dev/comp.bat",
+		"/C/git/mk1v4/games_old/papaya/dev/pantallas.h",
+		"/C/git/mk1v4/games_old/papaya/dev/title.bin",
+		"/C/git/mk1v4/games_old/papaya/dev/marcoc.bin",
+		"/C/git/mk1v4/games_old/ababol/dev/system/tilemap_conf.asm",
+		"/C/git/mk1v4/games_old/ababol/dev/extern.h",
+		"/C/git/mk1v4/games_old/ababol/script/script.spt",
+		"/C/git/mk1v4/games_old/ababol/dev/samples.h",
+		"/C/git/mk1v4/games_old/ababol/dev/wyz/wyz_player.h",
+		"/C/git/mk1v4/games_old/papaya/dev/system/tilemap_conf.asm",
+		"/C/git/mk1v4/games_old/ababol/ogt/digi2.asm",
+		"/C/git/mk1v4/games_old/ababol/dev/custom.h",
+		"/C/git/mk1v4/games_old/ababol/ogt/digi.asm",
+		"/C/git/mk1v4/games_old/papaya/dev/wyz/songs.h",
+		"/C/git/mk1v4/games_old/papaya/dev/wyz/wyz_player.h",
+		"/C/git/mk1v4/games_old/papaya/dev/msc4i.asm",
+		"/C/git/mk1v4/games_old/papaya/dev/engine.h",
+		"/C/git/mk1v4/games_old/ababol/dev/cpc.h",
+		"/C/git/mk1v4/games_old/ababol/dev/pantallas.h",
+		"/C/git/mk1v4/lib/cpcrslib-mt/cpc_PutTrSp8x16TileMapGPx.asm",
+		"/C/git/mk1v4/games_old/papaya/dev/mapa.h",
+		"/C/git/mk1v4/games_old/papaya/dev/enems.h",
+		"/C/git/mk1v4/lib/cpcrslib-mt/cpc_PutTrSp8x16TileMapGPxP.asm",
+		"/C/git/mk1v4/games_old/calavera/dev/comp.bat",
+		"/C/git/mk1v4/games_cpc/hobbit/dev/mainloop.h",
+		"/C/git/mk1v4/games_cpc/hobbit/dev/printer.h",
+		"/C/git/mk1v4/games_old/ababol/dev/definitions.h",
+		"/C/git/mk1v4/games_old/ababol/dev/config.h",
+		"/C/git/mk1v4/games_old/ababol/dev/cpc/palmap.h",
+		"/C/git/mk1v4/games_old/napia/dev/comp.bat",
+		"/C/git/mk1v4/games_old/ababol/dev/cpc/pal_hud.h",
+		"/C/git/mk1v4/games_old/napia/dev/cpc/palmap.h",
+		"/C/git/mk1v4/games_old/perils/dev/pantallas.h",
+		"/C/git/mk1v4/games_cpc/hobbit/dev/custom.h",
+		"/C/git/mk1v4/games_old/papaya/dev/speccy/extrasprites.h",
+		"/C/git/mk1v4/games_old/ababol/dev/cpc/extrasprites.h",
+		"/C/git/mk1v4/src_old/dev/pantallas.h",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/FreeBASIC/README.md",
+		"/C/git/mk1v4/games_old/ababol/dev/msc4i.h",
+		"/C/git/mk1v4/games_old/ababol/dev/msc.txt",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/FreeBASIC/FreeBasic.tmSyntax",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/FreeBASIC/FreeBASIC.sublime-syntax",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/C Improved/C Improved.tmLanguage",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/User/FreeBasic.tmSyntax",
+		"/C/Users/vboxuser/AppData/Roaming/Sublime Text 2/Packages/FreeBASIC/FreeBASIC.tmLanguage.txt",
+		"/C/git/mk1v4/games_old/ababol/dev/speccy.h",
+		"/C/git/mk1v4/games_zx/hobbit/dev/engine.h",
+		"/C/git/mk1v4/games_cpc/hobbit/dev/engine.h",
+		"/C/git/mk1v4/games_old/ababol/README.md",
+		"/C/git/mk1v4/games_cpc/hobbit/dev/definitions.h",
+		"/C/git/mk1v4/games_old/ababol/dev/enems.h",
+		"/C/git/mk1v4/games_old/ababol/dev/ababol3.asm",
+		"/C/git/mk1v4/games_old/perils/dev/engine.h",
+		"/C/git/mk1v4/games_old/ababol/script/script.spt.bin",
+		"/C/git/mk1v4/tests/msc4/jumptable_msc.asm",
+		"/C/git/mk1v4/games_old/ababol/dev/music.h",
+		"/C/git/mk1v4/games_old/ababol/dev/msc4i.asm",
+		"/C/git/mk1v4/games_zx/hobbit/dev/custom.h",
+		"/C/git/mk1v4/tests/msc4/msc4.md",
+		"/C/git/mk1v4/tests/msc4/README.md",
+		"/C/git/mk1v4/WIP.md",
+		"/Z/temp/bolalela.bas",
+		"/C/git/mk1v4/README.md"
+	],
+	"find":
+	{
+		"height": 36.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			"C:\\git\\mk1v4",
+			"C:\\git\\mk1v4\\games_old\\papaya\\dev",
+			"C:\\git\\mk1v4\\games_old\\papaya",
+			"C:\\git\\mk1v4\\games_old\\papaya\\dev",
+			"C:\\git\\mk1v4\\games_old\\papaya",
+			"C:\\git\\mk1v4\\games_old\\papaya\\dev",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_cpc\\hobbit\\dev",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_old\\napia",
+			"C:\\git\\mk1v4\\games_cpc\\hobbit\\dev",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_old\\papaya",
+			"C:\\git\\mk1v4\\games_old",
+			"C:\\git\\mk1v4\\games_cpc",
+			"C:\\git\\mk1v4\\games_old",
+			"C:\\git\\mk1v4\\games_old\\papaya\\dev",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_cpc\\hobbit",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_cpc\\hobbit\\dev",
+			"C:\\git\\mk1v4\\games_old",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev",
+			"C:\\git\\mk1v4\\games_old\\ababol",
+			"C:\\git\\mk1v4\\games_old\\ababol\\dev"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"stairs",
+			"ld  (_cx1), a",
+			"markdown",
+			"makrdown",
+			"cpc_testkey",
+			"KEY_2",
+			"KEY_LEFT",
+			"cpc_testkey",
+			"NEWLEVEL",
+			"flag_leave",
+			"dialog_res",
+			"en_an_facing",
+			"en_an_state",
+			"enems_calc_frame",
+			"make_nsign",
+			"_dialog",
+			"dialog",
+			"digits",
+			"decode_text",
+			"dialog",
+			"stb_redraw_done",
+			"run_dialog",
+			"dialog",
+			"SIGNAL_TEXTBOX",
+			"_DIALOG",
+			"_dialog",
+			"max_animated_tiles",
+			"base_arrays",
+			"BASE_FREE",
+			"TEXT_BUFFER",
+			"addOrResolveAlias",
+			"alias",
+			"total_papayas",
+			"decode_dialog",
+			"DIALOG",
+			"addr1",
+			"addr",
+			"getTextOffset",
+			"\"text\"",
+			"text box",
+			"\"_\"",
+			"_",
+			"TILE",
+			"ATTR_TEXTBOX",
+			"TOTAL_PAPAYAS",
+			"MODE_1",
+			"SPLIT",
+			"SPLOT",
+			"_title",
+			"inject_pal",
+			"split",
+			"246",
+			"hotspot",
+			"updatenow",
+			"garga",
+			"wyz_beat_ct",
+			"bit 4",
+			"33",
+			"YY",
+			"script_bytecode",
+			"getSubAddressByName",
+			"writeToSectBinary",
+			"processScript",
+			"v4.4.20260724",
+			"];\n",
+			"MAX_ENEMS",
+			"read_i_v",
+			"parseScriptLine",
+			"RV",
+			"pval",
+			"parseTokenizeString",
+			"parseScriptLine",
+			"isNumberOrVar",
+			"tile",
+			"inc",
+			"moggy_",
+			"platforms",
+			"scriptin",
+			"move (",
+			"OBJECT_COUNT",
+			"do_extern_action",
+			"_do_extern_action",
+			"extern",
+			"custom",
+			"gng",
+			"enems_init",
+			"KEY_AUX2",
+			"pal_general",
+			"draw_text_pre_loop",
+			"textbox",
+			"indexed_enems",
+			"WYZ_SONG_BUFFER",
+			"p`mode",
+			"pmode",
+			"palsasassembly",
+			"inks1",
+			"palmap",
+			"print_tile_inv",
+			"_print_tile_inv",
+			"shiruplay",
+			"spr_empty",
+			"lala",
+			"extrasprites",
+			"spr_empty",
+			"read_addr",
+			"lastCommandWasTerminator",
+			"unreachable ",
+			"read_addr",
+			"read_x_y",
+			"v4.2",
+			"processCommand",
+			"break",
+			"ret",
+			"script_actions",
+			"script_clausule",
+			"read_vbyte",
+			"script_param",
+			"temp_string",
+			"dtcbc_loop",
+			"render_all_sprites",
+			"render_this_enemy",
+			"indexed",
+			"indexed_enems",
+			"indexed",
+			"INDEXED_ENEMS",
+			"indexed_enems",
+			"enems_init",
+			"no_max_enems"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"ladder",
+			"NEW_LEVEL",
+			"run_dialog",
+			"AUX",
+			"v4.5.20260727",
+			"inks3",
+			"inks2",
+			"v4.3",
+			"v4.2.20260701"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 36.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 96.0
+	},
+	"replace":
+	{
+		"height": 64.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 282.0,
+	"status_bar_visible": true
+}
