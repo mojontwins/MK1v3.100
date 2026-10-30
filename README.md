@@ -12,3 +12,6 @@ Frozen version from early 2014, the last version of MK1 in pure C, preserved for
 
 Quick start (Linux): `env/setup-linux.sh`, `source ~/mk1tools/z88env.sh`,
 `src/utils/build-linux.sh`, then `cd src/dev && ./comp-zx.sh`.
+Windows: `env\setup-windows.bat`, `call %USERPROFILE%\mk1tools\z88env.bat`,
+`src\utils\build-windows.bat`, then `cd src\dev && comp-zx.bat` (every `.sh`
+has a `.bat` twin).
