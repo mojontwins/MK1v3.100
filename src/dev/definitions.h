@@ -39,8 +39,25 @@ unsigned char pad0, pad1, pad_this_frame;
 
 // Player
 
+// Posiciones en punto fijo 8.8 (sin signo): el byte alto es el píxel y el
+// bajo la fracción. Las velocidades (con signo) son 1/256 de píxel por frame.
+// FIXED_PIX da el píxel; SET_FIXED_PIX pone un píxel exacto. Los dos acceden
+// al byte alto directamente: en sccz80 un desplazamiento es una llamada a una
+// rutina con un bucle. Z80 y SM83 guardan primero el byte bajo.
+#define FIXED_PIX(v)			((unsigned char) ((v) >> 8))
+#define SET_FIXED_PIX(v, p)		{ ((unsigned char *) &(v)) [1] = (p); ((unsigned char *) &(v)) [0] = 0; }
+
+// Límites de la zona de juego en 8.8 (224 y 144 píxeles). En hexadecimal para
+// que sccz80 los trate como unsigned int y no como long.
+#define FIXED_MAX_X				0xE000
+#define FIXED_MAX_Y				0x9000
+
+// Tras sumar una velocidad: si la posición ha bajado de 0 ha dado la vuelta
+// (un valor enorme) y se deja en 0; si pasa del máximo, en el máximo.
+#define FIXED_CLAMP(v, max)		if ((v) >= 0xF000) (v) = 0; else if ((v) > (max)) (v) = (max)
+
 typedef struct {
-	int x, y, cx;
+	unsigned int x, y;
 	int vx, vy;
 	char g, ax, rx;
 	unsigned char crouch, cont_salto;
@@ -79,10 +96,10 @@ unsigned char *en_an_next_frame [3] 				AT (BASE_ARRAYS + 12);
 	unsigned char en_an_morido  [3] 				AT (BASE_ARRAYS + 18);
 #endif
 
-// Posición y velocidad propias (x64) de fanties y enemigos de tipo 6.
+// Posición (8.8) y velocidad propias de fanties y enemigos de tipo 6.
 #ifdef ENEMS_HAVE_FREE_COORDS
-	signed int en_an_x [3] 							AT (BASE_ARRAYS + 21);
-	signed int en_an_y [3] 							AT (BASE_ARRAYS + 27);
+	unsigned int en_an_x [3] 						AT (BASE_ARRAYS + 21);
+	unsigned int en_an_y [3] 						AT (BASE_ARRAYS + 27);
 	signed int en_an_vx [3] 						AT (BASE_ARRAYS + 33);
 	signed int en_an_vy [3] 						AT (BASE_ARRAYS + 39);
 	#ifdef ENABLE_RANDOM_RESPAWN

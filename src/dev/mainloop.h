@@ -410,7 +410,7 @@ void main (void) {
 						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 							x_pant --;
 						#endif
-						player.x = 14336; gpx = 224;
+						player.x = FIXED_MAX_X; gpx = 224;
 					}
 
 					if (
@@ -431,7 +431,7 @@ void main (void) {
 						#ifdef PLAYER_CHECK_MAP_BOUNDARIES
 							y_pant --;
 						#endif
-						player.y = 9216; gpy = 144;
+						player.y = FIXED_MAX_Y; gpy = 144;
 					}
 
 					if (
@@ -453,7 +453,7 @@ void main (void) {
 								y_pant ++;
 							#endif
 							player.y = 0; gpy = 0;
-							if (player.vy > 256) player.vy = 256;
+							if (player.vy > 1024) player.vy = 1024;
 						}
 					}
 				}

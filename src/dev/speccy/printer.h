@@ -248,8 +248,8 @@ void render_sprites (void) {
 				#endif
 				(malotes [enoffs + gpit].t & 15) == 6	// también muerto (explosión en su sitio)
 			) {
-				_en_x = en_an_x [gpit] >> 6;
-				_en_y = en_an_y [gpit] >> 6;
+				_en_x = FIXED_PIX (en_an_x [gpit]);
+				_en_y = FIXED_PIX (en_an_y [gpit]);
 			} else 
 		#endif
 		{

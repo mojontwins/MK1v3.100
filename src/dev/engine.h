@@ -614,8 +614,8 @@ void draw_scr (void) {
 				case 6:
 					// Añade aquí tu código custom. Esto es un ejemplo:
 					en_an_base_frame [gpit] = TYPE_6_FIXED_SPRITE << 1;
-					en_an_x [gpit] = malotes [enoffsmasi].x << 6;
-					en_an_y [gpit] = malotes [enoffsmasi].y << 6;
+					SET_FIXED_PIX (en_an_x [gpit], malotes [enoffsmasi].x);
+					SET_FIXED_PIX (en_an_y [gpit], malotes [enoffsmasi].y);
 					en_an_vx [gpit] = en_an_vy [gpit] = 0;
 					en_an_state [gpit] = TYPE_6_IDLE;				
 					break;				
@@ -676,8 +676,8 @@ void draw_scr (void) {
 
 void set_player_at (unsigned char x, unsigned char y) {
 	gpx = x; gpy = y;
-	player.x = gpx << 6;
-	player.y = gpy << 6;
+	SET_FIXED_PIX (player.x, x);
+	SET_FIXED_PIX (player.y, y);
 }
 
 void init_player (void) {
@@ -751,8 +751,8 @@ void kill_player (unsigned char sound) {
 				mem_load ();
 			#else
 				n_pant = sg_pool [SG_NFLAGS];
-				player.x = sg_pool [SG_NFLAGS + 1] << 10;
-				player.y = sg_pool [SG_NFLAGS + 2] << 10;
+				SET_FIXED_PIX (player.x, sg_pool [SG_NFLAGS + 1] << 4);
+				SET_FIXED_PIX (player.y, sg_pool [SG_NFLAGS + 2] << 4);
 			#endif
 			player.vx = player.vy = 0;
 		}
@@ -925,7 +925,7 @@ void move (void) {
 					#endif
 					&& player.saltando
 				) {
-					player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto>>1));
+					player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto << 1));
 					if (player.vy < -PLAYER_MAX_VY_SALTANDO) player.vy = -PLAYER_MAX_VY_SALTANDO;
 					player.cont_salto ++;
 					if (player.cont_salto == 8)
@@ -957,7 +957,7 @@ void move (void) {
 			}
 			
 			if (player.saltando ) {
-				player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto>>1));
+				player.vy -= (PLAYER_VY_INICIAL_SALTO + PLAYER_INCR_SALTO - (player.cont_salto << 1));
 				if (player.vy < -PLAYER_MAX_VY_SALTANDO) player.vy = -PLAYER_MAX_VY_SALTANDO;
 				player.cont_salto ++;
 				if (player.cont_salto == 8)
@@ -984,11 +984,10 @@ void move (void) {
 	#endif
 
 	player.y += player.vy;
-	if (player.y < 0) player.y = 0;
-	if (player.y > 9216) player.y = 9216;
+	FIXED_CLAMP (player.y, FIXED_MAX_Y);
 
 	// Convertimos a pixel
-	gpy = player.y >> 6;
+	gpy = FIXED_PIX (player.y);
 
 	// Reiniciamos las banderas de "sobre plataforma" y "colisión matadora vertical"
 	possee = 0; hit_v = 0;
@@ -1046,7 +1045,7 @@ void move (void) {
 					gpy = (gpy & 0xf0) + 16;
 				#endif
 
-				player.y = gpy << 6;
+				SET_FIXED_PIX (player.y, gpy);
 			}
 		} else if (rds > 0) {		// Estamos descendiendo
 
@@ -1096,7 +1095,7 @@ void move (void) {
 					gpy = (gpy & 0xf0);
 				#endif
 
-				player.y = gpy << 6;
+				SET_FIXED_PIX (player.y, gpy);
 				possee = 1;
 			}
 		}
@@ -1107,7 +1106,7 @@ void move (void) {
 
 		// Cuando la gravedad es menor de 64, habrá un frame en el que no hay colisión,
 		// por lo que hay que detectar que estamos posados de forma explícita
-		#if !defined PLAYER_MOGGY_STYLE && PLAYER_G < 64
+		#if !defined PLAYER_MOGGY_STYLE && PLAYER_G < 256
 			cy1 = cy2 = (gpy + 16) >> 4;
 			cm_two_points ();
 			possee = (at1 & 12) || (at2 & 12);
@@ -1161,11 +1160,10 @@ void move (void) {
 		player.x += ptgmx;
 	#endif
 	
-	if (player.x < 0) player.x = 0;
-	if (player.x > 14336) player.x = 14336;
+	FIXED_CLAMP (player.x, FIXED_MAX_X);
 
 	// Convertimos a pixel
-	gpx = player.x >> 6;
+	gpx = FIXED_PIX (player.x);
 
 	// Colisión
 
@@ -1218,7 +1216,7 @@ void move (void) {
 					gpx = (gpx & 0xf0) + 16;
 				#endif
 
-				player.x = gpx << 6;
+				SET_FIXED_PIX (player.x, gpx);
 			}
 
 		} else if (rds > 0) { 	// Hacia la derecha
@@ -1260,7 +1258,7 @@ void move (void) {
 					gpx = (gpx & 0xf0);
 				#endif
 
-				player.x = gpx << 6;
+				SET_FIXED_PIX (player.x, gpx);
 			}
 
 		}
@@ -1522,13 +1520,13 @@ void move (void) {
 	void platform_get_player (void) {
 		player.gotten = 1;
 		gpy = _en_y - 16;
-		player.y = gpy << 6;
+		SET_FIXED_PIX (player.y, gpy);
 		#ifdef PLAYER_CUMULATIVE_JUMP
 			if (player.saltando == 0)
 		#endif
 		player.vy = 0;
 		// Arrastre vertical de la plataforma
-		ptgmy = _en_my << 6;
+		ptgmy = _en_my << 8;
 	}
 #endif
 
@@ -1669,27 +1667,34 @@ void mueve_bicharracos (void) {
 				case 5:
 					active = 1;
 
+					// Se acelera hacia el jugador (o se aleja si está escondido).
+					// Las direcciones se comparan en píxeles: la diferencia de dos
+					// posiciones 8.8 no cabe en un int con signo.
+					gpen_cx = FIXED_PIX (en_an_x [gpit]);
+					gpen_cy = FIXED_PIX (en_an_y [gpit]);
 					if (player_hidden ()) {
 						en_an_vx [gpit] = limit (
-							en_an_vx [gpit] + addsign (en_an_x [gpit] - player.x, FANTY_A >> 1),
+							en_an_vx [gpit] + addsign (gpen_cx - gpx, FANTY_A >> 1),
 							-FANTY_MAX_V, FANTY_MAX_V);
 						en_an_vy [gpit] = limit (
-							en_an_vy [gpit] + addsign (en_an_y [gpit] - player.y, FANTY_A >> 1),
+							en_an_vy [gpit] + addsign (gpen_cy - gpy, FANTY_A >> 1),
 							-FANTY_MAX_V, FANTY_MAX_V);
 					} else if ((rand () & 7) > 1) {
 						en_an_vx [gpit] = limit (
-							en_an_vx [gpit] + addsign (player.x - en_an_x [gpit], FANTY_A),
+							en_an_vx [gpit] + addsign (gpx - gpen_cx, FANTY_A),
 							-FANTY_MAX_V, FANTY_MAX_V);
 						en_an_vy [gpit] = limit (
-							en_an_vy [gpit] + addsign (player.y - en_an_y [gpit], FANTY_A),
+							en_an_vy [gpit] + addsign (gpy - gpen_cy, FANTY_A),
 							-FANTY_MAX_V, FANTY_MAX_V);
 					}
 
-					en_an_x [gpit] = limit (en_an_x [gpit] + en_an_vx [gpit], 0, 14336);
-					en_an_y [gpit] = limit (en_an_y [gpit] + en_an_vy [gpit], 0, 9216);
+					en_an_x [gpit] += en_an_vx [gpit];
+					FIXED_CLAMP (en_an_x [gpit], FIXED_MAX_X);
+					en_an_y [gpit] += en_an_vy [gpit];
+					FIXED_CLAMP (en_an_y [gpit], FIXED_MAX_Y);
 
-					gpen_cx = en_an_x [gpit] >> 6;
-					gpen_cy = en_an_y [gpit] >> 6;
+					gpen_cx = FIXED_PIX (en_an_x [gpit]);
+					gpen_cy = FIXED_PIX (en_an_y [gpit]);
 
 					break;
 			#endif
@@ -1698,8 +1703,8 @@ void mueve_bicharracos (void) {
 				case 6:
 					active = 1;
 					// Posición actual en píxeles y distancia al jugador.
-					gpen_cx = en_an_x [gpit] >> 6;
-					gpen_cy = en_an_y [gpit] >> 6;
+					gpen_cx = FIXED_PIX (en_an_x [gpit]);
+					gpen_cy = FIXED_PIX (en_an_y [gpit]);
 					rdd = distance (gpx, gpy, gpen_cx, gpen_cy);
 
 					switch (en_an_state [gpit]) {
@@ -1712,27 +1717,29 @@ void mueve_bicharracos (void) {
 								en_an_state [gpit] = TYPE_6_RETREATING;
 							} else {
 								en_an_vx [gpit] = limit (
-									en_an_vx [gpit] + addsign (player.x - en_an_x [gpit], FANTY_A),
+									en_an_vx [gpit] + addsign (gpx - gpen_cx, FANTY_A),
 									-FANTY_MAX_V, FANTY_MAX_V);
 								en_an_vy [gpit] = limit (
-									en_an_vy [gpit] + addsign (player.y - en_an_y [gpit], FANTY_A),
+									en_an_vy [gpit] + addsign (gpy - gpen_cy, FANTY_A),
 									-FANTY_MAX_V, FANTY_MAX_V);
 
-								en_an_x [gpit] = limit (en_an_x [gpit] + en_an_vx [gpit], 0, 14336);
-								en_an_y [gpit] = limit (en_an_y [gpit] + en_an_vy [gpit], 0, 9216);
+								en_an_x [gpit] += en_an_vx [gpit];
+								FIXED_CLAMP (en_an_x [gpit], FIXED_MAX_X);
+								en_an_y [gpit] += en_an_vy [gpit];
+								FIXED_CLAMP (en_an_y [gpit], FIXED_MAX_Y);
 							}
 							break;
 						case TYPE_6_RETREATING:
 							// Vuelve a su posición original (_en_x, _en_y)
-							if (gpen_cx != _en_x) en_an_x [gpit] += addsign (_en_x - gpen_cx, 64);
-							if (gpen_cy != _en_y) en_an_y [gpit] += addsign (_en_y - gpen_cy, 64);
+							if (gpen_cx != _en_x) en_an_x [gpit] += addsign (_en_x - gpen_cx, 256);
+							if (gpen_cy != _en_y) en_an_y [gpit] += addsign (_en_y - gpen_cy, 256);
 
 							if (rdd <= SIGHT_DISTANCE)
 								en_an_state [gpit] = TYPE_6_PURSUING;
 							break;
 					}
-					gpen_cx = en_an_x [gpit] >> 6;
-					gpen_cy = en_an_y [gpit] >> 6;
+					gpen_cx = FIXED_PIX (en_an_x [gpit]);
+					gpen_cy = FIXED_PIX (en_an_y [gpit]);
 					if (en_an_state [gpit] == TYPE_6_RETREATING &&
 						gpen_cx == _en_x &&
 						gpen_cy == _en_y
@@ -1844,7 +1851,7 @@ void mueve_bicharracos (void) {
 						if (_en_mx != 0 && gpy + 16 >= _en_y && gpy + 11 <= _en_y && player.vy >= 0) {
 							platform_get_player ();
 							// Arrastre horizontal de la plataforma
-							ptgmx = _en_mx << 6;
+							ptgmx = _en_mx << 8;
 						}
 					}
 				} else
@@ -1877,8 +1884,8 @@ void mueve_bicharracos (void) {
 							#endif
 
 							gpy = gpen_cy >= 16 ? gpen_cy - 16 : 0;
-							player.y = gpy << 6;
-							player.vy = -256;
+							SET_FIXED_PIX (player.y, gpy);
+							player.vy = -1024;
 
 							#ifdef ACTIVATE_SCRIPTING
 								// Run this screen fire script or "entering any".
@@ -1906,10 +1913,10 @@ void mueve_bicharracos (void) {
 							#ifdef PLAYER_MOGGY_STYLE
 								// Rebote genital
 								if (_en_mx) {
-									player.vx = addsign (gpx - gpen_cx, abs (_en_mx) << 8);
+									player.vx = addsign (gpx - gpen_cx, abs (_en_mx) << 10);
 								}
 								if (_en_my) {
-									player.vy = addsign (gpy - gpen_cy, abs (_en_my) << 8);
+									player.vy = addsign (gpy - gpen_cy, abs (_en_my) << 10);
 								}
 							#else
 								#ifdef ENEMS_HAVE_FREE_COORDS
@@ -1953,7 +1960,7 @@ void mueve_bicharracos (void) {
 								// Los que se mueven libremente reculan
 								#ifdef ENEMS_HAVE_FREE_COORDS
 									if (rdt == 5 || rdt == 6) {
-										en_an_vx [gpit] += addsign (bullets_mx [gpjt], 128);
+										en_an_vx [gpit] += addsign (bullets_mx [gpjt], 512);
 									}
 								#endif
 
@@ -1985,8 +1992,9 @@ void mueve_bicharracos (void) {
 			// De vez en cuando aparece un fanty en lugar de un enemigo muerto.
 			if (_en_t > 15 && en_an_fanty_activo [gpit] == 0 && en_an_state [gpit] != GENERAL_DYING && (rand () & 31) == 1) {
 				en_an_fanty_activo [gpit] = 1;
-				if (player.y > 5120) en_an_y [gpit] = -1024; else en_an_y [gpit] = 10240;
-				en_an_x [gpit] = (rand () % 240 - 8) << 6;
+				// Aparece por arriba o por abajo, lejos del jugador
+				SET_FIXED_PIX (en_an_y [gpit], gpy > 80 ? 0 : 144);
+				SET_FIXED_PIX (en_an_x [gpit], rand () % 225);
 				en_an_vx [gpit] = en_an_vy [gpit] = 0;
 				en_an_base_frame [gpit] = 4;
 				#ifdef MALOTE_HAS_LIFE

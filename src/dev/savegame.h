@@ -28,8 +28,8 @@ void mem_save (void) {
 		for (sgit = 0; sgit < SG_NFLAGS; sgit ++) sg_pool [sgit] = flags [sgit];
 	#endif
 	sg_pool [SG_NFLAGS] = n_pant;
-	sg_pool [SG_NFLAGS + 1] = player.x >> 10;
-	sg_pool [SG_NFLAGS + 2] = player.y >> 10;
+	sg_pool [SG_NFLAGS + 1] = gpx >> 4;
+	sg_pool [SG_NFLAGS + 2] = gpy >> 4;
 	#ifdef MAX_AMMO
 		sg_pool [SG_NFLAGS + 3] = player.ammo;
 	#endif
@@ -46,8 +46,8 @@ void mem_load (void) {
 		for (sgit = 0; sgit < SG_NFLAGS; sgit ++) flags [sgit] = sg_pool [sgit];
 	#endif
 	n_pant = sg_pool [SG_NFLAGS];
-	player.x = sg_pool [SG_NFLAGS + 1] << 10;
-	player.y = sg_pool [SG_NFLAGS + 2] << 10;
+	SET_FIXED_PIX (player.x, sg_pool [SG_NFLAGS + 1] << 4);
+	SET_FIXED_PIX (player.y, sg_pool [SG_NFLAGS + 2] << 4);
 	#ifdef MAX_AMMO
 		player.ammo = sg_pool [SG_NFLAGS + 3];
 	#endif

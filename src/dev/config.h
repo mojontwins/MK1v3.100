@@ -107,8 +107,8 @@
 //#define BREAKABLE_WALLS_LIFE	1		// Amount of hits to break wall
 
 //#define ENABLE_RANDOM_RESPAWN 		// If defined, automatic flying enemies spawn on killed enemies
-//#define FANTY_MAX_V 			256 	// Flying enemies max speed (also for custom type 6 if you want)
-//#define FANTY_A 				16		// Flying enemies acceleration.
+//#define FANTY_MAX_V 			1024 	// Flying enemies max speed (1/256 px/frame; also for custom type 6)
+//#define FANTY_A 				64		// Flying enemies acceleration (1/256 px/frame^2).
 //#define FANTIES_LIFE_GAUGE	10		// Amount of shots needed to kill flying enemies.
 
 // Scripting
@@ -219,25 +219,28 @@
 // separately. If a top-view engine is configured instead, the horizontal values are also
 // applied to the vertical component, vertical values are ignored.
 
+// Units: positions are 8.8 fixed point, so speeds are in 1/256 pixel per frame
+// and accelerations in 1/256 pixel per frame^2 (256 = 1 pixel).
+
 // IV.1. Vertical movement. Only for side-view.
 
-#define PLAYER_MAX_VY_CAYENDO	512 	// Max falling speed (512/64 = 8 pixels/frame)
-#define PLAYER_G				32		// Gravity acceleration (32/64 = 0.5 píxeles/frame^2)
+#define PLAYER_MAX_VY_CAYENDO	2048 	// Max falling speed (2048/256 = 8 pixels/frame)
+#define PLAYER_G				128		// Gravity acceleration (128/256 = 0.5 píxeles/frame^2)
 
-#define PLAYER_VY_INICIAL_SALTO 64	 	// Initial junp velocity (64/64 = 1 píxel/frame)
-#define PLAYER_MAX_VY_SALTANDO	320 	// Max jump velocity (320/64 = 5 píxels/frame)
-#define PLAYER_INCR_SALTO		48		// acceleration while JUMP is pressed (48/64 = 0.75 píxeles/frame^2)
+#define PLAYER_VY_INICIAL_SALTO 256	 	// Initial jump velocity (256/256 = 1 píxel/frame)
+#define PLAYER_MAX_VY_SALTANDO	1280 	// Max jump velocity (1280/256 = 5 píxels/frame)
+#define PLAYER_INCR_SALTO		192		// acceleration while JUMP is pressed (192/256 = 0.75 píxeles/frame^2)
 
-#define PLAYER_INCR_JETPAC		48		// Vertical jetpac gauge. Must by > G of course!
-#define PLAYER_MAX_VY_JETPAC	256 	// Max vertical jetpac speed
+#define PLAYER_INCR_JETPAC		192		// Vertical jetpac gauge. Must by > G of course!
+#define PLAYER_MAX_VY_JETPAC	1024 	// Max vertical jetpac speed (1024/256 = 4 píxeles/frame)
 
-#define PLAYER_BOOTEE_CROUCH 	128		// Add this to vy when pressing DOWN in BOOTEE
+#define PLAYER_BOOTEE_CROUCH 	512		// Add this to vy when pressing DOWN in BOOTEE
 
 // IV.2. Horizontal (side view) or general (top view) movement.
 
-#define PLAYER_MAX_VX			256 	// Max velocity (192/64 = 3 píxels/frame)
-#define PLAYER_AX				48		// Acceleration (24/64 = 0,375 píxels/frame^2)
-#define PLAYER_RX				64		// Friction (32/64 = 0,5 píxels/frame^2)
+#define PLAYER_MAX_VX			1024 	// Max velocity (1024/256 = 4 píxels/frame)
+#define PLAYER_AX				192		// Acceleration (192/256 = 0,75 píxels/frame^2)
+#define PLAYER_RX				256		// Friction (256/256 = 1 píxel/frame^2)
 
 // ============================================================================
 // V. Tile behaviour
