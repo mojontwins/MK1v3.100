@@ -4,6 +4,13 @@
 ' Compile with fbc imanol.bas cmdlineparser.bas
 
 #include "file.bi"
+
+' [FIX] En Linux el ejecutable no lleva extensión
+#ifdef __FB_WIN32__
+	#define MKTS_OM_EXE "/mkts_om.exe"
+#else
+	#define MKTS_OM_EXE "/mkts_om"
+#endif
 #include "cmdlineparser.bi"
 
 Sub usage
@@ -132,7 +139,7 @@ While Not Eof (fIn)
 			ElseIf Left (replace, 1) = "!" Then
 				replace = Right (replace, Len (replace) - 1)
 				fPipe = FreeFile
-				open pipe (Exepath & "/mkts_om.exe platform=cpc mode=outputpal in=" & replace & " silent") For Input As fPipe
+				open pipe (Exepath & MKTS_OM_EXE & " platform=cpc mode=outputpal in=" & replace & " silent") For Input As fPipe
 				Line Input #fPipe, replace
 				Close fPipe
 				Print "    Replacing with  " & replace

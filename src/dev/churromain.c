@@ -40,9 +40,9 @@
 // Cosas del juego:
 
 #ifdef CPC
-	#include "cpc\sysvars.h"
+	#include "cpc/sysvars.h"
 #else
-	#include "speccy\sysvars.h"
+	#include "speccy/sysvars.h"
 #endif
 
 #include "definitions.h"
@@ -75,11 +75,14 @@
 // GAME ASSETS
 // ***********
 
+// [FIX v3.100] Faltaba el #endif de COMPRESSED_LEVELS (el zcpp de Windows lo
+// toleraba) y levels_128.h no existe: el archivo es speccy_128/levels128.h.
 #ifdef COMPRESSED_LEVELS
-#ifdef MODE_128K
-	#include "levels_128.h"
-#else
-	#include "levels.h"
+	#ifdef MODE_128K
+		#include "speccy_128/levels128.h"
+	#else
+		#include "levels.h"
+	#endif
 #endif
 
 #ifdef CPC

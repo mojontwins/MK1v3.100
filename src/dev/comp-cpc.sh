@@ -1,0 +1,92 @@
+#!/bin/bash
+# Equivalente Linux de comp-cpc.bat
+# Uso: ./comp-cpc.sh [justcompile] [noclean]
+# Requiere z88dk 1.10 en el PATH (source z88env.sh, ver env/setup-linux.sh)
+
+# Cambia "game" por el nombre de tu güego.
+game=bootee
+mode=0
+
+cd "$(dirname "$0")"
+U=../utils/linux
+P="platform=cpc cpcmode=$mode pal=../gfx/cpc/pal.png"
+
+justcompile=0; noclean=0
+for a in "$@"; do
+	[ "$a" = "justcompile" ] && justcompile=1
+	[ "$a" = "noclean" ] && noclean=1
+done
+
+if [ $justcompile = 0 ]; then
+	echo "### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###"
+	$U/mapcnv ../map/mapa.map mapa.h 6 5 15 10 15 packed > /dev/null
+	$U/ene2h ../enems/enems.ene enems.h 2bytes > /dev/null
+
+	$U/mkts_om $P mode=chars greyordered in=../gfx/cpc/font.png out=font.bin silent > /dev/null
+	$U/mkts_om $P mode=strait2x2 greyordered in=../gfx/cpc/work.png out=work.bin silent > /dev/null
+	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites.png out=sprites.bin max=16 silent > /dev/null
+	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_extra.png out=sprites_extra.bin max=2 silent > /dev/null
+	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_bullet.png out=sprites_bullet.bin metasize=1,1 max=1 silent > /dev/null
+	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_sword.png out=sprites_sword.bin metasize=1,1 max=4 silent > /dev/null
+	$U/mkts_om platform=cpc mode=palsasassembly in=../gfx/cpc/pal.png prefix=my_inks out=cpc/pal.h silent > /dev/null
+
+	for s in marco ending title; do
+		$U/mkts_om $P mode=superbuffer in=../gfx/cpc/$s.png out=$s.scr silent > /dev/null
+	done
+	for s in title marco ending; do
+		rm -f $s.bin; $U/zx0 $s.scr.bin $s.bin > /dev/null
+	done
+fi
+
+echo "### COMPILANDO SCRIPT ###"
+# no olvides cambiar NPANT por el nº de pantallas
+# $U/msc ../script/script.spt msc.h 30
+
+echo "### COMPILANDO GUEGO ###"
+$U/pasmo cpc/cpc_TrPixLutM$mode.asm trpixlut.bin
+rm -f trpixlutc.bin; $U/zx0 trpixlut.bin trpixlutc.bin > /dev/null
+$U/wyzTrackerParser ../ogt/instrumentos.asm cpc/instrumentos.h > /dev/null
+
+rm -f zcc_opt.def
+zcc +cpc -a -vn -zorg=1024 -lcpcrslib_mt -o $game.asm cpc/tilemap_conf.asm churromain.c -DCPC -DMODE_$mode > /dev/null 2>&1
+rm -f zcc_opt.def
+if ! zcc +cpc -m -vn -zorg=1024 -lcpcrslib_mt -o $game.bin cpc/tilemap_conf.asm churromain.c -DCPC -DMODE_$mode; then
+	echo "ERROR"; exit 1
+fi
+$U/printsize $game.bin
+
+echo "### CONSTRUYENDO SNA Y CDT ###"
+rm -f $game.sna
+$U/cpctbin2sna $game.bin 0x400 -pc 0x400 -o $game.sna
+echo "Output: $game.sna"
+
+$U/mkts_om platform=cpc cpcmode=$mode pal=../gfx/cpc/pal_loading.png mode=scr in=../gfx/cpc/loading.png out=loading.bin silent > /dev/null
+rm -f loading.c.bin $game.c.bin
+$U/zx7 loading.bin loading.c.bin > /dev/null
+$U/zx7 $game.bin $game.c.bin > /dev/null
+
+$U/imanol in=cpc/loadercpc.asm-orig out=cpc/loadercpc.asm \
+	scrc_size=?loading.c.bin \
+	mainbin_size=?$game.c.bin \
+	loading_palette=!../gfx/cpc/pal_loading.png \
+	loader_mode=0 > /dev/null
+$U/pasmo cpc/loadercpc.asm loader.bin > /dev/null
+
+$U/imanol in=cpc/preloadercpc.asm-orig out=cpc/preloadercpc.asm \
+	loader_size=?loader.bin \
+	loader_mode=0 > /dev/null
+$U/pasmo cpc/preloadercpc.asm preloader.bin > /dev/null
+
+rm -f $game.cdt
+$U/cpc2cdt -r $game -m cpc -l 1024 -x 1024 -p 2000 preloader.bin $game.cdt > /dev/null
+$U/cpc2cdt -r LOADER -m raw1full -rl 740 -p 2000 loader.bin $game.cdt > /dev/null
+$U/cpc2cdt -r SCR -m raw1full -rl 740 -p 2000 loading.c.bin $game.cdt > /dev/null
+$U/cpc2cdt -r MAIN -m raw1full -rl 740 -p 2000 $game.c.bin $game.cdt > /dev/null
+echo "Output: $game.cdt"
+
+if [ $noclean = 0 ]; then
+	echo "### LIMPIANDO ###"
+	rm -f *.scr *.bin zcc_opt.def
+fi
+
+echo "### DONE ###"
