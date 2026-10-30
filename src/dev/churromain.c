@@ -44,9 +44,15 @@
 	// interrupciones están deshabilitadas. Ahora terminan en 0xF000.
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #else
+	// [v3.100] En 48K ahora también hay interrupciones IM2 (sincronía de
+	// frames): la tabla de vectores va en 0xF000-0xF100 y la ISR en 0xF1F1
+	// (splib2 usa 0xF200-0xFFFF para sus tablas de rotación). La pila va en el
+	// hueco libre entre ambas (0xF1F0 hacia abajo, 64 bytes) y los bloques de
+	// sprites terminan en 0xF000. Antes la pila estaba en 0xF200 y los bloques
+	// debajo, pisando esa zona.
 	#define STACK_SIZE 		64
-	#define STACK_ADDR		61952
-	#define AD_FREE 		STACK_ADDR-STACK_SIZE-(NUMBLOCKS*15)
+	#define STACK_ADDR		0xF1F0
+	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #endif
 
 // Cosas del juego:
@@ -68,6 +74,7 @@
 		#include "speccy_128/128k.h"
 		#include "speccy_128/wyzplayer.h"
 	#else
+		#include "speccy/isr.h"
 		#include "speccy/beeper.h"
 	#endif
 #else

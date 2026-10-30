@@ -308,6 +308,12 @@ void main (void) {
 
 				// Update to screen
 				sp_UpdateNow();
+
+				// [v3.100] Sincronía de frames (en CPC la hace sp_UpdateNow)
+				#if !defined CPC && GAME_FRAME_TICKS > 0
+					while (isr_frames < GAME_FRAME_TICKS);
+					isr_frames = 0;
+				#endif
 			
 				#ifdef PLAYER_CAN_FIRE
 					for (gpit = 0; gpit < 3; gpit ++) {

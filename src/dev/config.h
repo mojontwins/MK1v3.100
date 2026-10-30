@@ -22,6 +22,8 @@
 #define PLAYER_NUM_OBJETOS		25		// Objects to get to finish game
 #define PLAYER_LIFE 			99		// Max and starting life gauge.
 #define PLAYER_REFILL			15		// Life recharge
+#define GAME_FRAME_TICKS		2		// Interrupciones (1/50 s) por frame de juego: 2 = 25 fps.
+										// 0 = sin sincronizar (lo más rápido posible, como antes en ZX 48K)
 //#define COMPRESSED_LEVELS 			// use levels.h instead of mapa.h and enems.h (!)
 //#define MAX_LEVELS			4		// # of compressed levels
 //#define REFILL_ME 					// If defined, refill player on each level

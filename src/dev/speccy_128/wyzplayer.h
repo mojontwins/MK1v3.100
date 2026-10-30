@@ -23,7 +23,8 @@
 	defw 0	// 2 bytes libres
 #endasm
 
-void ISR(void) {	
+void ISR(void) {
+	isr_frames ++;		// [v3.100] Sincronía de frames
 	#asm
 		ld b, 1
 		call SetRAMBank

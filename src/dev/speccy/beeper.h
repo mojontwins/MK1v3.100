@@ -291,9 +291,13 @@
 	14 Lock
 */
 
+// [v3.100] Los efectos de beeper se tocan sin interrupciones: ahora en 48K
+// hay una ISR (sincronía de frames) que si no metería ruido en el sonido.
 void __FASTCALL__ peta_el_beeper (unsigned char n) {
 	#asm
 		ld a, l
+		di
 		call playsfx
+		ei
 	#endasm
 }

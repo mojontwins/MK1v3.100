@@ -68,6 +68,13 @@
 	#define SG_NFLAGS 0
 #endif
 
+// [v3.100] Sincronía de frames: la ISR cuenta interrupciones en isr_frames y
+// el bucle principal espera a que pasen GAME_FRAME_TICKS antes de seguir.
+#ifndef GAME_FRAME_TICKS
+	#define GAME_FRAME_TICKS 2
+#endif
+unsigned char isr_frames;
+
 #define sgni(n)			(n < 0 ? -1 : 1)
 #define saturate(n)		(n < 0 ? 0 : n)
 

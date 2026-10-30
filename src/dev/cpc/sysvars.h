@@ -26,7 +26,12 @@
 #define BASE_LUT			0xF800 + 0x600
 
 #define BLACK_PEN 1
-#define MIN_FAPS_PER_FRAME 2
+// [v3.100] Igual que en ZX: GAME_FRAME_TICKS de config.h
+#ifdef GAME_FRAME_TICKS
+	#define MIN_FAPS_PER_FRAME GAME_FRAME_TICKS
+#else
+	#define MIN_FAPS_PER_FRAME 2
+#endif
 
 #asm
 	// Imports
