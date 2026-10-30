@@ -450,7 +450,8 @@ void main (void) {
 
 				
 				// Win game condition
-				if (player.objs == PLAYER_NUM_OBJETOS
+				// [FIX v3.100] LEVEL_MAX_OBJS: con niveles comprimidos depende del nivel.
+				if (player.objs == LEVEL_MAX_OBJS
 					#ifdef ACTIVATE_SCRIPTING
 						|| script_result == 1
 					#endif

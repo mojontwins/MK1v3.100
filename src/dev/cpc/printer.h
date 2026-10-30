@@ -585,10 +585,12 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 	}
 	*/
 	#asm
+			; [FIX v3.100] "ld hl, BASE_SPRITES" estaba dentro del bucle, así que
+			; solo se borraba el sprite 0, SW_SPRITES_ALL veces.
 			ld  de, 15
 			ld  b, SW_SPRITES_ALL
-		.clear_sprites_loop
 			ld  hl, BASE_SPRITES
+		.clear_sprites_loop
 			ld  a, #(_sprite_18_a%256)
 			ld  (hl), a
 			inc hl

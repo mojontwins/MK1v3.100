@@ -300,7 +300,9 @@ void cortina (void) {
 		.clearb1
 			push bc
 			
-			ld	b, 255				// Procesamos los 256 atributos de cada tercio
+			// [FIX v3.100] Era "ld b, 255": djnz da 255 vueltas y quedaban 3
+			// atributos sin limpiar. Con b = 0 da 256.
+			ld	b, 0				// Procesamos los 256 atributos de cada tercio
 		.clearb2
 		
 			ld	a, (de)				// Nos traemos un atributo

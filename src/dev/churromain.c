@@ -14,7 +14,9 @@
 // NUMBLOCKS es el número de bloques necesario para mover los sprites
 // Configurar bien este número es MUY IMPORTANTE
 
-#define NUMBLOCKS 40
+// [v3.100] Se calcula solo: antes valía 40 fijo y al activar los disparos
+// splib2 se quedaba sin bloques. MAX_BULLETS vale 0 si no hay disparos.
+#define NUMBLOCKS (40 + 5 * MAX_BULLETS)
 
 // La regla es esta: cada sprite de 16x16 ocupa 10 bloques.
 // Cada proyectil ocupa 5 bloques.

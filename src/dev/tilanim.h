@@ -17,6 +17,8 @@ typedef struct {
 TILANIM tilanims [MAX_TILANIMS];
 
 void add_tilanim (unsigned char x, unsigned char y, unsigned char t) {
+	// [FIX v3.100] No se comprobaba el límite del array.
+	if (max_tilanims == MAX_TILANIMS) return;
 	tilanims [max_tilanims].xy = (x << 4) + y;
 	tilanims [max_tilanims].ft = t;
 	
