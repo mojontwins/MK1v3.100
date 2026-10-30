@@ -497,7 +497,11 @@ void draw_scr_background (void) {
 
 		// El tile actual es rdd y su comportamiento es rda
 
-		set_map_tile (rdx, rdy, rdd, rda);
+		// [OPT v3.100] Antes set_map_tile (rdx, rdy, rdd, rda), que vuelve a
+		// calcular el índice en el buffer: aquí ya es gpit.
+		map_attr [gpit] = rda;
+		map_buff [gpit] = rdd;
+		draw_coloured_tile (VIEWPORT_X + (rdx << 1), VIEWPORT_Y + (rdy << 1), rdd);
 
 		#ifdef BREAKABLE_WALLS
 			brk_buff [gpit] = 0;

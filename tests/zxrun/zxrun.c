@@ -25,6 +25,9 @@
  *     -count DIR F1 cuenta cuántas veces se ejecuta DIR desde el frame F1 e imprime
  *                   los ciclos de reloj medios entre ejecuciones (p.ej. _move =
  *                   ciclos por frame de juego)
+ *     -incl DIR F1  tiempo inclusivo: desde el frame F1, mide los ciclos entre que se
+ *                   entra en la función DIR y se vuelve de ella (incluye lo que
+ *                   llame) e imprime llamadas y ciclos medios por llamada
  *     -128          emula un Spectrum 128K
  *     -page N FICH  (128K) carga FICH en el banco de RAM N, desde su inicio
  *                   (lo mismo que hace el cargador con reubica). Repetible.
@@ -106,7 +109,8 @@ static void parse_keys(const char *s) {
 
 int main(int argc, char **argv) {
 	int dumps[64][2], ndumps = 0, is128 = 0, npages = 0, trap = 0, proffrom = -1;
-	const char *proffile = NULL; int cntaddr = -1, cntfrom = 0; uint64_t cnt = 0, cntticks = 0; static uint32_t prof[65536]; uint16_t curpc = 0;
+	const char *proffile = NULL; int cntaddr = -1, cntfrom = 0; uint64_t cnt = 0, cntticks = 0;
+	int incaddr = -1, incfrom = 0, inside = 0; uint16_t incsp = 0; uint64_t inccalls = 0, incticks = 0; static uint32_t prof[65536]; uint16_t curpc = 0;
 	uint16_t ring[4096]; uint16_t ringsp[4096]; int rp = 0, armed = 0, tlo = 0, thi = 0x10000, romfrom = 0;
 	int page_n[8]; const char *page_f[8];
 	const char *bin = NULL, *prefix = "shot"; int addr = 24200, frames = 500, hash = 0, watch = -1;
@@ -119,6 +123,7 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[i], "-h")) hash = 1;
 		else if (!strcmp(argv[i], "-d")) { char *c; dumps[ndumps][0] = (int)strtol(argv[++i], &c, 0); dumps[ndumps][1] = (*c == ',') ? (int)strtol(c + 1, NULL, 0) : 16; ndumps++; }
 		else if (!strcmp(argv[i], "-128")) is128 = 1;
+		else if (!strcmp(argv[i], "-incl")) { incaddr = (int)strtol(argv[++i], NULL, 0); incfrom = atoi(argv[++i]); }
 		else if (!strcmp(argv[i], "-count")) { cntaddr = (int)strtol(argv[++i], NULL, 0); cntfrom = atoi(argv[++i]); }
 		else if (!strcmp(argv[i], "-prof")) { proffrom = atoi(argv[++i]); proffile = argv[++i]; }
 		else if (!strcmp(argv[i], "-t")) trap = (int)strtol(argv[++i], NULL, 0);
@@ -157,7 +162,17 @@ int main(int argc, char **argv) {
 		for (int e = 0; e < nevs; e++) if (evs[e].frame == fr) {
 			if (evs[e].down) zx_key_down(&sys, evs[e].key); else zx_key_up(&sys, evs[e].key);
 		}
-		if (cntaddr >= 0 && fr >= cntfrom) {
+		if (incaddr >= 0 && fr >= incfrom) {
+			uint32_t t = 0, ticks = clk_us_to_ticks(sys.freq_hz, 20000);
+			for (; t < ticks; t++) { sys.pins = _zx_tick(&sys, sys.pins);
+				if (inside) {
+					incticks ++;
+					if (z80_opdone(&sys.cpu) && sys.cpu.sp > incsp) inside = 0;	/* ret: SP por encima de la entrada */
+				} else if (z80_opdone(&sys.cpu) && sys.cpu.pc - 1 == incaddr) {
+					inside = 1; incsp = sys.cpu.sp; inccalls ++;
+				} }
+			kbd_update(&sys.kbd, 20000);
+		} else if (cntaddr >= 0 && fr >= cntfrom) {
 			uint32_t t = 0, ticks = clk_us_to_ticks(sys.freq_hz, 20000);
 			for (; t < ticks; t++) { sys.pins = _zx_tick(&sys, sys.pins);
 				if (z80_opdone(&sys.cpu) && sys.cpu.pc - 1 == cntaddr) cnt ++; }
@@ -198,6 +213,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	(void)si;
+	if (incaddr >= 0) printf("incl %llu llamadas, %llu ciclos/llamada\n", (unsigned long long)inccalls, inccalls ? (unsigned long long)(incticks / inccalls) : 0ULL);
 	if (cntaddr >= 0) printf("count %llu, %llu ciclos/vez\n", (unsigned long long)cnt, cnt ? (unsigned long long)(cntticks / cnt) : 0ULL);
 	if (proffile) { FILE *pf = fopen(proffile, "wb"); fwrite(prof, 4, 65536, pf); fclose(pf); }
 	for (int d = 0; d < ndumps; d++) {
