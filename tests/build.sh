@@ -25,7 +25,10 @@ for d in "$@"; do
 		vs=${v//&/\\&}		# & es especial en el reemplazo de sed
 		if grep -qE "^[ \t]*//[ \t]*#define[ \t]+$k\b" "$cfg"; then
 			sed -i -E "0,/^[ \t]*\/\/[ \t]*#define[ \t]+$k\b.*/s@@#define $k $vs@" "$cfg"
-		elif ! grep -qE "^[ \t]*#define[ \t]+$k\b" "$cfg"; then
+		elif grep -qE "^[ \t]*#define[ \t]+$k\b" "$cfg"; then
+			# Ya activo: se cambia el valor si se ha dado uno
+			[[ $d == *=* ]] && sed -i -E "0,/^([ \t]*)#define[ \t]+$k\b[^/]*/s@@\1#define $k $vs\t@" "$cfg"
+		else
 			extra="$extra#define $k $v"$'\n'
 		fi
 	fi
