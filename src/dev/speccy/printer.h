@@ -206,10 +206,14 @@ void pad_read (void) {
 	pad_this_frame = (~pad_this_frame) | pad1;
 }
 
+// Última posición dibujada de cada enemigo (ver update_this_enemy)
+unsigned char en_an_last_x [3], en_an_last_y [3];
+
 void saca_a_todo_el_mundo_de_aqui (void) {
 	sp_MoveSprAbs (sp_player, spritesClip, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);				
 	for (gpit = 0; gpit < 3; gpit ++) {
 		sp_MoveSprAbs (sp_moviles [gpit], spritesClip, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);
+		en_an_last_y [gpit] = 0xff;		// Fuera de pantalla: obliga a moverlo la próxima vez
 	}
 	#ifdef PLAYER_CAN_FIRE
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
@@ -218,7 +222,15 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 
 }
 
+// [OPT v3.100] Si un enemigo no ha cambiado de posición ni de frame no se
+// llama a sp_MoveSprAbs: cada llamada invalida sus celdas y splib2 las vuelve
+// a pintar. Es seguro: splib2 repinta los sprites de cualquier celda que se
+// invalide por otro motivo (otro sprite, un tile...). Los enemigos muertos o
+// quietos dejan de costar.
 void update_this_enemy (void) {
+	if (en_an_next_frame [gpit] == en_an_current_frame [gpit] &&
+		_en_x == en_an_last_x [gpit] && _en_y == en_an_last_y [gpit]) return;
+	en_an_last_x [gpit] = _en_x; en_an_last_y [gpit] = _en_y;
 	sp_MoveSprAbs (sp_moviles [gpit], spritesClip, en_an_next_frame [gpit] - en_an_current_frame [gpit], VIEWPORT_Y + (_en_y >> 3), VIEWPORT_X + (_en_x >> 3), _en_x & 7, _en_y & 7);
 	en_an_current_frame [gpit] = en_an_next_frame [gpit];
 }
