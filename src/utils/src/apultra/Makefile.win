@@ -1,0 +1,52 @@
+# Project: apultra
+# Makefile created by Dev-C++ 5.11
+
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+OBJ      = src/libdivsufsort/lib/divsufsort.o src/libdivsufsort/lib/divsufsort_utils.o src/libdivsufsort/lib/sssort.o src/libdivsufsort/lib/trsort.o src/apultra.o src/expand.o src/matchfinder.o src/shrink.o src/shrink_context.o
+LINKOBJ  = src/libdivsufsort/lib/divsufsort.o src/libdivsufsort/lib/divsufsort_utils.o src/libdivsufsort/lib/sssort.o src/libdivsufsort/lib/trsort.o src/apultra.o src/expand.o src/matchfinder.o src/shrink.o src/shrink_context.o
+LIBS     = -L"C:/Archivos de programa/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -m32
+INCS     = -I"C:/Archivos de programa/Dev-Cpp/MinGW64/include" -I"C:/Archivos de programa/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Archivos de programa/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
+CXXINCS  = -I"C:/Archivos de programa/Dev-Cpp/MinGW64/include" -I"C:/Archivos de programa/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Archivos de programa/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/Archivos de programa/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
+BIN      = apultra.exe
+CXXFLAGS = $(CXXINCS) -m32
+CFLAGS   = $(INCS) -m32
+RM       = rm.exe -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before $(BIN) all-after
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o $(BIN) $(LIBS)
+
+src/libdivsufsort/lib/divsufsort.o: src/libdivsufsort/lib/divsufsort.c
+	$(CC) -c src/libdivsufsort/lib/divsufsort.c -o src/libdivsufsort/lib/divsufsort.o $(CFLAGS)
+
+src/libdivsufsort/lib/divsufsort_utils.o: src/libdivsufsort/lib/divsufsort_utils.c
+	$(CC) -c src/libdivsufsort/lib/divsufsort_utils.c -o src/libdivsufsort/lib/divsufsort_utils.o $(CFLAGS)
+
+src/libdivsufsort/lib/sssort.o: src/libdivsufsort/lib/sssort.c
+	$(CC) -c src/libdivsufsort/lib/sssort.c -o src/libdivsufsort/lib/sssort.o $(CFLAGS)
+
+src/libdivsufsort/lib/trsort.o: src/libdivsufsort/lib/trsort.c
+	$(CC) -c src/libdivsufsort/lib/trsort.c -o src/libdivsufsort/lib/trsort.o $(CFLAGS)
+
+src/apultra.o: src/apultra.c
+	$(CC) -c src/apultra.c -o src/apultra.o $(CFLAGS)
+
+src/expand.o: src/expand.c
+	$(CC) -c src/expand.c -o src/expand.o $(CFLAGS)
+
+src/matchfinder.o: src/matchfinder.c
+	$(CC) -c src/matchfinder.c -o src/matchfinder.o $(CFLAGS)
+
+src/shrink.o: src/shrink.c
+	$(CC) -c src/shrink.c -o src/shrink.o $(CFLAGS)
+
+src/shrink_context.o: src/shrink_context.c
+	$(CC) -c src/shrink_context.c -o src/shrink_context.o $(CFLAGS)
