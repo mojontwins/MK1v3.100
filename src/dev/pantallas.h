@@ -39,13 +39,13 @@ void title (void) {
 		cpc_ShowTileMap (1);
 	#endif
 
-	#if defined MODE_128K || defined CPC
+	#ifdef HAS_AY_MUSIC
 		wyz_play_music (0);
 	#endif
 
 	select_joyfunc ();
 
-	#if defined MODE_128K || defined CPC
+	#ifdef HAS_AY_MUSIC
 		wyz_stop_sound ();
 	#endif
 }
@@ -83,7 +83,7 @@ void game_over (void) {
 	recuadre (" GAME OVER! ");
 	sp_UpdateNow ();
 
-	#if defined MODE_128K || defined CPC
+	#ifdef HAS_AY_MUSIC
 		wyz_play_music (2);	
 	#else
 		gpit = 4; do {

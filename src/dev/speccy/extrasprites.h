@@ -8,18 +8,18 @@
 
 // Frames extra por si se pueden eliminar los enemigos:
 
-#if defined(PLAYER_CAN_FIRE) || defined(PLAYER_KILLS_ENEMIES) || defined(ENABLE_PURSUERS) || defined (MODE_128K)
+#ifdef NEEDS_EXPLOSION_SPRITE
     extern unsigned char sprite_17_a []; 
 #endif
 
 extern unsigned char sprite_18_a []; 
 
-#if defined(PLAYER_CAN_FIRE) || defined (MODE_128K)
+#ifdef NEEDS_BULLET_SPRITE
     extern unsigned char sprite_19_a [];
     extern unsigned char sprite_19_b [];
 #endif
 
-#if defined(PLAYER_CAN_FIRE) || defined(PLAYER_KILLS_ENEMIES) || defined(ENABLE_PURSUERS) || defined (MODE_128K)
+#ifdef NEEDS_EXPLOSION_SPRITE
     #asm
         ._sprite_17_a
             defb 0, 128
@@ -127,7 +127,7 @@ extern unsigned char sprite_18_a [];
 		defb 0, 255, 0, 255, 0, 255, 0, 255
 #endasm
 
-#if defined(PLAYER_CAN_FIRE) || defined (MODE_128K)
+#ifdef NEEDS_BULLET_SPRITE
     #asm	              	
     	._sprite_19_a
     		defb 0, 255

@@ -62,39 +62,14 @@ unsigned char wyz_beat_ct;
 
 // Shortcuts
 		
-#ifndef PLAYER_CAN_FIRE
-	#ifdef MAX_BULLETS
-		#undef MAX_BULLETS
-	#endif
-	#define MAX_BULLETS 0
-#endif
+// [v3.100] MAX_BULLETS = 0 sin disparos: ver config_derived.h
 
-#ifdef ENABLE_SWORD
-	#define SWORD_SW_SPRITE_ON 1
-#else
-	#define SWORD_SW_SPRITE_ON 0
-#endif
-
-#ifdef SHOW_LEVEL_INFO
-	#define NEEDS_BLACKOUT_AREA
-#endif
-
-#if defined COINS_PERSISTENT || defined BREAKABLE_PERSISTENT
-	#define ENABLE_PERSISTENCE
-#endif
-
-#ifndef MAX_CUSTOM_SW_SPRITES
-	#define MAX_CUSTOM_SW_SPRITES 0
-#endif
-
-#define SW_SPRITES_ALL 		1 + MAX_ENEMS + MAX_BULLETS + SWORD_SW_SPRITE_ON + MAX_CUSTOM_SW_SPRITES
+// Sprites software: jugador, enemigos y balas.
+#define SW_SPRITES_ALL 		1 + MAX_ENEMS + MAX_BULLETS		// Sin paréntesis: se usa en #asm ("ld b, ...")
 
 #define SP_PLAYER 			0
 #define SP_ENEMS_BASE 		1
 #define SP_BULLETS_BASE 	(SP_ENEMS_BASE + MAX_ENEMS)
-#define SP_SWORD_BASE 		(SP_BULLETS_BASE + MAX_BULLETS)
-#define SP_COCOS_BASE 		(SP_SWORD_BASE + SWORD_SW_SPRITE_ON)
-#define SP_CUSTOM_BASE		(SP_COCOS_BASE + MAX_ENEMS)
 
 #ifdef MODE_1
 	// P_0 P_1 P_2 P_3

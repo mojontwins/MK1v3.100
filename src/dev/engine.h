@@ -111,7 +111,7 @@ signed int addsign (signed int n, signed int value) {
 	void break_wall (unsigned char x, unsigned char y);
 #endif
 
-#if defined PAUSE_ABORT || defined GET_X_MORE
+#ifdef NEEDS_REDRAW_SCR
 	void redraw_scr (void);
 #endif
 
@@ -226,7 +226,7 @@ signed int addsign (signed int n, signed int value) {
 					}
 				} 
 
-				#if defined(PLAYER_MOGGY_STYLE) || defined(CAN_FIRE_UP)
+				#ifdef BULLETS_MOVE_VERT
 					if (bullets_my [gpit]) {
 						bullets_y [gpit] += bullets_my [gpit];
 						if (bullets_y [gpit] > 160) {
@@ -435,7 +435,7 @@ void do_hotspots (void) {
 		// [FIX v3.100] El destino tiene que estar dentro de la pantalla: attr ()
 		// devuelve 0 fuera de ella y la caja se salía del mapa.
 		if (x1 < 15 && y1 < 10 && (attr (x1, y1) & 8) == 0) {
-			#if defined ACTIVATE_SCRIPTING && defined ENABLE_PUSHED_SCRIPTING
+			#ifdef PUSHED_SCRIPTING
 				// [FIX v3.100] Los flags de ENABLE_PUSHED_SCRIPTING no se rellenaban.
 				flags [MOVED_TILE_FLAG] = qtile (x1, y1);
 				flags [MOVED_X_FLAG] = x1;
@@ -554,7 +554,7 @@ void draw_scr_background (void) {
 	#endif
 }
 
-#if defined PAUSE_ABORT || defined GET_X_MORE
+#ifdef NEEDS_REDRAW_SCR
 	// [v3.100] Repinta la pantalla actual desde map_buff, sin reiniciar nada.
 	// Antes la pausa usaba draw_scr () y GET_X_MORE draw_scr_background (), que
 	// reconstruyen la pantalla desde el mapa: volvían los muros rotos y las cajas
@@ -719,7 +719,7 @@ void init_player (void) {
 	player.estado = 	EST_NORMAL;
 	player.ct_estado = 	0;
 
-	#if !defined(COMPRESSED_LEVELS) || defined(REFILL_ME)	
+	#ifdef REFILL_LIFE_ON_LEVEL	
 		player.life = 		PLAYER_LIFE;
 	#endif
 	
@@ -784,7 +784,7 @@ void kill_player (unsigned char sound) {
 	}
 #endif
 
-#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+#ifdef CHECK_LOCKS_OR_BOXES
 	void check_lock_or_box_horz (void) {
 		rdx = cx1; rdy = (gpy + 8) >> 4;
 		rda = qtile (rdx, rdy);
@@ -818,7 +818,7 @@ void kill_player (unsigned char sound) {
 		rdx = (gpx + 8) >> 4; rdy = cy1;
 		rda = qtile (rdx, rdy);
 
-		#if defined PLAYER_PUSH_BOXES && defined PLAYER_MOGGY_STYLE
+		#ifdef PUSH_BOXES_VERT
 			if (rda == 14) {
 				x0 = x1 = rdx; y0 = rdy;
 				if (player.vy > 0) {
@@ -907,9 +907,9 @@ void move (void) {
 			// Inicio del salto
 
 			if (
-				#if defined PLAYER_CAN_FIRE && !defined USE_TWO_BUTTONS
+				#ifdef JUMP_ON_UP
 					(pad0 & sp_UP) == 0
-				#elif defined (PLAYER_CAN_FIRE) && defined (USE_TWO_BUTTONS)
+				#elif defined JUMP_ON_KEY
 					sp_KeyPressed (key_jump)
 				#else
 					(pad0 & sp_FIRE) == 0
@@ -933,9 +933,9 @@ void move (void) {
 
 			#ifndef PLAYER_CUMULATIVE_JUMP	
 				if (
-					#if defined PLAYER_CAN_FIRE && !defined USE_TWO_BUTTONS
+					#ifdef JUMP_ON_UP
 						(pad0 & sp_UP) == 0 
-					#elif defined (PLAYER_CAN_FIRE) && defined (USE_TWO_BUTTONS)
+					#elif defined JUMP_ON_KEY
 						sp_KeyPressed (key_jump)
 					#else
 						(pad0 & sp_FIRE) == 0 
@@ -953,9 +953,9 @@ void move (void) {
 			// Interrupción del salto
 
 			if (
-				#if defined PLAYER_CAN_FIRE && !defined USE_TWO_BUTTONS
+				#ifdef JUMP_ON_UP
 					(pad0 & sp_UP)
-				#elif defined (PLAYER_CAN_FIRE) && defined (USE_TWO_BUTTONS)
+				#elif defined JUMP_ON_KEY
 					!sp_KeyPressed (key_jump)
 				#else
 					(pad0 & sp_FIRE)
@@ -1044,7 +1044,7 @@ void move (void) {
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
-				#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && defined PLAYER_MOGGY_STYLE
+				#ifdef CHECK_LOCKS_OR_BOXES_VERT
 					check_lock_or_box_vert ();
 				#endif
 
@@ -1089,7 +1089,7 @@ void move (void) {
 			) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
-				#if (!defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES) && defined PLAYER_MOGGY_STYLE
+				#ifdef CHECK_LOCKS_OR_BOXES_VERT
 					check_lock_or_box_vert ();
 				#endif
 
@@ -1216,7 +1216,7 @@ void move (void) {
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
-				#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+				#ifdef CHECK_LOCKS_OR_BOXES
 					check_lock_or_box_horz ();
 				#endif
 
@@ -1258,7 +1258,7 @@ void move (void) {
 			if ((at1 & 8) || (at2 & 8)) {
 
 				// Como hemos colisionado, vemos si hay una caja que empujar o un cerrojo que abrir
-				#if !defined DEACTIVATE_KEYS || defined PLAYER_PUSH_BOXES
+				#ifdef CHECK_LOCKS_OR_BOXES
 					check_lock_or_box_horz ();
 				#endif
 
@@ -1434,7 +1434,7 @@ void move (void) {
 // Funciones sobre niveles comprimidos:
 // ---------------------------------------------------------------------------
 
-#if defined (COMPRESSED_LEVELS) || defined (ENABLE_CHECKPOINTS)
+#ifdef NEEDS_CLEAR_GAMEAREA
 	void clear_gamearea_tiles (void) {
 		for (gpit = 0; gpit < 10; gpit ++) {
 			for (gpjt = 0; gpjt < 15; gpjt ++) {
@@ -1482,7 +1482,7 @@ void move (void) {
 //  * Tocaba malotes [].life aunque la estructura no tuviera ese campo (solo
 //    existe con MALOTE_HAS_LIFE), lo que rompía PLAYER_KILLS_ENEMIES.
 //  * Ahora también se usa con niveles comprimidos (tras prepare_level).
-#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE) || defined (ENABLE_RANDOM_RESPAWN)
+#ifdef NEEDS_INIT_MALOTES
 	void init_malotes (void) {
 		for (gpit = 0; gpit < MAP_W * MAP_H * 3; gpit ++) {
 			// Clear bit 4
@@ -1534,7 +1534,7 @@ void move (void) {
 	}
 #endif
 
-#if defined(ENABLE_CUSTOM_TYPE_6) || defined(ENABLE_RANDOM_RESPAWN)
+#ifdef ENEMS_HAVE_FREE_COORDS
 	int limit (int val, int min, int max) {
 		if (val < min) return min;
 		if (val > max) return max;
@@ -1559,7 +1559,7 @@ void move (void) {
 // [FIX v3.100] Un enemigo muere. Antes este código estaba repetido (con
 // diferencias) en la muerte por pisotón y por disparo, y la cuenta de
 // enemigos matados se incrementaba dos veces por disparo.
-#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE)
+#ifdef ENEMIES_CAN_DIE
 void enemy_dies (void) {
 	en_an_next_frame [gpit] = sprite_17_a;		// Explosión
 	en_an_state [gpit] = GENERAL_DYING;
@@ -1884,7 +1884,7 @@ void mueve_bicharracos (void) {
 
 					// Colisión especial: pisar enemigo
 
-					#if defined PLAYER_KILLS_ENEMIES || defined PLAYER_STOMPS_ON_ENEMIES
+					#ifdef PLAYER_STEPS_ON_ENEMIES
 						// [FIX v3.100] Se comparaba con _en_y en lugar de gpen_cy, que es
 						// la posición real (distinta para fanties y tipo 6).
 						if (
@@ -1924,7 +1924,7 @@ void mueve_bicharracos (void) {
 					{
 						tocado = 1;
 
-						#if defined(SLOW_DRAIN) && defined(PLAYER_BOUNCES)
+						#ifdef SLOW_DRAIN_ON
 							if (!lasttimehit || ((maincounter & 3) == 0))
 						#endif
 						{
@@ -2045,7 +2045,7 @@ void mueve_bicharracos (void) {
 		#endif
 	}
 
-	#if defined SLOW_DRAIN && defined PLAYER_BOUNCES
+	#ifdef SLOW_DRAIN_ON
 		lasttimehit = tocado;
 	#endif
 }

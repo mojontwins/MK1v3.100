@@ -36,7 +36,7 @@ void sp_UpdateNow (void) {
 	// Invalidate all sprites
 
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		#if defined PLAYER_CAN_FIRE || defined PLAYER_HAS_SWORD
+		#ifdef PLAYER_CAN_FIRE
 			if (gpit >= SP_BULLETS_BASE) {
 				cpc_PutSPTileMap2Bx8 ((int) (&sp_sw [gpit]));
 			} else
@@ -52,7 +52,7 @@ void sp_UpdateNow (void) {
 	// Redraw all sprites
 
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		#if defined PLAYER_CAN_FIRE || defined PLAYER_HAS_SWORD
+		#ifdef PLAYER_CAN_FIRE
 			if (gpit >= SP_BULLETS_BASE) {
 				cpc_PutTrSp2Bx8TileMap ((int) (&sp_sw [gpit])); // REVISAR!!
 			} else
@@ -523,7 +523,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
 #ifndef DEACTIVATE_OBJECTS
 	void draw_objs () {
 		// [FIX v3.100] Como en ZX: el icono y flags [OBJECT_COUNT] solo con scripting.
-		#if defined(ONLY_ONE_OBJECT) && defined(ACTIVATE_SCRIPTING)
+		#ifdef SHOW_OBJECT_ICON
 			if (player.objs) {
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X, 135, 132);
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X + 1, 135, 133);

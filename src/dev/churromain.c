@@ -11,6 +11,9 @@
 	#undef MODE_128K
 #endif
 
+// Constantes y banderas derivadas de config.h
+#include "config_derived.h"
+
 // NUMBLOCKS es el número de bloques necesario para mover los sprites
 // Configurar bien este número es MUY IMPORTANTE
 
@@ -160,7 +163,7 @@
 
 #include "mainloop.h"
 
-#if !defined CPC && !defined MODE_128K
+#ifdef HAS_BEEPER
 	// From beepola. Phaser engine by Shiru.
 	#include "speccy/music.h"
 #endif

@@ -94,7 +94,7 @@ void main (void) {
 				#endif
 			#endif
 
-			#if defined (PLAYER_KILLS_ENEMIES) || defined (PLAYER_CAN_FIRE) || defined (ENABLE_RANDOM_RESPAWN)
+			#ifdef NEEDS_INIT_MALOTES
 				init_malotes ();
 			#endif
 
@@ -134,7 +134,7 @@ void main (void) {
 				ammo_old = 0xff;
 			#endif
 
-			#if defined(TIMER_ENABLE) && defined(PLAYER_SHOW_TIMER)
+			#ifdef SHOW_TIMER
 				timer_old = 0;
 			#endif
 
@@ -257,7 +257,7 @@ void main (void) {
 					}
 				#endif
 
-				#if (defined(PLAYER_KILLS_ENEMIES) || defined(PLAYER_CAN_FIRE)) && defined PLAYER_SHOW_KILLS
+				#ifdef SHOW_KILLS
 					if (player.killed != killed_old) {
 						print_number2 (KILLED_X, KILLED_Y, player.killed);
 						killed_old = player.killed; 
@@ -271,7 +271,7 @@ void main (void) {
 					}
 				#endif
 
-				#if defined(TIMER_ENABLE) && defined(PLAYER_SHOW_TIMER)
+				#ifdef SHOW_TIMER
 					if (ctimer.t != timer_old) {
 						print_number2 (TIMER_X, TIMER_Y, ctimer.t);
 						timer_old = ctimer.t;
@@ -298,7 +298,7 @@ void main (void) {
 
 				render_sprites ();
 	
-				#if defined ACTIVATE_SCRIPTING && defined ENABLE_FIRE_ZONE
+				#ifdef FIRE_ZONE
 					if (f_zone_ac == 1) {
 						if (gpx >= fzx1 && gpx <= fzx2 && gpy >= fzy1 && gpy <= fzy2) {
 							run_fire_script ();
@@ -492,7 +492,7 @@ void main (void) {
 			}
 			sp_WaitForNoKey ();
 
-			#if defined MODE_128K || defined CPC
+			#ifdef HAS_AY_MUSIC
 				wyz_stop_sound ();
 			#endif
 
@@ -525,7 +525,7 @@ void main (void) {
 				#else
 					game_over ();
 				#endif
-				#if defined MODE_128K || defined CPC
+				#ifdef HAS_AY_MUSIC
 					wyz_stop_sound ();
 				#endif
 			}

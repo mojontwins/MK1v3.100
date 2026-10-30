@@ -101,9 +101,6 @@ void system_init (void) {
 #else
 	// Draw packed tile (with special effects)
 
-	#if defined USE_AUTO_SHADOWS && defined USE_AUTO_TILE_SHADOWS
-		#error "USE_AUTO_SHADOWS y USE_AUTO_TILE_SHADOWS son incompatibles"
-	#endif
 
 	void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
 		px = x; py = y; pt = t;
@@ -188,7 +185,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, unsigned char
 
 #ifndef DEACTIVATE_OBJECTS
 	void draw_objs () {
-		#if defined(ONLY_ONE_OBJECT) && defined(ACTIVATE_SCRIPTING)
+		#ifdef SHOW_OBJECT_ICON
 			if (player.objs) {
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X, 135, 132);
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X + 1, 135, 133);

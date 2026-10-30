@@ -82,10 +82,5 @@ extern struct sp_Rect spritesClip [0];
 		defb VIEWPORT_Y, VIEWPORT_X, 20, 30
 #endasm
 
-#ifndef PLAYER_CAN_FIRE
-	#ifdef MAX_BULLETS
-		#undef MAX_BULLETS
-	#endif
-	#define MAX_BULLETS 0
-#endif
+// [v3.100] MAX_BULLETS = 0 sin disparos: ver config_derived.h
 		

@@ -7,72 +7,10 @@
 #define EST_PARP 		2
 #define EST_MUR 		4
 
-// ---------------------------------------------------------------------------
-// [v3.100] Constantes derivadas de config.h
-// ---------------------------------------------------------------------------
-
-// enoffs, enoffsmasi y los bucles de enemigos usan unsigned char: como mucho
-// 85 pantallas (85 * 3 = 255 enemigos).
-#if MAP_W * MAP_H > 85
-	#error "MAP_W * MAP_H no puede pasar de 85 pantallas"
-#endif
-
-// Los bundles de nivel (COMPRESSED_LEVELS) siempre llevan la vida de los enemigos.
-#ifdef COMPRESSED_LEVELS
-	#define FORCE_ENEMS_LIFE
-#endif
-
-// ¿Tiene la estructura MALOTE el campo life? Tiene que coincidir con la
-// condición que escribe ene2h en enems.h.
-#if ((defined PLAYER_CAN_FIRE || defined ENABLE_SWORD) && ENEMS_LIFE_GAUGE > 1) || defined FORCE_ENEMS_LIFE
-	#define MALOTE_HAS_LIFE
-#endif
-
-// Datos que dependen del nivel. Con niveles comprimidos se leen de la
-// cabecera del bundle, que sigue en level_data mientras dura el nivel (ver
-// levels.h); si no, de config.h.
-// El motor usa siempre estas macros: LEVEL_MAP_W en lugar de MAP_W, etc.
-// MAP_W y MAP_H pasan a ser el tamaño máximo (el de los buffers).
-#ifdef COMPRESSED_LEVELS
-	#define LEVEL_MAP_W			(level_data [0].map_w)
-	#define LEVEL_MAP_H			(level_data [0].map_h)
-	#define LEVEL_SCR_INI		(level_data [0].scr_ini)
-	#define LEVEL_INI_X			(level_data [0].ini_x)
-	#define LEVEL_INI_Y			(level_data [0].ini_y)
-	#define LEVEL_MAX_OBJS		(level_data [0].max_objs)
-	#define LEVEL_ENEMS_LIFE	(level_data [0].enems_life)
-	#define LEVEL_SCR_FIN		(level_data [0].scr_fin)
-	#define LEVEL_FIN_X			(level_data [0].fin_x)
-	#define LEVEL_FIN_Y			(level_data [0].fin_y)
-#else
-	#define LEVEL_SCR_INI		SCR_INICIO
-	#define LEVEL_INI_X			PLAYER_INI_X
-	#define LEVEL_INI_Y			PLAYER_INI_Y
-	#define LEVEL_SCR_FIN		SCR_FIN
-	#define LEVEL_MAP_W			MAP_W
-	#define LEVEL_MAP_H			MAP_H
-	#define LEVEL_MAX_OBJS		PLAYER_NUM_OBJETOS
-	#ifdef ENEMS_LIFE_GAUGE
-		#define LEVEL_ENEMS_LIFE	ENEMS_LIFE_GAUGE
-	#else
-		#define LEVEL_ENEMS_LIFE	1
-	#endif
-	#define LEVEL_FIN_X			PLAYER_FIN_X
-	#define LEVEL_FIN_Y			PLAYER_FIN_Y
-#endif
-
-// Número de flags que guardan los checkpoints (ninguno sin scripting).
-#ifdef ACTIVATE_SCRIPTING
-	#define SG_NFLAGS MAX_FLAGS
-#else
-	#define SG_NFLAGS 0
-#endif
+// [v3.100] Las constantes derivadas de config.h están en config_derived.h.
 
 // [v3.100] Sincronía de frames: la ISR cuenta interrupciones en isr_frames y
 // el bucle principal espera a que pasen GAME_FRAME_TICKS antes de seguir.
-#ifndef GAME_FRAME_TICKS
-	#define GAME_FRAME_TICKS 2
-#endif
 unsigned char isr_frames;
 
 #define sgni(n)			(n < 0 ? -1 : 1)
@@ -147,8 +85,7 @@ unsigned char *en_an_next_frame [3] 				AT (BASE_ARRAYS + 12);
 
 // [FIX v3.100] Aquí se usaba RANDOM_RESPAWN pero config.h define
 // ENABLE_RANDOM_RESPAWN. Ahora todo el motor usa ENABLE_RANDOM_RESPAWN.
-#if defined(ENABLE_RANDOM_RESPAWN) || defined (ENABLE_CUSTOM_TYPE_6)
-	#define ENEMS_HAVE_FREE_COORDS		// Hay enemigos con coordenadas propias (x64)
+#ifdef ENEMS_HAVE_FREE_COORDS
 	signed int en_an_x [3] 							AT (BASE_ARRAYS + 21);
 	signed int en_an_y [3] 							AT (BASE_ARRAYS + 27);
 	signed int en_an_vx [3] 						AT (BASE_ARRAYS + 33);
@@ -172,7 +109,7 @@ unsigned char en_an_base_frame [3]	 				AT (BASE_ARRAYS + 60);
 unsigned char _en_x, _en_y, _en_x1, _en_x2, _en_y1, _en_y2, _en_t, _en_life;
 signed char _en_mx, _en_my;
 
-#if defined(SLOW_DRAIN) && defined(PLAYER_BOUNCES)
+#ifdef SLOW_DRAIN_ON
 	unsigned char lasttimehit;
 #endif
 
@@ -243,7 +180,7 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 	unsigned char fzx1, fzy1, fzx2, fzy2, f_zone_ac;
 #endif
 
-#if defined(ACTIVATE_SCRIPTING) && defined(ENABLE_PUSHED_SCRIPTING)
+#ifdef PUSHED_SCRIPTING
 	unsigned char just_pushed;
 #endif
 
@@ -290,7 +227,7 @@ unsigned char cx1, cx2, cy1, cy2, at1, at2;
 	unsigned char ammo_old;
 #endif
 
-#if defined(TIMER_ENABLE) && defined(PLAYER_SHOW_TIMER)
+#ifdef SHOW_TIMER
 	unsigned char timer_old;
 #endif
 
