@@ -36,6 +36,12 @@
 //                         Cada vez que se entra en una pantalla, tras
 //                         dibujarla (n_pant es la nueva pantalla).
 //
+//   HOOK_WIN_CONDITION    unsigned char hook_win_condition (void)
+//                         Cada frame: devuelve distinto de 0 si se ha superado
+//                         el nivel (o el juego). Sustituye a la condición
+//                         normal (todos los objetos y, si la hay, la casilla
+//                         final). WIN GAME del script sigue funcionando.
+//
 //   HOOK_LEVEL_END        void hook_level_end (void)
 //                         Al superar un nivel (o el juego, sin niveles).
 //

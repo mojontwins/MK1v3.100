@@ -241,7 +241,8 @@ void main (void) {
 					#endif
 				#endif
 
-				#ifndef DEACTIVATE_OBJECTS
+				// Marcador. Un contador con coordenada X 99 no se muestra.
+				#if !defined DEACTIVATE_OBJECTS && OBJECTS_X != 99
 					if (player.objs != objs_old) {
 						draw_objs ();
 						objs_old = player.objs;
@@ -253,7 +254,7 @@ void main (void) {
 					life_old = player.life;
 				}
 			
-				#ifndef DEACTIVATE_KEYS
+				#if !defined DEACTIVATE_KEYS && KEYS_X != 99
 					if (player.keys != keys_old) {
 						print_number2 (KEYS_X, KEYS_Y, player.keys);
 						keys_old = player.keys;
@@ -267,7 +268,7 @@ void main (void) {
 					}
 				#endif
 
-				#ifdef MAX_AMMO 	
+				#if defined MAX_AMMO && AMMO_X != 99
 					if (player.ammo != ammo_old) {
 						print_number2 (AMMO_X, AMMO_Y, player.ammo);
 						ammo_old = player.ammo;
@@ -469,19 +470,31 @@ void main (void) {
 
 				// Win game condition
 				// Todos los objetos y, si hay pantalla final, estar en su tile.
-				if (player.objs == LEVEL_MAX_OBJS
-					#ifdef ACTIVATE_SCRIPTING
-						|| script_result == 1
-					#endif
-				) {
-					if (
-						pant_final == 99 ||
-						(n_pant == pant_final && (gpx >> 4 == LEVEL_FIN_X && gpy >> 4 == LEVEL_FIN_Y))
+				// Un juego puede poner su propia condición con HOOK_WIN_CONDITION.
+				#ifdef HOOK_WIN_CONDITION
+					if (hook_win_condition ()
+						#ifdef ACTIVATE_SCRIPTING
+							|| script_result == 1
+						#endif
 					) {
 						success = 1;
 						playing = 0;
 					}
-				}
+				#else
+					if (player.objs == LEVEL_MAX_OBJS
+						#ifdef ACTIVATE_SCRIPTING
+							|| script_result == 1
+						#endif
+					) {
+						if (
+							pant_final == 99 ||
+							(n_pant == pant_final && (gpx >> 4 == LEVEL_FIN_X && gpy >> 4 == LEVEL_FIN_Y))
+						) {
+							success = 1;
+							playing = 0;
+						}
+					}
+				#endif
 
 				// Game over condition
 				if (player.life == 0

@@ -315,3 +315,7 @@ unsigned char *allpurposepuntero;
 #ifdef FIRE_TO_PUSH	
 	unsigned char pushed_any;
 #endif
+
+// attr () está en engine.h, pero las sombras automáticas de printer.h ya la
+// usan (sin el prototipo sccz80 supondría que devuelve int).
+unsigned char attr (unsigned char x, unsigned char y);

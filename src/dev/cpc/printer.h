@@ -609,7 +609,7 @@ void render_sprites (void) {
 	// Render enemies
 
 	for (gpit = 0; gpit < 3; gpit ++) {
-		// Fanties y enemigos de tipo 6 tienen sus propias coordenadas (x64).
+		// Fanties y enemigos de tipo 6 tienen sus propias coordenadas (8.8).
 		#ifdef ENEMS_HAVE_FREE_COORDS
 			if (
 				#ifdef ENABLE_RANDOM_RESPAWN

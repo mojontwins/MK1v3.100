@@ -21,6 +21,10 @@ game=bootee
 cd "$(dirname "$0")"
 U=../utils/linux
 
+# Un juego puede traer un game.sh que cambie "game" y defina convert_assets,
+# la conversión de sus gráficos (en lugar de la de bootee de más abajo).
+[ -f game.sh ] && . ./game.sh
+
 justcompile=0; noclean=0
 for a in "$@"; do
 	[ "$a" = "justcompile" ] && justcompile=1
@@ -30,7 +34,10 @@ done
 mode128=0
 grep -qE '^[[:space:]]*#define[[:space:]]+MODE_128K\b' config.h && mode128=1
 
-if [ $justcompile = 0 ]; then
+if [ $justcompile = 0 ] && type convert_assets > /dev/null 2>&1; then
+	echo "### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###"
+	convert_assets || { echo "ERROR convirtiendo"; exit 1; }
+elif [ $justcompile = 0 ]; then
 	echo "### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###"
 	$U/mapcnv ../map/mapa.map mapa.h 6 5 15 10 15 packed > /dev/null
 	$U/ene2h ../enems/enems.ene enems.h 2bytes > /dev/null
@@ -124,8 +131,8 @@ echo "### CONSTRUYENDO CINTA ###"
 $U/bin2tap -o screen.tap -a 16384 loading.scr
 $U/bin2tap -o main.tap -a 24200 $game.bin
 if [ $mode128 = 0 ]; then
-	# cambia BOOTEE por el nombre que quieres que salga en Program:
-	$U/bas2tap -a10 -sBOOTEE speccy/loader.bas loader.tap > /dev/null
+	# El nombre en Program: es el del juego en mayúsculas
+	$U/bas2tap -a10 -s$(echo $game | tr a-z A-Z) speccy/loader.bas loader.tap > /dev/null
 	cat loader.tap screen.tap main.tap > $game.tap
 else
 	# Cargador 128K: cada página se carga en 32768 y reubica la copia a su
@@ -140,7 +147,7 @@ else
 		tapes="$tapes ram$p.tap"
 	done
 	echo "10 BORDER NOT PI:PAPER NOT PI:INK VAL \"6\":CLS:CLEAR VAL \"24199\":LOAD \"\"SCREEN\$:LOAD \"\"CODE$pages:LOAD \"\"CODE:RANDOMIZE USR VAL \"24200\"" > loader128.bas
-	$U/bas2tap -a10 -sBOOTEE loader128.bas loader.tap > /dev/null
+	$U/bas2tap -a10 -s$(echo $game | tr a-z A-Z) loader128.bas loader.tap > /dev/null
 	cat loader.tap $tapes main.tap > $game.tap
 fi
 
