@@ -107,9 +107,9 @@ fi
 
 echo "### COMPILANDO GUEGO ###"
 rm -f zcc_opt.def
-zcc +zx -a -vn churromain.c -o $game.asm -lsplib2 -zorg=24200 > /dev/null 2>&1
+zcc +zx -a -vn churromain.c -o $game.asm -lsplib2f -zorg=24200 > /dev/null 2>&1
 rm -f zcc_opt.def
-if ! zcc +zx -m -vn churromain.c -o $game.bin -lsplib2 -zorg=24200; then
+if ! zcc +zx -m -vn churromain.c -o $game.bin -lsplib2f -zorg=24200; then
 	echo "ERROR"; exit 1
 fi
 $U/printsize $game.bin

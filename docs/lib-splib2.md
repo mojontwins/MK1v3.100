@@ -53,7 +53,7 @@ copy splib2\spritepack.h  c:\z88dk10-orig\include
 La línea de compilación del target ZX (`src/dev/comp.bat:62`) es:
 
 ```
-zcc +zx -m -vn -unsigned -zorg=24200 -lsplib2 -o %game%.bin churromain.c -DSPECCY
+zcc +zx -m -vn -unsigned -zorg=24200 -lsplib2f -o %game%.bin churromain.c -DSPECCY
 ```
 
 y el include de la cabecera lo hace `src/dev/speccy.h:6`:
@@ -138,7 +138,7 @@ El motor define sus constantes en `src/dev/speccy.h:54-62`:
 ```
 
 `AD_FREE` es la memoria que se le da al asignador de bloques de splib2 (ver
-§5.2). **Si añades sprites, tienes que subir `NUMBLOCKS`** (§9).
+sección 5.2). **Si añades sprites, tienes que subir `NUMBLOCKS`** (sección 9).
 
 ---
 

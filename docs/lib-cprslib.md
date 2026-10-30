@@ -95,7 +95,7 @@ zcc +cpc -m -vn -unsigned -zorg=1024 -lcpcrslib_mt -o %game%.bin system\tilemap_
 Dos cosas a destacar:
 
 1. **El `tilemap_conf.asm` va en la línea de compilación**, antes que el
-   `.c`. Es el módulo que hace de contrato con la librería (ver §2).
+   `.c`. Es el módulo que hace de contrato con la librería (ver la sección 2).
 2. La variante fg se enlaza cambiando `-lcpcrslib_mt` por
    `-lcpcrslib_fg_mt`.
 
@@ -131,7 +131,7 @@ compila con el juego:
   `ancho_pantalla_bytes_visible` = 64.
 - `behindtilemasks` (sólo la variante fg): 256 bytes, 1 por tile.
 - `mascara1` / `mascara2` = `$00` / `$00`: máscaras de los "garbled bits" del
-  modo 0 (ver §6.6; la biblioteca actual no las usa).
+  modo 0 (ver la sección 6.6; la biblioteca actual no las usa).
 
 Y en `src/dev/cpc.h:9-26`, el motor exporta además:
 
@@ -439,7 +439,7 @@ typedef struct sprite {
 ```
 
 - `cx`, `cy`: la posición **actual** del sprite. Las unidades dependen de la
-  rutina que se use (ver §6.3).
+  rutina que se use (ver la sección 6.3).
 - `ox`, `oy`: la posición **anterior**. La rutina de invalidación marca
   las celdas de las dos posiciones, para que el sprite no deje rastro.
 - `cox`, `coy`: el desplazamiento de la "cara" del sprite dentro del
@@ -623,7 +623,7 @@ Las que usa el motor de serie:
 4. En `render_all_sprites`, pon `cx`, `cy` y `sp0` cada frame.
 
 Recuerda: cada sprite necesita sus propias rutinas de invalidación y
-dibujo, y **sus unidades de coordenadas** (§6.3).
+dibujo, y **sus unidades de coordenadas** (sección 6.3).
 
 ### 8.2. Escribir en pantalla
 
@@ -663,7 +663,7 @@ lo que quieres es repintar la zona de juego, `invalidate_viewport()`
   luego se dibujan los sprites, y al final se vuelca a la pantalla. Si
   llamas a `cpc_UpdScr` después de dibujar los sprites, los borras.
 - **Unidades de coordenadas**: cada familia de rutinas espera unidades
-  distintas (§6.3).
+  distintas (sección 6.3).
 - **Modo 0 vs modo 1**: no es sólo el número de colores. En modo 0 el
   motor divide la X entre 2, la LUT de transparencia es otra, y las rutinas
   de sprite son otras (`Px` en vez de `PxM1`).

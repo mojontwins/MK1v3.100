@@ -1,8 +1,8 @@
 @echo off
-rem Compila el juego para ZX Spectrum en Windows (equivalente de comp-zx.sh).
+rem Compila el juego para ZX Spectrum en Windows.
 rem Uso: comp-zx.bat [justcompile] [noclean]
-rem Requiere z88dk 1.10 en el PATH (z88env.bat, ver env\setup-windows.bat) y
-rem las utilidades en ..\utils\win (src\utils\build-windows.bat).
+rem Antes, en la misma ventana: C:\z88dk10-orig\setenv.bat (z88dk 1.10, ver
+rem env\z88dk10-orig.zip). Las utilidades estan en ..\utils.
 rem
 rem Con ACTIVATE_SCRIPTING compila los scripts con msc4 (..\script\script.spt
 rem o la lista de scripts.txt).
@@ -22,7 +22,7 @@ rem Cambia "game" por el nombre de tu güego.
 set game=bootee
 
 cd /d "%~dp0"
-set "U=%~dp0..\utils\win"
+set "U=%~dp0..\utils"
 
 rem Un juego puede traer un game.bat que cambie "game" y un convert.bat con la
 rem conversion de sus graficos (en lugar de la de bootee de mas abajo).
@@ -133,9 +133,9 @@ if errorlevel 1 exit /b 1
 :compile
 echo ### COMPILANDO GUEGO ###
 if exist zcc_opt.def del zcc_opt.def
-zcc +zx -a -vn churromain.c -o %game%.asm -lsplib2 -zorg=24200 > nul 2>&1
+zcc +zx -a -vn churromain.c -o %game%.asm -lsplib2f -zorg=24200 > nul 2>&1
 if exist zcc_opt.def del zcc_opt.def
-zcc +zx -m -vn churromain.c -o %game%.bin -lsplib2 -zorg=24200
+zcc +zx -m -vn churromain.c -o %game%.bin -lsplib2f -zorg=24200
 if errorlevel 1 (echo ERROR& exit /b 1)
 "%U%\printsize" %game%.bin
 

@@ -4,20 +4,14 @@ Copyleft 2010-2014, 2026 by The Mojon Twins
 
 ## Qué es este documento
 
-Es el manual de **MTE MK1 v3.100** ("la Churrera"), el motor de juegos para
-ZX Spectrum 48K / 128K y Amstrad CPC que vive en este repositorio. Está
-escrito a partir del tutorial de MK1 (`docs/MK1.pdf`), del histórico de
-cambios de la rama 3.99 (`docs/whatsnew.txt`) y, sobre todo, del código: si
-algo de aquí no coincide con `src/dev`, **manda el código**.
-
-El tutorial de `MK1.pdf` es de una versión posterior (MK1 5.0, 2020): muchos
-conceptos son los mismos, pero los nombres de fichero, varias directivas, el
-scripting (MSC3) y los *code injection points* no lo son. Este manual cuenta
-cómo es la v3.100 tal y como está ahora.
+Es el manual de **MTE MK1 v3.100** ("la Churrera"), el motor para hacer
+güegos de ZX Spectrum 48K / 128K y Amstrad CPC. Cuenta cómo hacer un güego
+con él, desde instalar las herramientas hasta montar la cinta. Si algo de aquí
+no coincide con `src/dev`, **manda el código**.
 
 | Capítulo | Qué cuenta |
 |---|---|
-| [0](#capítulo-0---antes-de-empezar) | Instalar el entorno, la estructura del repositorio, hacer un güego nuevo. |
+| [0](#capítulo-0---antes-de-empezar) | Instalar las herramientas, compilar el ejemplo, hacer un güego nuevo. |
 | [1](#capítulo-1---el-tileset) | El tileset y el comportamiento de los tiles. |
 | [2](#capítulo-2---el-mapa) | El mapa. |
 | [3](#capítulo-3---los-sprites) | Los sprites. |
@@ -27,21 +21,22 @@ cómo es la v3.100 tal y como está ahora.
 | [7](#capítulo-7---música-y-sonido) | Música y efectos. |
 | [8](#capítulo-8---el-scripting-msc4) | El scripting (MSC4). |
 | [9](#capítulo-9---código-propio-customh-y-externh) | Código propio: `custom.h` y `extern.h`. |
-| [10](#capítulo-10---zx-spectrum-128k-y-juegos-con-niveles) | 128K y juegos de varios niveles. |
+| [10](#capítulo-10---zx-spectrum-128k-y-juegos-con-niveles) | 128K y güegos de varios niveles. |
 | [11](#capítulo-11---amstrad-cpc) | Amstrad CPC. |
-| [12](#capítulo-12---las-herramientas) | Referencia de las herramientas. |
-| [13](#capítulo-13---probar-el-motor) | Probar el motor (emuladores y pruebas). |
-| [A](#apéndice-a---qué-cambia-la-v3100) | Qué cambia la v3.100 respecto a la 3.99. |
+| [12](#capítulo-12---tu-güego-aparte-del-motor-y-el-ejemplo-de-goku-mal) | Tu güego aparte del motor: `game.bat`, `convert.bat` y el ejemplo de Goku Mal. |
+| [13](#capítulo-13---las-herramientas) | Referencia de las herramientas. |
+| [A](#apéndice-a---trabajar-en-linux) | Trabajar en Linux. |
 | [B](#apéndice-b---mapa-de-memoria) | Mapa de memoria. |
 
 Otros documentos:
 
-* [`msc4.md`](msc4.md): la especificación completa del lenguaje de scripts
-  (el [§19](msc4.md#19-mk1-v3100-el-intérprete-en-c) es lo propio de v3.100).
+* [`msc4.md`](msc4.md): el lenguaje de scripts, completo.
 * [`formato-niveles.md`](formato-niveles.md): el formato de los niveles.
 * [`lib-splib2.md`](lib-splib2.md), [`lib-cprslib.md`](lib-cprslib.md): las
   librerías gráficas de ZX y CPC.
-* `examples/Goku Mal 128/README.md`: un juego de 128K con cinco niveles.
+* [`tecnico.md`](tecnico.md): notas técnicas, para quien quiera tocar el
+  motor o probarlo.
+* `examples/Goku Mal 128/README.md`: un güego de 128K con cinco niveles.
 
 ---
 
@@ -72,29 +67,42 @@ coleccionables, recargas de vida, de munición y de tiempo; temporizador;
 puntos de control (*checkpoints*); tiles animados; sombras automáticas; pausa;
 y, en 128K, música AY y varios niveles.
 
-## Instalar el entorno (Linux)
+## Lo que necesitas
 
-```sh
-env/setup-linux.sh [directorio]     # FreeBASIC, z88dk 1.10, librerías, crt0
-source ~/mk1tools/z88env.sh         # (o el directorio que le hayas dado)
-src/utils/build-linux.sh            # compila todas las utilidades en src/utils/linux
+Todo lo necesario para trabajar en Windows está en este repositorio:
+
+| Dónde | Qué es |
+|---|---|
+| `env/z88dk10-orig.zip` | El compilador de C (z88dk 1.10), con las librerías (`splib2` para ZX, `cpcrslib` para CPC), las cabeceras y los `crt0` que usa el motor. |
+| `env/mappy-mojon.zip` | Mappy, el editor de mapas (capítulo 2). |
+| `env/WYZTracker-0.5.0.2.zip` | WYZ Tracker 0.5.0.2, para hacer la música de **ZX Spectrum 128K** (capítulo 7). |
+| `env/WYZTracker.2.0.1.2.7z` | WYZ Tracker 2.0.1.2, para hacer la música de **Amstrad CPC** (capítulo 7). |
+| `env/cpc_pal.*` | La paleta del CPC para tu editor de gráficos (`.png`, `.act`, `.aco` y `.pal`). |
+| `env/XVI32.zip` | Un editor hexadecimal, por si hay que mirar un binario. |
+| `src/utils/` | Las herramientas de conversión (`ts2bin`, `mapcnv`, `ponedor`…) y el compilador de scripts (`msc4`), ya compiladas. |
+
+Además te hará falta un editor de gráficos que guarde png (el que te guste),
+un editor de textos y un emulador de Spectrum o de CPC para probar el güego.
+
+## Instalar el entorno
+
+1. Descomprime `env\z88dk10-orig.zip` directamente en `C:\`. Tiene que
+   quedar la carpeta `C:\z88dk10-orig`.
+2. Descomprime donde quieras Mappy y el WYZ Tracker que vayas a usar.
+
+Y ya está. Las herramientas de `src\utils` no hay que instalarlas.
+
+Cada vez que abras una ventana de comandos para compilar, lo primero es
+ejecutar
+
+```bat
+C:\z88dk10-orig\setenv.bat
 ```
 
-`env/setup-linux.sh` instala FreeBASIC 1.10, compila z88dk 1.10 (el compilador
-`sccz80` con el que se hizo la Churrera), instala `splib2` (ZX) y
-`cpcrslib_mt` (CPC) y el `crt0` mínimo del motor (`ld sp,$FFFF : jp _main`), y
-escribe `z88env.sh` con las variables de entorno.
+que le dice a esa ventana dónde está z88dk (sólo a esa ventana: si la
+cierras y abres otra, hay que volver a ejecutarlo).
 
-`src/utils/build-linux.sh` compila las utilidades de FreeBASIC (`mapcnv`,
-`ene2h`, `ts2bin`, `sprcnv`, `png2scr`, `buildlevel`, `librarian`,
-`mkts_om`…), el compilador de scripts `msc4` (desde `msc4/`) y las externas en
-C (`zx0`, `zx7`, `apultra`, `pasmo`, `bas2tap`, `bin2tap`, `cpc2cdt`,
-`cpctbin2sna`). Todo queda en `src/utils/linux/`.
-
-En Windows siguen estando los `.exe` y los `comp-zx.bat` / `comp-cpc.bat`
-originales, pero el camino mantenido es el de Linux (`comp-zx.sh`,
-`comp-cpc.sh`): los `.bat` no compilan los scripts, ni los niveles, ni el
-modo 128K.
+Si trabajas en Linux, mira el [apéndice A](#apéndice-a---trabajar-en-linux).
 
 ## La estructura del repositorio
 
@@ -104,8 +112,8 @@ src/                 <- el esqueleto de un güego (el ejemplo es Bootee)
     config.h         <- la configuración (capítulo 6)
     custom.h         <- tu código: ganchos del motor (capítulo 9)
     extern.h         <- tu código: EXTERN, TEXT BOX y DIALOG del script
-    comp-zx.sh       <- compila para ZX Spectrum
-    comp-cpc.sh      <- compila para Amstrad CPC
+    comp-zx.bat      <- compila para ZX Spectrum
+    comp-cpc.bat     <- compila para Amstrad CPC
     churromain.c     <- el programa principal (incluye todo lo demás)
     engine.h         <- el motor
     mainloop.h       <- el bucle principal
@@ -120,62 +128,101 @@ src/                 <- el esqueleto de un güego (el ejemplo es Bootee)
   enems/             <- los enemigos y hotspots (enems.ene)
   ogt/               <- la música (CPC, y zx128/ para ZX 128K)
   script/            <- el script (script.spt), si lo hay
-  utils/             <- las herramientas (linux/ las compiladas para Linux)
-msc4/                <- el compilador de scripts
-examples/            <- juegos de ejemplo (Goku Mal 128)
-tests/               <- pruebas: emuladores, matriz de configuraciones...
-env/                 <- instalación del entorno
+  utils/             <- las herramientas
+msc4/                <- el código fuente del compilador de scripts
+examples/            <- güegos de ejemplo (Goku Mal 128)
+tests/               <- pruebas del motor
+env/                 <- lo que hay que instalar
 docs/                <- la documentación
 ```
 
 ## Compilar el ejemplo
 
-```sh
-cd src/dev
-./comp-zx.sh        # bootee.tap
-./comp-cpc.sh       # bootee.sna y bootee.cdt
-```
+`src` es un güego completo, Bootee, listo para compilar:
 
-`comp-zx.sh` convierte los gráficos, el mapa y los enemigos, compila el
-script (si `config.h` define `ACTIVATE_SCRIPTING`), construye los niveles (si
-hay un `levels.sh`), en 128K ensambla el reproductor de música y reparte los
-recursos en las páginas de RAM, compila con `zcc` y monta la cinta. Opciones:
-`justcompile` (sólo compilar, sin convertir) y `noclean` (deja los
-intermedios). `comp-cpc.sh` hace lo mismo para CPC.
+1. Abre una ventana de comandos (tecla Windows + R, escribe `cmd` y pulsa
+   Intro).
+2. Prepara z88dk:
+
+   ```bat
+   C:\z88dk10-orig\setenv.bat
+   ```
+
+3. Ve a la carpeta `src\dev` del repositorio (cambia la ruta por la tuya):
+
+   ```bat
+   cd C:\MK1v3.100\src\dev
+   ```
+
+4. Compila:
+
+   ```bat
+   comp-zx.bat
+   ```
+
+   Sale `bootee.tap`, la cinta de Spectrum. Para CPC, `comp-cpc.bat`, que
+   deja `bootee.sna` (una instantánea) y `bootee.cdt` (la cinta).
+5. Abre la cinta en tu emulador.
+
+`comp-zx.bat` lo hace todo:
+
+1. Convierte los gráficos, el mapa y los enemigos (capítulos 1 a 5).
+2. Si `config.h` define `ACTIVATE_SCRIPTING`, compila el script (capítulo 8).
+3. Si el güego tiene niveles, los construye (capítulo 10).
+4. En 128K, prepara el reproductor de música y reparte las pantallas y los
+   niveles por las páginas de RAM (capítulo 10).
+5. Compila el güego con z88dk.
+6. Monta la cinta y borra los ficheros intermedios.
+
+Si algo falla, se para y dice qué. Se le pueden dar dos opciones:
+
+* `comp-zx.bat justcompile`: no convierte nada, sólo compila. Es más rápido
+  cuando sólo has tocado el código o `config.h`.
+* `comp-zx.bat noclean`: no borra los ficheros intermedios (útil para ver qué
+  ha pasado).
 
 ## Hacer un güego nuevo
 
-1. Copia `src/` entero con el nombre de tu güego.
-2. Sustituye los recursos: `gfx/`, `map/`, `enems/`, `ogt/`, `script/`.
-3. En `dev/comp-zx.sh` (y `comp-cpc.sh`) cambia `game=bootee` por el nombre
-   de tu güego y ajusta las llamadas a los conversores a tu mapa (el tamaño
-   del mapa va en la llamada a `mapcnv`). O, mejor, deja el script como está
-   y crea un `dev/game.sh` (ver más abajo).
-4. Configura `dev/config.h` (capítulo 6).
-5. Si hace falta, escribe tu código en `dev/custom.h` y `dev/extern.h`.
-6. `./comp-zx.sh`.
+1. **Copia la carpeta `src` entera** a otro sitio, con el nombre de tu güego
+   (por ejemplo `C:\juegos\miguego`). Cópiala entera: los scripts de
+   compilación buscan las herramientas en `utils`, al lado de `dev`.
+2. **Sustituye los recursos** de Bootee por los tuyos, con los mismos nombres:
 
-### `game.sh`
+   | Qué | Dónde | Capítulo |
+   |---|---|---|
+   | Tileset y fuente | `gfx\speccy\work.png`, `gfx\speccy\font.png` | 1 |
+   | Mapa | `map\mapa.fmp` (Mappy) y `map\mapa.map` (exportado) | 2 |
+   | Sprites | `gfx\speccy\sprites.png` | 3 |
+   | Título, marco, final, carga | `gfx\speccy\title.png`, `marco.png`, `ending.png`, `loading.png` | 4 |
+   | Enemigos y *hotspots* | `enems\enems.ene` | 5 |
+   | Música (128K) | `ogt\zx128\` | 7 |
+   | Script | `script\script.spt` | 8 |
 
-Si en `dev/` hay un `game.sh`, `comp-zx.sh` lo lee al principio. Puede
-cambiar el nombre del güego y definir una función `convert_assets` que
-sustituye a la conversión de Bootee (la de los gráficos, mapa y enemigos):
+3. **Edita `dev\comp-zx.bat`** con un editor de textos:
+   * cambia `set game=bootee` por el nombre de tu güego (sin espacios: es el
+     nombre de la cinta, `miguego.tap`, y el del programa que carga);
+   * en la línea de `mapcnv`, pon el tamaño de tu mapa en pantallas (Bootee
+     tiene 6x5; ver el capítulo 2):
 
-```sh
-game=gokumal
+     ```bat
+     "%U%\mapcnv" ..\map\mapa.map mapa.h 6 5 15 10 15 packed > nul
+     ```
 
-convert_assets () {
-	$U/ts2bin ../gfx/font.png ../gfx/work1.png ts.bin 7 > /dev/null || return 1
-	$U/sprcnv ../gfx/sprites1.png speccy/sprites.h > /dev/null || return 1
-	$U/png2scr ../gfx/loading.png loading.scr > /dev/null || return 1
-	...
-}
-```
+4. **Configura `dev\config.h`** (capítulo 6): el tamaño del mapa (que tiene
+   que ser el mismo que en `mapcnv`), la pantalla de inicio, cuántos objetos
+   hay que coger, cómo se mueve el jugador, qué enemigos hay…
+5. Si hace falta, escribe tu propio código en `dev\custom.h` y `dev\extern.h`
+   (capítulo 9).
+6. **Compila**: `C:\z88dk10-orig\setenv.bat` y `comp-zx.bat`, como con el
+   ejemplo.
 
-Así un güego no tiene que tocar `comp-zx.sh`, y se puede actualizar el motor
-copiando los ficheros nuevos de `src/dev` sin perder nada. Es lo que hace el
-ejemplo de Goku Mal, que ni siquiera tiene una copia del motor: su `make.sh`
-copia `src/dev`, pone encima los ficheros del güego y compila.
+Lo normal es ir poco a poco: primero el tileset y el mapa, compilar y ver que
+se mueve por él; luego los sprites; luego los enemigos…
+
+Cuando el güego crezca, o cuando salga una versión nueva del motor, conviene
+no tener los cambios mezclados con los ficheros del motor. El
+[capítulo 12](#capítulo-12---tu-güego-aparte-del-motor-y-el-ejemplo-de-goku-mal)
+cuenta cómo separarlos.
 
 ---
 
@@ -256,8 +303,8 @@ El motor usa 256 "caracteres" de 8x8: los 64 primeros son la fuente (ASCII
 256x16 (`gfx/speccy/font.png`). `ts2bin` junta las dos cosas en `ts.bin` (2304
 bytes: 2048 de gráficos y 256 de atributos):
 
-```sh
-ts2bin ../gfx/speccy/font.png ../gfx/speccy/work.png ts.bin 7
+```bat
+..\utils\ts2bin ..\gfx\speccy\font.png ..\gfx\speccy\work.png ts.bin 7
 ```
 
 El último parámetro es la tinta que se usa cuando un cuadro de 8x8 tiene un
@@ -291,8 +338,8 @@ el del nivel actual.
 
 ## La conversión: `mapcnv`
 
-```sh
-mapcnv ../map/mapa.map mapa.h 6 5 15 10 15 packed
+```bat
+..\utils\mapcnv ..\map\mapa.map mapa.h 6 5 15 10 15 packed
 ```
 
 | Parámetro | Significado |
@@ -305,9 +352,9 @@ mapcnv ../map/mapa.map mapa.h 6 5 15 10 15 packed
 | `packed` | Mapa de 16 tiles (4 bits por tile). Sin `packed`, un byte por tile (`UNPACKED_MAP` en `config.h`). |
 | `fixmappy` | Resta 1 a cada tile (si Mappy añadió un tile negro al principio). |
 
-`comp-zx.sh` y `comp-cpc.sh` traen la llamada con los valores de Bootee
-(6x5): cámbialos (o usa `game.sh`). `MAP_W` y `MAP_H` en `config.h` tienen que
-coincidir.
+`comp-zx.bat` y `comp-cpc.bat` traen la llamada con los valores de Bootee
+(6x5): cámbialos por los de tu mapa. `MAP_W` y `MAP_H` en `config.h` tienen
+que coincidir.
 
 Como máximo 85 pantallas (`MAP_W * MAP_H <= 85`; el motor usa índices de un
 byte para los enemigos, 3 por pantalla).
@@ -352,8 +399,8 @@ frames son otros: ver `move ()` en `engine.h`.
 
 ## La conversión
 
-```sh
-sprcnv ../gfx/speccy/sprites.png speccy/sprites.h [nomask]
+```bat
+..\utils\sprcnv ..\gfx\speccy\sprites.png speccy\sprites.h [nomask]
 ```
 
 genera `speccy/sprites.h` (`sprite_1_a` … `sprite_16_c`). `nomask` genera los
@@ -384,9 +431,9 @@ se comprimen (`zx0`). Con `DIRECT_TO_PLAY` el título **es** el marco: el
 juego empieza sobre la pantalla de título y no hay `marco.png`, lo que ahorra
 una pantalla comprimida. Bootee lo hace así.
 
-```sh
-png2scr ../gfx/speccy/title.png title.scr
-zx0 title.scr title.bin
+```bat
+..\utils\png2scr ..\gfx\speccy\title.png title.scr
+..\utils\zx0 title.scr title.bin
 ```
 
 En 48K las pantallas comprimidas van dentro del binario (`pantallas.h`). En
@@ -470,13 +517,15 @@ Con `ONLY_ONE_OBJECT` sólo se puede llevar un objeto: si ya se lleva uno, el
 
 ## El `ponedor`
 
-Los enemigos y *hotspots* se colocan con el `ponedor` (`src/utils/ponedor.exe`,
-Windows), que lee el mapa y el tileset:
+Los enemigos y *hotspots* se colocan con el `ponedor` (`src\utils\ponedor.exe`),
+que lee el mapa y el tileset:
 
-```
-ponedor.exe enems.ene                       # editar
+```bat
+ponedor.exe enems.ene
 ponedor.exe new out=enems.ene map=mapa.map tiles=work.png size=6,5 scrsize=15,10 [adjust=1]
 ```
+
+La primera forma abre un `.ene` para editarlo; la segunda crea uno nuevo.
 
 `scrsize=15,10` es obligatorio para MK1 (por defecto son 16x12). `adjust=1`
 si Mappy añadió un tile negro. Un clic en una casilla empieza un enemigo
@@ -488,8 +537,8 @@ tecla `L` lo cambia.
 
 ## La conversión: `ene2h`
 
-```sh
-ene2h ../enems/enems.ene enems.h 2bytes
+```bat
+..\utils\ene2h ..\enems\enems.ene enems.h 2bytes
 ```
 
 genera `enems.h` con las tablas `malotes []` (los enemigos) y `hotspots []`.
@@ -502,10 +551,7 @@ niveles, los enemigos y *hotspots* van en el bundle del nivel
 # Capítulo 6 - Configurando el güego
 
 Todo el comportamiento del motor se elige en `dev/config.h` con directivas
-`#define`. Las que no se usan se dejan comentadas (`//#define`). Además hay un
-`config_derived.h` que calcula, a partir de `config.h`, las "banderas" que
-usa el motor por dentro (`ENEMIES_CAN_DIE`, `HAS_AY_MUSIC`…); no hay que
-tocarlo.
+`#define`. Las que no se usan se dejan comentadas (`//#define`).
 
 ## I. Configuración general
 
@@ -520,7 +566,7 @@ tocarlo.
 | `PLAYER_NUM_OBJETOS` | Objetos que hay que recoger para terminar. |
 | `PLAYER_LIFE` | Vida inicial y máxima. |
 | `PLAYER_REFILL` | Vida que da cada recarga. |
-| `GAME_FRAME_TICKS` | Interrupciones (1/50 s) por frame de juego: 2 = 25 fps fijos. 0 = sin sincronizar, lo más rápido posible (como la 3.99 en 48K). En CPC, el equivalente `MIN_FAPS_PER_FRAME` sale de aquí. |
+| `GAME_FRAME_TICKS` | Interrupciones (1/50 s) por frame de juego: 2 = 25 fps fijos. 0 = sin sincronizar, lo más rápido posible. En CPC, el equivalente `MIN_FAPS_PER_FRAME` sale de aquí. |
 | `COMPRESSED_LEVELS` | Varios niveles (sólo con `MODE_128K`, capítulo 10). |
 | `MAX_LEVELS` | Número de niveles. |
 | `REFILL_ME` | Con niveles: recarga la vida al empezar cada nivel. |
@@ -704,10 +750,6 @@ horizontales (para los dos ejes).
 | `PLAYER_AX` | 192 | Aceleración horizontal. |
 | `PLAYER_RX` | 256 | Rozamiento (frenada al soltar). |
 
-Las versiones anteriores (3.99) usaban 10.6 (64 = un píxel): para pasar un
-güego viejo a la v3.100 hay que **multiplicar estos valores por 4** (y
-`FANTY_MAX_V` y `FANTY_A` también).
-
 ## V. El comportamiento de los tiles
 
 `comportamiento_tiles []`, 48 valores (ver el capítulo 1). Con
@@ -743,18 +785,29 @@ las versiones:
 Beepola (`speccy/music.h`). Mientras suena un efecto el juego se para (el
 beeper usa la CPU entera), así que los efectos se tocan entre `di` y `ei`.
 
+## La música: WYZ Tracker
+
+En 128K y en CPC la música es del WYZ player, y se compone con **WYZ
+Tracker**. Cada máquina usa una versión distinta, y los ficheros de una no
+valen para la otra:
+
+| Máquina | Versión de WYZ Tracker | Dónde está |
+|---|---|---|
+| ZX Spectrum 128K | **0.5.0.2** | `env/WYZTracker-0.5.0.2.zip` |
+| Amstrad CPC | **2.0.1.2** | `env/WYZTracker.2.0.1.2.7z` |
+
 ## ZX Spectrum 128K: WYZ player
 
-La música y los efectos los toca el WYZ proPLAYER desde la interrupción, en la
-página 1 de RAM. `comp-zx.sh` lo ensambla (`speccy_128/wyz/wyzplayer.asm`) con
-los datos del güego, que se buscan en `../ogt/zx128/` (o en `../ogt/`):
+La música y los efectos los toca el WYZ player desde la interrupción, en la
+página 1 de RAM. `comp-zx.bat` lo ensambla (`speccy_128/wyz/wyzplayer.asm`)
+con los datos del güego, que se buscan en `../ogt/zx128/` (o en `../ogt/`):
 
 | Fichero | Qué es |
 |---|---|
-| `instrumentos.asm` | Instrumentos y pautas (de WYZTracker). |
+| `instrumentos.asm` | Instrumentos y pautas (los exporta WYZ Tracker 0.5.0.2). |
 | `canciones.asm` | `SONG_0`… (con `INCBIN` de los `.mus`) y `TABLA_SONG`. |
 | `efectos.asm` | Opcional: `EFECTO0`… y `TABLA_EFECTOS`. Si no está, los 15 efectos de MK1 de `speccy_128/wyz/efectos.asm`. |
-| `*.mus` | Las canciones exportadas de WYZTracker. |
+| `*.mus` | Las canciones exportadas de WYZ Tracker 0.5.0.2. |
 
 Las canciones se tocan con `wyz_play_music (n)` (n es su posición en
 `TABLA_SONG`): 0 en el título, 1 en el juego (con niveles, la del nivel) y 2
@@ -763,15 +816,13 @@ efectos debe hacer que su `TABLA_EFECTOS` tenga las 15 entradas en el orden de
 la tabla de arriba (el ejemplo de Goku Mal hace corresponder sus 9 efectos
 con los números de MK1 así).
 
-Las canciones tienen que ser del formato del proPLAYER 0.2 de ZX: los `.mus`
-del WYZ player nuevo del CPC no valen (el reproductor se cuelga).
-
 ## Amstrad CPC
 
-También el WYZ player (`cpc/wyz_player.h`), con los datos en `../ogt/`:
-`instrumentos.asm` (que `wyzTrackerParser` convierte en `cpc/instrumentos.h`),
-`cpc/efectos.h` y las canciones comprimidas que lista `cpc/songs.h` (0
-título, 1 juego, 2 game over).
+También el WYZ player (`cpc/wyz_player.h`), con la música hecha con WYZ
+Tracker 2.0.1.2 y los datos en `../ogt/`: `instrumentos.asm` (que
+`wyzTrackerParser` convierte en `cpc/instrumentos.h`), `cpc/efectos.h` y las
+canciones comprimidas que lista `cpc/songs.h` (0 título, 1 juego, 2 game
+over).
 
 ---
 
@@ -801,22 +852,21 @@ PRESS FIRE AT SCREEN 3
 END
 ```
 
-La especificación completa del lenguaje está en [`msc4.md`](msc4.md); lo que
-toca a la v3.100 (cómo se compila, qué secciones lanza el motor y cuándo, las
-variables especiales, `extern.h`, los niveles) en su
-[§19](msc4.md#19-mk1-v3100-el-intérprete-en-c). Aquí va lo justo para empezar.
+El lenguaje completo (todas las secciones, comandos y variables, cuándo lanza
+el motor cada sección, `extern.h`, los niveles) está en [`msc4.md`](msc4.md).
+Aquí va lo justo para empezar.
 
 ## Ponerlo en marcha
 
 1. En `config.h`: `#define ACTIVATE_SCRIPTING` (y, si quieres,
    `SCRIPTING_DOWN` o `SCRIPTING_KEY_M` para la tecla de acción).
 2. Escribe el script en `script/script.spt`.
-3. `./comp-zx.sh`. El script se compila solo con `msc4 ... v=3_100 output=c`,
-   que genera el bytecode, `msc-config.h` (lo que necesita el intérprete) y
-   `msc-scripts.h`. El intérprete es `dev/msc.h`, en C, y sólo se compila lo
-   que el script usa.
+3. `comp-zx.bat`. El script se compila solo, con `msc4`, antes que el
+   güego. El intérprete es `dev/msc.h`, en C, y sólo se compila lo que el
+   script usa.
 
-Si el script tiene errores, `comp-zx.sh` se para y muestra el log de msc4.
+Si el script tiene errores, `comp-zx.bat` se para y muestra lo que dice
+msc4.
 
 ## Las secciones
 
@@ -961,7 +1011,7 @@ Con `#define MODE_128K`:
   `get_resource (RES_X, dirección)`;
 * la cinta lleva un cargador que coloca cada página en su sitio.
 
-`comp-zx.sh` lo hace todo: ensambla el WYZ player en `RAM1.bin` y genera
+`comp-zx.bat` lo hace todo: ensambla el WYZ player en `RAM1.bin` y genera
 `wyz_addrs.h`; reparte con `librarian` los recursos de `dev/librarian.txt`
 (si no hay, `title.bin`, `marco.bin` y `ending.bin`) en `RAM3.bin`… y genera
 `librarian.h` con un `#define RES_<NOMBRE>` por recurso (el nombre del
@@ -971,7 +1021,7 @@ usa con otra página puesta queda por debajo de 0xC000; y monta la cinta.
 En 128K la pila va por debajo del programa (24200) y nada que se use con otra
 página en 0xC000 (la pila, el descompresor, la interrupción, los buffers de
 nivel, el tileset y los sprites) puede estar en 0xC000-0xFFFF. Si el programa
-crece tanto que algo de eso pasa de 0xC000, `comp-zx.sh` da un error.
+crece tanto que algo de eso pasa de 0xC000, `comp-zx.bat` da un error.
 
 ## Juegos con niveles
 
@@ -990,24 +1040,41 @@ Cada nivel puede tener un mapa de distinto tamaño. `MAP_W * MAP_H` de
 
 El formato está descrito en [`formato-niveles.md`](formato-niveles.md).
 
-### Construir los niveles: `levels.sh`
+### Construir los niveles: `levels.bat`
 
-Si en `dev/` hay un `levels.sh` ejecutable, `comp-zx.sh` lo llama antes de
-`librarian`. Es donde se construyen los niveles:
+Si en `dev\` hay un `levels.bat`, `comp-zx.bat` lo llama antes de repartir los
+recursos por las páginas de RAM. Es donde se construyen los niveles: para
+cada uno, el bundle con `buildlevel`, y si lleva tileset o spriteset propios,
+esos también; y todo se comprime con `zx0`:
 
-```sh
-U=../utils/linux
-$U/buildlevel map=../map/mapa1.map ene=../enems/enems1.ene behs=behs1.txt \
-	out=level1.bin maxpant=25 scr_ini=0 ini_x=2 ini_y=7 max_objs=10 life=3 2bytes
-$U/zx0 level1.bin level1c.bin
-$U/ts2bin ../gfx/font.png ../gfx/work1.png ts1.bin 7
-$U/zx0 ts1.bin ts1c.bin
-$U/sprcnv ../gfx/sprites1.png spr1.h && $U/defb2bin spr1.h spr1.bin
-$U/zx0 spr1.bin spr1c.bin
+```bat
+@echo off
+rem Nivel 1: bundle, tileset y spriteset
+"%U%\buildlevel" map=..\map\mapa1.map ene=..\enems\enems1.ene behs=behs1.txt ^
+	out=level1.bin maxpant=25 scr_ini=0 ini_x=2 ini_y=7 max_objs=10 life=3 2bytes > nul || exit /b 1
+"%U%\ts2bin" ..\gfx\font.png ..\gfx\work1.png ts1.bin 7 > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites1.png spr1.h > nul || exit /b 1
+"%U%\defb2bin" spr1.h spr1.bin > nul || exit /b 1
+
+rem zx0 no sobrescribe: se borra antes la salida
+for %%f in (level1 ts1 spr1) do (
+	if exist %%fc.bin del %%fc.bin
+	"%U%\zx0" %%f.bin %%fc.bin > nul || exit /b 1
+)
+exit /b 0
 ```
 
+`%U%` es la carpeta de las herramientas (la pone `comp-zx.bat`). Cada línea
+acaba en `|| exit /b 1`, que para la compilación si esa herramienta falla, y
+el fichero acaba en `exit /b 0`. Los `.bin` comprimidos (`level1c.bin`,
+`ts1c.bin`, `spr1c.bin`) se ponen en `dev\librarian.txt`, uno por línea, para
+que vayan a las páginas de RAM; cada uno se convierte en un
+`RES_<NOMBRE>` (`RES_LEVEL1C`, `RES_TS1C`…) para la tabla de niveles.
+El `levels.bat` de Goku Mal (capítulo 12) construye cinco niveles con una
+subrutina.
+
 `behs1.txt` tiene los 48 comportamientos separados por comas. Los parámetros
-de `buildlevel` están en el capítulo 12.
+de `buildlevel` están en el capítulo 13.
 
 ### La tabla de niveles: `levelset.h`
 
@@ -1044,32 +1111,34 @@ cabecera del nivel; sin niveles, de `config.h`.
 
 ### Ejemplos
 
+* `examples/Goku Mal 128/`: un güego completo de cinco niveles, con
+  cinemáticas, contraseñas y su propia música y efectos (capítulo 12).
 * `tests/levels/`: Bootee partido en dos niveles de distinto tamaño, con y
-  sin scripts (`tests/levels/run.sh`).
-* `examples/Goku Mal 128/`: un juego completo de cinco niveles, con
-  cinemáticas, contraseñas y su propia música y efectos.
+  sin scripts.
 
 ---
 
 # Capítulo 11 - Amstrad CPC
 
-El mismo motor compila para CPC (`comp-cpc.sh`) con la librería `cpcrslib`
+El mismo motor compila para CPC (`comp-cpc.bat`) con la librería `cpcrslib`
 (versión de los Mojon Twins) en lugar de `splib2`. Lo propio del CPC está en
 `dev/cpc/`. Las diferencias:
 
 * Los gráficos son pngs con la paleta del CPC (`gfx/cpc/pal.png`, modo 0 por
-  defecto: `mode=0` en `comp-cpc.sh`). Se convierten con `mkts_om`:
+  defecto: `set mode=0` en `comp-cpc.bat`). Para dibujarlos, carga en tu
+  editor la paleta de `env/cpc_pal.*`. Se convierten con `mkts_om` (así
+  está en `comp-cpc.bat`, donde `%P%` es
+  `platform=cpc cpcmode=0 pal=..\gfx\cpc\pal.png`):
 
-  ```sh
-  P="platform=cpc cpcmode=0 pal=../gfx/cpc/pal.png"
-  mkts_om $P mode=chars greyordered in=../gfx/cpc/font.png out=font.bin
-  mkts_om $P mode=strait2x2 greyordered in=../gfx/cpc/work.png out=work.bin
-  mkts_om $P mode=sprites in=../gfx/cpc/sprites.png out=sprites.bin max=16
-  mkts_om $P mode=superbuffer in=../gfx/cpc/title.png out=title.scr
-  mkts_om platform=cpc mode=palsasassembly in=../gfx/cpc/pal.png prefix=my_inks out=cpc/pal.h
+  ```bat
+  "%U%\mkts_om" %P% mode=chars greyordered in=..\gfx\cpc\font.png out=font.bin silent
+  "%U%\mkts_om" %P% mode=strait2x2 greyordered in=..\gfx\cpc\work.png out=work.bin silent
+  "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites.png out=sprites.bin max=16 silent
+  "%U%\mkts_om" %P% mode=superbuffer in=..\gfx\cpc\title.png out=title.scr silent
+  "%U%\mkts_om" platform=cpc mode=palsasassembly in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent
   ```
 
-* La música es del WYZ player (capítulo 7).
+* La música es del WYZ player, hecha con WYZ Tracker 2.0.1.2 (capítulo 7).
 * La sincronía de frames la hace `sp_UpdateNow ()` (`MIN_FAPS_PER_FRAME`, que
   sale de `GAME_FRAME_TICKS`).
 * La salida es `bootee.sna` (para emuladores) y una cinta `bootee.cdt` con
@@ -1080,10 +1149,255 @@ El mismo motor compila para CPC (`comp-cpc.sh`) con la librería `cpcrslib`
 
 ---
 
-# Capítulo 12 - Las herramientas
+# Capítulo 12 - Tu güego aparte del motor, y el ejemplo de Goku Mal
 
-Todas están en `src/utils/linux/` tras `build-linux.sh` (y los `.exe` de
-Windows en `src/utils/`).
+## El problema
+
+Si haces tu güego como cuenta el capítulo 0, tus cambios quedan mezclados con
+los ficheros del motor: has tocado `comp-zx.bat` para cambiar el nombre y las
+conversiones, y `dev\` tiene a la vez tus ficheros (`config.h`, `custom.h`…)
+y los del motor (`engine.h`, `mainloop.h`…). Para un güego pequeño no pasa
+nada. Pero cuando salga una versión nueva del motor y quieras usarla, tendrás
+que acordarte de qué ficheros eran tuyos y de qué cambiaste en
+`comp-zx.bat`.
+
+Para eso, `comp-zx.bat` busca en `dev\` unos ficheros opcionales con todo lo
+que es propio de tu güego. Si existen, los usa; si no, hace lo de Bootee. Así
+no hay que tocar `comp-zx.bat` nunca.
+
+## Los ficheros de tu güego
+
+| Fichero | Para qué | Si no está |
+|---|---|---|
+| `game.bat` | El nombre del güego. | `bootee` |
+| `convert.bat` | La conversión de los gráficos, el mapa y los enemigos. | La de Bootee (la que hay escrita en `comp-zx.bat`). |
+| `levels.bat` | Construir los niveles (capítulo 10). | No hay niveles. |
+| `librarian.txt` | Lo que va en las páginas de RAM, en 128K (capítulo 10). | `title.bin`, `marco.bin` y `ending.bin`. |
+| `scripts.txt` | La lista de scripts (capítulo 8). | `..\script\script.spt` |
+
+`comp-zx.bat` los usa en este orden:
+
+1. Lee `game.bat`.
+2. Convierte: con `convert.bat` si existe; si no, como Bootee. (Con
+   `justcompile` se salta este paso.)
+3. Compila los scripts, si `config.h` define `ACTIVATE_SCRIPTING`.
+4. Llama a `levels.bat`.
+5. En 128K, ensambla la música y reparte lo de `librarian.txt` por las
+   páginas de RAM.
+6. Compila y monta la cinta.
+
+Estos ficheros son sólo para ZX (`comp-zx.bat`). Para CPC se edita
+`comp-cpc.bat` directamente.
+
+### `game.bat`
+
+Es una sola línea, con el nombre del güego:
+
+```bat
+set game=miguego
+```
+
+El nombre no puede llevar espacios. La cinta será `miguego.tap`, y el
+programa que se ve al cargarla, `MIGUEGO`.
+
+### `convert.bat`
+
+Hace lo mismo que la parte de "convertir" de `comp-zx.bat`, pero con tus
+ficheros y tus parámetros. Para un güego como Bootee pero con un mapa de 8x4
+pantallas sería:
+
+```bat
+@echo off
+rem Mapa y enemigos
+"%U%\mapcnv" ..\map\mapa.map mapa.h 8 4 15 10 15 packed > nul || exit /b 1
+"%U%\ene2h" ..\enems\enems.ene enems.h 2bytes > nul || exit /b 1
+
+rem Tileset, fuente y sprites
+"%U%\ts2bin" ..\gfx\speccy\font.png ..\gfx\speccy\work.png ts.bin 7 > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\speccy\sprites.png speccy\sprites.h > nul || exit /b 1
+
+rem Pantallas fijas: a formato Spectrum y comprimidas
+for %%s in (title marco ending loading) do (
+	"%U%\png2scr" ..\gfx\speccy\%%s.png %%s.scr > nul || exit /b 1
+)
+for %%s in (title marco ending) do (
+	if exist %%s.bin del %%s.bin
+	"%U%\zx0" %%s.scr %%s.bin > nul || exit /b 1
+)
+exit /b 0
+```
+
+Cosas que hay que saber para escribirlo:
+
+* **`%U%`** es la carpeta de las herramientas (`src\utils`). La pone
+  `comp-zx.bat` antes de llamar a `convert.bat`. Las rutas son relativas a
+  `dev\`, que es donde se ejecuta.
+* **`> nul`** esconde lo que escribe cada herramienta. Si algo no funciona,
+  quítalo para ver qué dice.
+* **`|| exit /b 1`** al final de una línea quiere decir "si esto falla, para
+  aquí y avisa del error". Así `comp-zx.bat` se entera y no sigue compilando
+  con datos a medias.
+* **`exit /b 0`** al final dice que todo ha ido bien.
+* `zx0` no sobrescribe un fichero que ya existe: por eso se borra antes
+  (`if exist ... del ...`).
+* Dentro de un `.bat`, las variables de un `for` se escriben con dos `%`
+  (`%%s`).
+
+Un `convert.bat` puede convertir lo que quiera: más pantallas, otros nombres
+de fichero… Lo único que tiene que dejar en `dev\` es lo que el motor espera:
+`mapa.h`, `enems.h`, `ts.bin`, `speccy\sprites.h`, `loading.scr` y las
+pantallas comprimidas que se usen (`title.bin`…). Con niveles, el mapa y los
+enemigos van en los niveles (capítulo 10), y `convert.bat` no los convierte.
+
+## Tu güego en su propia carpeta
+
+Con estos ficheros se puede ir más lejos: que tu güego no tenga ni siquiera
+una copia del motor. Tu carpeta sólo tiene lo tuyo, y un `make.bat` que, al
+compilar, junta una copia del motor actual con tus ficheros. Es lo que hace
+Goku Mal.
+
+## El ejemplo de Goku Mal
+
+`examples\Goku Mal 128` es un güego completo de 128K: cinco niveles, cada uno
+con su mapa, su tileset y sus sprites; cinemáticas, contraseñas, pantalla de
+zona, su propia música y sus efectos. Todo lo propio del güego va en ganchos
+de `custom.h` (capítulo 9).
+
+### Compilarlo
+
+1. Abre una ventana de comandos y prepara z88dk:
+
+   ```bat
+   C:\z88dk10-orig\setenv.bat
+   ```
+
+2. Ve a la carpeta del ejemplo (las comillas hacen falta por los espacios
+   del nombre; cambia la ruta por la tuya):
+
+   ```bat
+   cd "C:\MK1v3.100\examples\Goku Mal 128"
+   ```
+
+3. Compila:
+
+   ```bat
+   make.bat
+   ```
+
+   Tarda un poco: convierte las pantallas, construye los cinco niveles,
+   ensambla la música y compila. Al final dice `gokumal.tap listo`.
+4. Abre `gokumal.tap` en un emulador de **Spectrum 128K**.
+
+`make.bat noclean` deja todos los ficheros intermedios en `build\dev`, por
+si quieres ver qué se ha generado.
+
+### Qué hay en la carpeta
+
+```
+Goku Mal 128\
+  make.bat           <- compila el güego
+  dev\               <- SÓLO los ficheros de dev que son del güego
+    game.bat         <- set game=gokumal
+    convert.bat      <- las pantallas, el tileset y los sprites del nivel 1
+    levels.bat       <- construye los cinco niveles
+    librarian.txt    <- lo que va en las páginas de RAM
+    levelset.h       <- la tabla de niveles
+    config.h         <- la configuración del motor para Goku Mal
+    custom.h         <- todo su código propio
+    speccy\extrasprites.h <- su explosión y su bala
+  gfx\               <- gráficos (png)
+  map\               <- los cinco mapas
+  enems\             <- los enemigos de cada mapa
+  levels\            <- los comportamientos de los tiles de cada mapa
+  ogt\zx128\         <- su música y sus efectos para el WYZ player
+```
+
+No hay ni `engine.h`, ni `mainloop.h`, ni `comp-zx.bat`, ni `utils`.
+
+### Qué hace `make.bat`
+
+1. Borra `build\` (si existe) y la vuelve a crear.
+2. Copia **todo** `src\dev` del repositorio a `build\dev`: el motor actual,
+   con `comp-zx.bat` y los ficheros de Bootee.
+3. Copia **encima** los ficheros de `dev\` de Goku Mal. Los que se llaman
+   igual (`config.h`, `custom.h`…) sustituyen a los de Bootee; los nuevos
+   (`game.bat`, `convert.bat`, `levels.bat`…) se añaden.
+4. Enlaza `build\utils` con `src\utils` y `build\gfx`, `build\map`… con las
+   carpetas del güego (con `mklink /J`, un enlace a una carpeta que no
+   necesita permisos de administrador). Así, para `comp-zx.bat`, `build\`
+   tiene la misma forma que `src\`.
+5. Llama a `build\dev\comp-zx.bat`, que encuentra `game.bat`,
+   `convert.bat` y `levels.bat` y los usa.
+6. Copia `gokumal.tap` a la carpeta del güego.
+
+Cuando el motor cambie, Goku Mal se compila con el nuevo sin tocar nada.
+
+### Su `convert.bat`
+
+Convierte el tileset y los sprites del nivel 1 (los que van dentro del
+binario), la pantalla de carga y todas las pantallas fijas, que en Goku Mal
+son muchas (título, final, zonas, siete cinemáticas, logos…):
+
+```bat
+"%U%\ts2bin" ..\gfx\font.png ..\gfx\work1.png ts.bin 7 > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites1.png speccy\sprites.h > nul || exit /b 1
+"%U%\png2scr" ..\gfx\loading.png loading.scr > nul || exit /b 1
+for %%s in (title ending zoneA zoneB intro1 intro2 intro3 intro4 intro5 intro6 intro7 logo controls dedicado) do (
+	"%U%\png2scr" ..\gfx\%%s.png %%s.scr > nul || exit /b 1
+	if exist %%s.bin del %%s.bin
+	"%U%\zx0" %%s.scr %%s.bin > nul || exit /b 1
+)
+```
+
+No convierte ni mapa ni enemigos: van en los niveles.
+
+### Su `levels.bat`
+
+Los cinco niveles se construyen igual, así que `levels.bat` tiene una
+subrutina, `:build`, y la llama una vez por nivel con sus datos:
+
+```bat
+rem         nivel mapa scr_ini ini_x ini_y max_objs vida
+call :build 1 1 24  2 7 99 3 || exit /b 1
+call :build 2 2  0  4 1 99 4 || exit /b 1
+...
+exit /b 0
+
+:build
+"%U%\buildlevel" map=..\map\mapa%2.MAP ene=..\enems\enems%2.ene behs=..\levels\behs%2.txt ^
+	out=level%1.bin maxpant=25 scr_ini=%3 ini_x=%4 ini_y=%5 max_objs=%6 life=%7 lock=99 2bytes > nul || exit /b 1
+"%U%\ts2bin" ..\gfx\font.png ..\gfx\work%2.png ts%1.bin 7 > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites%2.png spr%1.h > nul || exit /b 1
+"%U%\defb2bin" spr%1.h spr%1.bin > nul || exit /b 1
+...
+```
+
+Dentro de la subrutina, `%1`, `%2`… son los números que se le pasan en el
+`call`: `%1` el nivel, `%2` el mapa, etc. Los niveles van en el orden del
+güego, que no es el de los mapas: el nivel 4 es el mapa 5.
+
+`librarian.txt` lista lo que sale de aquí (`level1c.bin`, `ts1c.bin`,
+`spr1c.bin`…) junto con las pantallas, y `levelset.h` lo junta en la tabla de
+niveles (capítulo 10).
+
+### Hacer lo mismo con tu güego
+
+1. Crea una carpeta para tu güego con `gfx`, `map`, `enems`, `ogt`… como
+   necesites, y una carpeta `dev` con **sólo** tus ficheros: `config.h`,
+   `game.bat`, y lo que cambies (`convert.bat`, `custom.h`, `extern.h`,
+   `levels.bat`, `librarian.txt`…).
+2. Copia el `make.bat` de Goku Mal y cambia, cerca del final, `gokumal.tap`
+   por el nombre de tu cinta. Si tu carpeta no está dentro de `examples`,
+   cambia también la línea que busca el repositorio (`..\..` es "dos
+   carpetas más arriba").
+3. Compila con `make.bat`.
+
+---
+
+# Capítulo 13 - Las herramientas
+
+Están todas en `src\utils`. Normalmente no hay que llamarlas a mano: lo hacen
+`comp-zx.bat`, `comp-cpc.bat` y tus `convert.bat` y `levels.bat`.
 
 | Herramienta | Uso |
 |---|---|
@@ -1098,58 +1412,55 @@ Windows en `src/utils/`).
 | `librarian list=lista.txt out=librarian.h [dir=salida] [pages=3,4,6,7]` | Reparte recursos en páginas de RAM de 128K. |
 | `msc4 in=a.spt[,b.spt] v=3_100 output=c [rooms=N]` | Compila los scripts (ver `msc4.md`). |
 | `mkts_om platform=cpc ...` | Conversor de gráficos de CPC. |
-| `pasmo` | Ensamblador (el WYZ player, el cargador de 128K). |
+| `wyzTrackerParser instrumentos.asm instrumentos.h` | Los instrumentos de WYZ Tracker a C (CPC). |
+| `pasmo` | Ensamblador (el WYZ player, el cargador de 128K y los de CPC). |
 | `bin2tap`, `bas2tap` | Cintas de ZX. |
-| `cpctbin2sna`, `cpc2cdt` | Instantáneas y cintas de CPC. |
+| `cpctbin2sna`, `cpc2cdt`, `zx7`, `imanol` | Instantáneas, cintas y cargadores de CPC. |
 | `printsize binario` | Tamaño del binario. |
-| `ponedor.exe` | El editor de enemigos (Windows). |
+| `ponedor` | El editor de enemigos (capítulo 5). |
+| `rle44map_sp`, `rle53map_sp`, `rle62map_sp` | Conversores de mapas a formatos RLE (no los usa el motor). |
 
 ---
 
-# Capítulo 13 - Probar el motor
+# Apéndice A - Trabajar en Linux
 
-En `tests/` hay herramientas para probar el motor sin un emulador con
-pantalla:
+Todo lo de este manual se puede hacer también en Linux. Cada `.bat` tiene un
+`.sh` equivalente con el mismo nombre, que hace lo mismo:
 
-| Herramienta | Qué hace |
+| Windows | Linux |
 |---|---|
-| `tests/zxrun/zxrun juego.bin [-128 -page n RAMn.bin ...] -f frames -k teclas -s frames -o prefijo` | Emulador de ZX 48K/128K (con las librerías chips): ejecuta N frames pulsando teclas (`-k "130:1+,134:1-"`: tecla abajo en el frame 130, arriba en el 134) y guarda capturas png. Además: `-d dir,len` vuelca memoria, `-h` hash de pantalla, `-rt` detecta saltos a la ROM, `-prof` perfil. |
-| `tests/cpcrun/cpcrun juego.sna ...` | Lo mismo para CPC (`-pc` y `-low` para depurar cuelgues). |
-| `tests/build.sh zx\|cpc salida.bin [DEF[=valor]] [-UNDEF] [@script.spt]` | Compila en una copia limpia de `src/` cambiando directivas de `config.h`. |
-| `tests/matrix.sh [zx\|cpc\|all] [filtro]` | Compila unas cien configuraciones distintas del motor. |
-| `tests/bench.sh` | Mide ciclos por frame y por pintado de pantalla. |
-| `tests/levels/run.sh [nivel]` | La prueba de niveles (`SCRIPTED=1` con scripts). |
-| `tests/script/` | Scripts de prueba del intérprete. |
+| `C:\z88dk10-orig\setenv.bat` | `source ~/mk1tools/z88env.sh` |
+| `comp-zx.bat`, `comp-cpc.bat` | `./comp-zx.sh`, `./comp-cpc.sh` |
+| `game.bat` + `convert.bat` | `game.sh`: pone `game=` y define una función `convert_assets` |
+| `levels.bat` | `levels.sh` (ejecutable) |
+| `examples\Goku Mal 128\make.bat` | `./make.sh` |
 
----
+Para instalar el entorno:
 
-# Apéndice A - Qué cambia la v3.100
+```sh
+env/setup-linux.sh [directorio]     # FreeBASIC, z88dk 1.10, librerías, crt0
+source ~/mk1tools/z88env.sh         # (o el directorio que le hayas dado)
+src/utils/build-linux.sh            # compila las herramientas en src/utils/linux
+```
 
-Respecto a la rama 3.99 (`docs/whatsnew.txt`):
+`env/setup-linux.sh` instala FreeBASIC 1.10 y compila z88dk 1.10 desde
+`env/z88dk-1.10.1.tgz`, le pone las librerías y los `crt0` del motor y escribe
+`z88env.sh` con las variables de entorno. `src/utils/build-linux.sh` compila
+todas las herramientas (las de FreeBASIC, `msc4` y las de C) en
+`src/utils/linux/`, que es donde las buscan los `.sh`. `ponedor` es sólo para
+Windows.
 
-* **Linux**: todo el toolchain se compila en Linux (`env/setup-linux.sh`,
-  `src/utils/build-linux.sh`) y hay `comp-zx.sh` y `comp-cpc.sh`.
-* **Coma fija 8.8** en lugar de 10.6: las constantes de movimiento son 4 veces
-  las de antes.
-* **Sincronía de frames** fija (`GAME_FRAME_TICKS`, 25 fps por defecto) también
-  en 48K.
-* **Niveles** nuevos: el bundle sólo lleva datos de juego, independientes de
-  la plataforma; tileset, spriteset y script son recursos aparte; cada nivel
-  puede tener su tamaño de mapa (`formato-niveles.md`). `librarian` genera
-  `#define RES_*` y lo llama `comp-zx.sh`. Los niveles de 48K comprimidos
-  desaparecen.
-* **128K**: el WYZ player y los recursos se montan solos; la pila va por
-  debajo del programa; comprobación de lo que tiene que quedar por debajo de
-  0xC000.
-* **Ganchos** en `custom.h` para personalizar el flujo del juego sin tocar el
-  motor.
-* **Scripting MSC4** con un intérprete en C (sustituye a MSC3): secciones
-  nuevas (`TIMER ZERO`, `TILE PUSHED`, `TILE DESTROYED`), un script por nivel,
-  `TEXT BOX` y `DIALOG`. Ya no existen `ENABLE_EXTERN_CODE`,
-  `ENABLE_FIRE_ZONE`, `TIMER_SCRIPT_0`, `ENABLE_PUSHED_SCRIPTING`,
-  `MOVED_*_FLAG` ni el inventario de MSC3 (`ITEMSET`, `MSC_MAXITEMS`).
-* Un montón de errores corregidos y el motor más rápido (el pintado de
-  pantalla, un 13 % menos de tiempo).
+Un `game.sh` es así:
+
+```sh
+game=gokumal
+
+convert_assets () {
+	$U/ts2bin ../gfx/font.png ../gfx/work1.png ts.bin 7 > /dev/null || return 1
+	$U/sprcnv ../gfx/sprites1.png speccy/sprites.h > /dev/null || return 1
+	...
+}
+```
 
 ---
 

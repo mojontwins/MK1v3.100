@@ -5,7 +5,7 @@ rem utilidades, que pone comp-zx.bat.
 rem
 rem Graficos que no van en los niveles. El tileset y los sprites del binario
 rem son los del nivel 1; cada nivel carga los suyos como recursos (levels.bat).
-if "%U%"=="" set "U=..\utils\win"
+if "%U%"=="" set "U=..\utils"
 
 "%U%\ts2bin" ..\gfx\font.png ..\gfx\work1.png ts.bin 7 > nul || exit /b 1
 "%U%\sprcnv" ..\gfx\sprites1.png speccy\sprites.h > nul || exit /b 1

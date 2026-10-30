@@ -6,7 +6,7 @@ rem
 rem Cada nivel: bundle (mapa, enemigos, hotspots, comportamientos) + tileset +
 rem spriteset, todo comprimido con zx0. Los numeros de nivel van en el orden
 rem del juego: el nivel 4 es el mapa 5 (5x5, las flores) y el 5 el mapa 4.
-if "%U%"=="" set "U=..\utils\win"
+if "%U%"=="" set "U=..\utils"
 
 rem         nivel mapa scr_ini ini_x ini_y max_objs vida
 rem 1x25, de abajo arriba

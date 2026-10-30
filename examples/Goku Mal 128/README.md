@@ -6,20 +6,21 @@ propio enganchado al motor con los ganchos de `custom.h`.
 
 ## Compilar
 
+En una ventana de comandos:
+
+```bat
+C:\z88dk10-orig\setenv.bat
+cd "C:\ruta\al\repositorio\examples\Goku Mal 128"
+make.bat
 ```
-./make.sh
-```
 
-Necesita las utilidades compiladas (`src/utils/build-linux.sh`) y z88dk
-(`env/setup-linux.sh`). Deja `gokumal.tap`.
+Deja `gokumal.tap`, para un Spectrum 128K. `make.bat noclean` deja los
+ficheros intermedios en `build\dev`. (En Linux: `./make.sh`.)
 
-En Windows: `make.bat` (con `src\utils\build-windows.bat` y
-`env\setup-windows.bat`). Enlaza las carpetas del juego con `mklink /J`, que
-no necesita permisos de administrador.
-
-El ejemplo no lleva una copia del motor: `make.sh` copia `src/dev` a
-`build/dev`, pone encima los archivos de `dev/` y llama a `comp-zx.sh`. Así
+El ejemplo no lleva una copia del motor: `make.bat` copia `src/dev` a
+`build/dev`, pone encima los archivos de `dev/` y llama a `comp-zx.bat`. Así
 siempre se compila con el motor actual y aquí solo está lo que es del juego.
+El capítulo 12 del manual (`docs/manual.md`) lo explica paso a paso.
 
 ## Qué hay aquí
 
@@ -28,10 +29,9 @@ siempre se compila con el motor actual y aquí solo está lo que es del juego.
 | `dev/config.h` | La configuración del motor para Goku Mal. |
 | `dev/custom.h` | Todo el código propio (ver abajo). |
 | `dev/levelset.h` | La tabla de niveles: bundle, tileset, spriteset y música de cada uno. |
-| `dev/levels.sh`, `dev/levels.bat` | Construye los cinco niveles con `buildlevel`, `ts2bin` y `sprcnv`. |
+| `dev/levels.bat` (`levels.sh`) | Construye los cinco niveles con `buildlevel`, `ts2bin` y `sprcnv`. |
 | `dev/librarian.txt` | Los recursos que van en las páginas de RAM. |
-| `dev/game.sh` | El nombre del juego y la conversión de las pantallas (la lee `comp-zx.sh`). |
-| `dev/game.bat`, `dev/convert.bat` | Lo mismo para `comp-zx.bat`: el nombre, y la conversión aparte. |
+| `dev/game.bat`, `dev/convert.bat` | El nombre del juego y la conversión de las pantallas (los usa `comp-zx.bat`; en Linux, `game.sh`). |
 | `dev/speccy/extrasprites.h` | Explosión y bala propias. |
 | `gfx/`, `map/`, `enems/`, `levels/` | Gráficos, mapas (Mappy), enemigos (`.ene`) y comportamientos de cada nivel. |
 | `ogt/zx128/` | Canciones, instrumentos y efectos para el WYZ player. `ogt/wyz/` son los fuentes de WYZTracker. |

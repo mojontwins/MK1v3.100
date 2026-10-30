@@ -73,18 +73,18 @@ define, el tileset en `tileset` y el spriteset sobre los sprites actuales.
 Con `ACTIVATE_SCRIPTING`, el script del nivel se descomprime en `msc_buffer`
 (sin script, el índice queda vacío y no se ejecuta nada). Los scripts de todos
 los niveles se compilan juntos para que el intérprete tenga todo lo que usa
-cualquiera de ellos: `comp-zx.sh` le pasa a msc4 la lista de `scripts.txt`
+cualquiera de ellos: `comp-zx.bat` le pasa a msc4 la lista de `scripts.txt`
 (una ruta por línea). msc4 deja un `.spt.bin` junto a cada script, que
-`levels.sh` comprime y `librarian.txt` reparte como los demás recursos:
+`levels.bat` comprime y `librarian.txt` reparte como los demás recursos:
 
 ```
 # scripts.txt
 ../script/nivel1.spt
 ../script/nivel2.spt
 
-# levels.sh
-zx0 ../script/nivel1.spt.bin script1c.bin
-zx0 ../script/nivel2.spt.bin script2c.bin
+rem levels.bat
+"%U%\zx0" ..\script\nivel1.spt.bin script1c.bin > nul || exit /b 1
+"%U%\zx0" ..\script\nivel2.spt.bin script2c.bin > nul || exit /b 1
 ```
 
 Cada script indica sus pantallas con `ROOMS = n` (el tamaño de su mapa).
@@ -92,13 +92,16 @@ Cada script indica sus pantallas con `ROOMS = n` (el tamaño de su mapa).
 ## Herramientas
 
 ```
-buildlevel map=mapa1.map ene=enems1.ene behs=behs1.txt out=level1.bin maxpant=25 \
-           scr_ini=0 ini_x=2 ini_y=7 max_objs=99 life=3 [scr_fin=N fin_x=X fin_y=Y] \
+buildlevel map=mapa1.map ene=enems1.ene behs=behs1.txt out=level1.bin maxpant=25 ^
+           scr_ini=0 ini_x=2 ini_y=7 max_objs=99 life=3 [scr_fin=N fin_x=X fin_y=Y] ^
            [mapw=W maph=H] [unpacked] [lock=15] [2bytes] [fixmappy] [noswap]
 zx0 level1.bin level1c.bin
 
-ts2bin font.png work1.png tileset1.bin 7           # tileset ZX (2304 bytes)
-sprcnv sprites1.png sprites1.h && defb2bin sprites1.h sprites1.bin   # spriteset ZX
+rem tileset ZX (2304 bytes)
+ts2bin font.png work1.png tileset1.bin 7
+rem spriteset ZX
+sprcnv sprites1.png sprites1.h
+defb2bin sprites1.h sprites1.bin
 ```
 
 `behs1.txt` contiene los 48 comportamientos separados por comas. El tamaño del
@@ -106,12 +109,12 @@ mapa se toma de la cabecera del `.ene` (se puede forzar con `mapw`/`maph`).
 
 ## ZX Spectrum 128K
 
-Los recursos comprimidos se listan en `src/dev/librarian.txt`; `comp-zx.sh`
+Los recursos comprimidos se listan en `src/dev/librarian.txt`; `comp-zx.bat`
 llama a `librarian`, que los reparte por las páginas 3, 4, 6 y 7 y genera
 `librarian.h` con un `#define RES_<NOMBRE>` por recurso. La página 1 es del
 WYZ player.
 
 Todo lo que se usa con otra página puesta en 0xC000 tiene que estar por debajo
 de esa dirección: la pila, el descompresor, la ISR y los destinos de
-`get_resource` (`level_data`, `tileset` y los sprites). `comp-zx.sh` lo
+`get_resource` (`level_data`, `tileset` y los sprites). `comp-zx.bat` lo
 comprueba con el `.map` del enlazador.

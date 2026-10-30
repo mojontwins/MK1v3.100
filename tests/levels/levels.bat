@@ -7,7 +7,7 @@ rem  * Nivel 2: un trozo de 3x2 pantallas (columnas 3-5, filas 0-1) con su
 rem    propio recurso de tileset, para probar mapas de distinto tamano y la
 rem    carga de graficos por nivel.
 rem Necesita Python 3 (crop.py) en el PATH.
-if "%U%"=="" set "U=..\utils\win"
+if "%U%"=="" set "U=..\utils"
 
 rem behs.txt (los 48 comportamientos) lo deja run.bat, sacado de config.h.
 "%U%\buildlevel" map=..\map\mapa.map ene=..\enems\enems.ene behs=behs.txt out=level1.bin maxpant=30 ^

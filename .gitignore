@@ -3,6 +3,5 @@ src/utils/linux/
 tests/zxrun/zxrun
 tests/out/
 tests/cpcrun/cpcrun
-src/utils/win/
 tests/zxrun/zxrun.exe
 tests/cpcrun/cpcrun.exe

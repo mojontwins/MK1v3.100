@@ -1,8 +1,8 @@
 @echo off
-rem Compila el juego para Amstrad CPC en Windows (equivalente de comp-cpc.sh).
+rem Compila el juego para Amstrad CPC en Windows.
 rem Uso: comp-cpc.bat [justcompile] [noclean]
-rem Requiere z88dk 1.10 en el PATH (z88env.bat, ver env\setup-windows.bat) y
-rem las utilidades en ..\utils\win (src\utils\build-windows.bat).
+rem Antes, en la misma ventana: C:\z88dk10-orig\setenv.bat (z88dk 1.10, ver
+rem env\z88dk10-orig.zip). Las utilidades estan en ..\utils.
 rem
 rem Sin expansion retardada: imanol recibe argumentos con "!" (loading_palette=!...).
 
@@ -13,7 +13,7 @@ set game=bootee
 set mode=0
 
 cd /d "%~dp0"
-set "U=%~dp0..\utils\win"
+set "U=%~dp0..\utils"
 set "P=platform=cpc cpcmode=%mode% pal=..\gfx\cpc\pal.png"
 
 set justcompile=0
