@@ -191,7 +191,6 @@
 //#define LINE_OF_TEXT			1		// If defined, scripts can show text @ Y = # (TEXT "...")
 //#define LINE_OF_TEXT_X		1		// X coordinate.
 //#define LINE_OF_TEXT_ATTR		71		// Attribute
-//#define MSC_TEXT_ATTR			71		// Attribute for TEXT BOX and DIALOG
 
 // Graphic FX, uncomment which applies...
 

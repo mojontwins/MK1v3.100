@@ -97,10 +97,16 @@ Novedades respecto a la salida en ensamblador:
 * `HIDE_HOTSPOTS` y `DONT_MAKE_FANTIES` vuelven a 0 al entrar en cada pantalla:
   se ponen en `ENTERING` para esa pantalla.
 * `CALL` puede llamar a una `SUB` definida más abajo.
-* `TEXT BOX` y `DIALOG` tienen una versión por defecto (un recuadro en la zona
-  de juego; `DIALOG` devuelve 1 o 2 según se pulse 1 o 2) que cada juego puede
-  cambiar con `HOOK_TEXT_BOX` / `HOOK_DIALOG` en `custom.h`.
+* `TEXT BOX` y `DIALOG` no se pintan en el motor: cada juego los muestra a su
+  manera en `extern.h`. El intérprete descodifica el texto en `msc_text_buf` y
+  llama a `text_box ()`; para `$F = DIALOG "UNO", "DOS", "TRES"` descodifica
+  hasta tres opciones en `msc_options [0..2]` (`msc_n_options` dice cuántas
+  hay) y `dialog_box ()` devuelve la elegida (1, 2 o 3). El `extern.h` del
+  motor trae las dos funciones vacías; `tests/script/extern.h` es un ejemplo
+  completo. Lo habitual es usar la respuesta con `RERUN`, como en
+  `LANGSPECS.md`.
 * `TEXT "..."` escribe en la línea `LINE_OF_TEXT` de `config.h`.
 * `EXTERN N, M` llama a `do_extern_action (n, m)` de `extern.h`.
+* `extern.h` solo se incluye si algún script usa `EXTERN`, `TEXT BOX` o `DIALOG`.
 * En la entrada 15 del índice (libre) va el número de pantallas del script,
   para que el intérprete no lea fuera del índice.

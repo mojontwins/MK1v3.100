@@ -48,13 +48,14 @@
 #endif
 
 // Teclas especiales: M (acción del script), H / Y (pausa / abortar),
-// Z (cambiar objeto), 1 / 2 (menú de checkpoints).
+// Z (cambiar objeto), 1 / 2 (menú de checkpoints), 1 / 2 / 3 (diálogos).
 #define KEY_M 0x047f
 #define KEY_H 0x10bf
 #define KEY_Y 0x10df
 #define KEY_Z 0x02fe
 #define KEY_1 0x01f7
 #define KEY_2 0x02f7
+#define KEY_3 0x04f7
 
 // Puntero a la función de manejo seleccionada.
 

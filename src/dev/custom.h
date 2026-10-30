@@ -45,20 +45,6 @@
 //   HOOK_GAME_ENDING      void hook_game_ending (void)
 //                         Sustituye a game_ending () al terminar el juego.
 //
-// Con scripting (msc.h):
-//
-//   HOOK_TEXT_BOX         void hook_text_box (void)
-//                         Muestra el TEXT BOX del script a la manera del
-//                         juego. El texto está en msc_text_buf (ASCII, '\n'
-//                         entre líneas).
-//
-//   HOOK_DIALOG           unsigned char hook_dialog (unsigned int t1,
-//                                                    unsigned int t2,
-//                                                    unsigned int t3)
-//                         DIALOG del script: devuelve la opción elegida.
-//                         msc_decode_text (t) pone cada texto en
-//                         msc_text_buf (0xffff = texto vacío).
-//
 // Ejemplo:
 //
 //   #define HOOK_LEVEL_START

@@ -20,6 +20,8 @@ extra=""
 for d in "$@"; do
 	if [[ $d == @* ]]; then
 		mkdir -p "$T/src/script"; cp "${d#@}" "$T/src/script/script.spt"
+		# Si junto al script hay un extern.h (text_box, dialog_box...), se usa
+		x="$(dirname "${d#@}")/extern.h"; [ -f "$x" ] && cp "$x" "$T/src/dev/extern.h"
 		sed -i -E "s@^[ \t]*//[ \t]*#define[ \t]+ACTIVATE_SCRIPTING\b@#define ACTIVATE_SCRIPTING@" "$cfg"
 		continue
 	fi

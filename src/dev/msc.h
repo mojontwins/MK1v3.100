@@ -108,11 +108,11 @@ unsigned int msc_read_word (void) {
 		return r;
 	}
 
-	// Descodifica el texto que empieza en msc_texts [offset] en msc_text_buf
-	// (ASCII, con '\n' en los saltos de línea y 0 al final).
-	void msc_decode_text (unsigned int offset) {
-		unsigned char c, *p;
-		p = msc_text_buf;
+	// Descodifica el texto que empieza en msc_texts [offset] en dest (ASCII,
+	// con '\n' en los saltos de línea y 0 al final). offset 0xffff es un texto
+	// vacío (una opción de DIALOG que no existe).
+	void msc_decode_text (unsigned int offset, unsigned char *dest) {
+		unsigned char c;
 		if (offset != 0xffff) {
 			msc_tptr = msc_texts + offset;
 			msc_tbits = 0;
@@ -121,90 +121,42 @@ unsigned int msc_read_word (void) {
 				if (c == 0) {
 					c = msc_5bits ();
 					if (c == 0) break;
-					*p ++ = (c == 31) ? '\n' : 32 + c;
+					*dest ++ = (c == 31) ? '\n' : 32 + c;
 				} else if (c < 27) {
-					*p ++ = 64 + c;
+					*dest ++ = 64 + c;
 				} else {
-					*p ++ = msc_punct [c - 27];
+					*dest ++ = msc_punct [c - 27];
 				}
 			}
 		}
-		*p = 0;
+		*dest = 0;
 	}
 
-	#ifndef MSC_TEXT_ATTR
-		#define MSC_TEXT_ATTR 71
+	// Mostrar los textos depende de cada juego: el motor solo los descodifica
+	// y llama a text_box () y dialog_box (), que escribe el programador en
+	// extern.h (igual que EXTERN).
+
+	// TEXT BOX "...": el texto en msc_text_buf y text_box () lo muestra.
+	#ifdef MSC_AU_E6
+		void msc_text_box (unsigned int offset) {
+			msc_decode_text (offset, msc_text_buf);
+			text_box ();
+		}
 	#endif
 
-	// Pinta msc_text_buf en un recuadro centrado en la zona de juego, a partir
-	// de la fila y (relativa a la zona de juego). Devuelve la fila siguiente.
-	unsigned char msc_print_text (unsigned char y) {
-		unsigned char *p, x;
-		x = VIEWPORT_X + (30 - MSC_TEXT_WIDTH) / 2;
-		p = msc_text_buf;
-		y += VIEWPORT_Y;
-		while (1) {
-			// Una línea: se rellena con espacios hasta MSC_TEXT_WIDTH
-			for (gpit = 0; gpit < MSC_TEXT_WIDTH; gpit ++) {
-				if (*p == 0 || *p == '\n') {
-					sp_PrintAtInv (y, x + gpit, MSC_TEXT_ATTR, 0);
-				} else {
-					sp_PrintAtInv (y, x + gpit, MSC_TEXT_ATTR, *p ++ - 32);
-				}
-			}
-			y ++;
-			if (*p == 0) break;
-			p ++;	// salta el '\n'
-		}
-		return y - VIEWPORT_Y;
-	}
-
-	void msc_wait_and_redraw (void) {
-		// Hasta que se pulse una tecla (o pasen 100 segundos)
-		sp_UpdateNow ();
-		sp_WaitForNoKey ();
-		espera_activa (5000);
-		sp_WaitForNoKey ();
-		redraw_scr ();
-	}
-
-	// TEXT BOX "...": un recuadro con el texto hasta que se pulse una tecla.
-	// Un juego puede mostrarlo a su manera con HOOK_TEXT_BOX en custom.h
-	// (el texto ya está descodificado en msc_text_buf).
-	void msc_text_box (unsigned int offset) {
-		msc_decode_text (offset);
-		#ifdef HOOK_TEXT_BOX
-			hook_text_box ();
-		#else
-			msc_print_text (8);
-			msc_wait_and_redraw ();
-		#endif
-	}
-
-	// DIALOG "PREGUNTA", "OPCIÓN 1", "OPCIÓN 2": muestra la pregunta y las
-	// opciones (las vacías no salen) y devuelve 1 o 2 según la tecla pulsada.
-	// Un juego puede hacerlo a su manera con HOOK_DIALOG en custom.h:
-	// unsigned char hook_dialog (unsigned int t1, unsigned int t2, unsigned int t3)
-	// (offsets de los textos para msc_decode_text, 0xffff si está vacío).
+	// DIALOG "OPCIÓN 1", "OPCIÓN 2", "OPCIÓN 3": hasta tres opciones en
+	// msc_options [0..2] (las que no existen quedan vacías, "") y
+	// msc_n_options; dialog_box () las presenta y devuelve la elegida (1, 2 o
+	// 3), que es el valor de la expresión: $F = DIALOG "SI", "NO".
 	#ifdef MSC_RV_E6
-		unsigned char msc_dialog (unsigned int t1, unsigned int t2, unsigned int t3) {
-			#ifdef HOOK_DIALOG
-				return hook_dialog (t1, t2, t3);
-			#else
-				unsigned char y, r;
-				msc_decode_text (t1); y = msc_print_text (5);
-				msc_decode_text (t2); y = msc_print_text (y + 1);
-				msc_decode_text (t3); msc_print_text (y);
-				sp_UpdateNow ();
-				sp_WaitForNoKey ();
-				while (1) {
-					if (sp_KeyPressed (KEY_1)) { r = 1; break; }
-					if (sp_KeyPressed (KEY_2)) { r = 2; break; }
-				}
-				sp_WaitForNoKey ();
-				redraw_scr ();
-				return r;
-			#endif
+		unsigned char msc_dialog (void) {
+			msc_n_options = 0;
+			for (gpit = 0; gpit < 3; gpit ++) {
+				msc_word = msc_read_word ();
+				msc_decode_text (msc_word, msc_options [gpit]);
+				if (msc_word != 0xffff) msc_n_options ++;
+			}
+			return dialog_box ();
 		}
 	#endif
 #endif
@@ -305,13 +257,8 @@ unsigned char msc_var (unsigned char n) {
 				return attr (x, msc_value ());
 		#endif
 		#ifdef MSC_RV_E6
-			case 0xE6:									// DIALOG
-				{
-					unsigned int t1, t2;
-					t1 = msc_read_word ();
-					t2 = msc_read_word ();
-					return msc_dialog (t1, t2, msc_read_word ());
-				}
+			case 0xE6:									// DIALOG "1", "2", "3"
+				return msc_dialog ();
 		#endif
 	}
 	return n < MAX_FLAGS ? flags [n] : 0;

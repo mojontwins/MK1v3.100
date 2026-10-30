@@ -234,10 +234,17 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 		unsigned char just_pushed;
 	#endif
 
-	#ifdef MSC_TEXTS
-		// Texto descodificado de TEXT BOX / DIALOG (ver msc_decode_text)
-		unsigned char msc_text_buf [MSC_TEXT_MAX_LEN + 1];
-		void msc_decode_text (unsigned int offset);
+	// Textos descodificados para text_box () y dialog_box () (extern.h)
+	#ifdef MSC_AU_E6
+		unsigned char msc_text_buf [MSC_TEXT_MAX_LEN + 1];		// TEXT BOX
+	#endif
+	#ifdef MSC_RV_E6
+		// DIALOG: una cadena por opción (msc_options [0..2])
+		unsigned char msc_option1 [MSC_TEXT_MAX_LEN + 1];
+		unsigned char msc_option2 [MSC_TEXT_MAX_LEN + 1];
+		unsigned char msc_option3 [MSC_TEXT_MAX_LEN + 1];
+		unsigned char *msc_options [] = { msc_option1, msc_option2, msc_option3 };
+		unsigned char msc_n_options;
 	#endif
 
 	// Están en msc.h, que se incluye después del motor.

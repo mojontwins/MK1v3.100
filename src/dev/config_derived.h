@@ -149,7 +149,8 @@
 // ---------------------------------------------------------------------------
 
 // Repintar la pantalla actual desde los buffers (pausa, "get X more").
-#if defined PAUSE_ABORT || defined GET_X_MORE || (defined ACTIVATE_SCRIPTING && defined MSC_TEXTS)
+// (también para que text_box () y dialog_box () puedan borrar su recuadro)
+#if defined PAUSE_ABORT || defined GET_X_MORE || (defined ACTIVATE_SCRIPTING && (defined MSC_AU_E6 || defined MSC_RV_E6))
 	#define NEEDS_REDRAW_SCR
 #endif
 

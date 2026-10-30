@@ -149,6 +149,7 @@ extern unsigned char def_keys_joy [0];
 
 #define KEY_1 0x4801
 #define KEY_2 0x4802
+#define KEY_3 0x4701
 
 #define KEY_LEFT 		0
 #define KEY_RIGHT		1

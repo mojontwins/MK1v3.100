@@ -155,7 +155,8 @@
 
 // Intérprete de scripts
 #ifdef ACTIVATE_SCRIPTING
-	#ifdef MSC_AU_E4
+	// Código del juego para EXTERN, TEXT BOX y DIALOG
+	#if defined MSC_AU_E4 || defined MSC_AU_E6 || defined MSC_RV_E6
 		#include "extern.h"
 	#endif
 	#include "msc.h"
