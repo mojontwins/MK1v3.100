@@ -45,24 +45,35 @@ enlazadas, parte del AY...). Lo que sí está es todo lo que el motor usa.
 
 ### 1.1. Cómo se instala y cómo se enlaza
 
-La librería compilada es `lib/splib2/splib2f.lib` y su cabecera,
-`lib/splib2/spritepack.h`. Las dos vienen ya puestas en
-`env/z88dk10-orig.zip` (en `lib\clibs` e `include`). Si recompilas la
-librería, `lib/updatelib.bat` las copia a `C:\z88dk10-orig`.
+La librería está en ensamblador de `sdasz80` (los `.s` de `lib/splib2`).
+`lib/splib2/make.bat` (o `make.sh`) ensambla los módulos de `sp.lst` con la
+configuración de `SPconfig.inc` y deja la librería, `splib2.lib`, y su
+cabecera, `spritepack.h`, en `src/dev/speccy`. Así cada güego lleva su copia
+y no hay que instalar nada.
 
 `comp-zx.bat` enlaza con ella:
 
 ```
-zcc +zx -m -vn churromain.c -o %game%.bin -lsplib2f -zorg=24200
+sdldz80 ... -k speccy -l splib2.lib -k %GBDK_HOME%\lib\z80 -l z80.lib
 ```
 
 y `speccy/sysvars.h` incluye la cabecera:
 
 ```c
-#include <spritepack.h>
+#include "spritepack.h"
 ```
 
 El motor usa siempre la API en C de `spritepack.h` (las funciones `sp_*`).
+
+#### Cómo se llama desde C
+
+Cada función `sp_*` es un envoltorio (`lib/splib2/cwrapper`) declarado con
+`__smallc` en `spritepack.h`: SDCC pone los argumentos en la pila de
+izquierda a derecha, de 2 bytes cada uno (como el antiguo z88dk), y el
+envoltorio los saca y llama a la rutina de la librería. Las funciones
+devuelven en L (8 bits) o HL (16 bits). Como las rutinas usan IX, que SDCC
+necesita intacto, cada envoltorio lo guarda al entrar (en `__sp_ixsave`) y lo
+recupera al salir.
 
 ---
 
@@ -75,7 +86,7 @@ de la memoria de forma fija (`churromain.c` y `speccy/sysvars.h`):
 23300 - 23599   map_attr y map_buff  (BASE_ROOM_BUFFERS: la pantalla actual)
 23600 - 23727   arrays de enemigos y balas (BASE_ARRAYS)
 23728 - 23877   golpes de los muros rompibles (BASE_BRK_BUFF)
-24200 - ?????   el programa (zorg=24200)
+24200 - ?????   el programa y sus variables
 AD_FREE - 0xEFFF  bloques para los sprites (sp_AddMemory)
 0xF000 - 0xF100   tabla de vectores IM2
 0xF1F0 hacia abajo  la pila, 64 bytes (en 48K)
@@ -86,10 +97,10 @@ AD_FREE - 0xEFFF  bloques para los sprites (sp_AddMemory)
 En 128K la pila va por debajo del programa (empieza en 24200 y crece hacia
 abajo), porque entre 0xC000 y 0xFFFF se ponen otras páginas de RAM.
 
-Las direcciones fijas de splib2 están en `lib/splib2/SPconfig.def`:
+Las direcciones fijas de splib2 están en `lib/splib2/SPconfig.inc`:
 
-- `IM2TABLE = $F000`: tabla de vectores IM2, 257 bytes (`$F000-$F100`).
-- `SProtatetbl = $F000`, pero lo que ocupa de verdad es `$F200-$FFFF`
+- `IM2TABLE = 0xF000`: tabla de vectores IM2, 257 bytes (`$F000-$F100`).
+- `SProtatetbl = 0xF000`, pero lo que ocupa de verdad es `$F200-$FFFF`
   (4 KB): las tablas que permiten desplazar los sprites de 0 a 7 píxeles en
   horizontal.
 - El GenericISR se copia en `$F1F1` (61937).
@@ -215,19 +226,15 @@ Todo esto está en `system_init ()` (`speccy/printer.h`), que se llama una vez
 al arrancar:
 
 ```c
-#asm
-	di
-#endasm
-sp_InitIM2 (0xf1f1);
-sp_CreateGenericISR (0xf1f1);
-sp_RegisterHook (255, ISR);
-#asm
-	ei
-#endasm
+__asm__ ("di");
+sp_InitIM2 ((void *) 0xf1f1);
+sp_CreateGenericISR ((void *) 0xf1f1);
+sp_RegisterHook (255, ISR_HOOK);
+__asm__ ("ei");
 ...
 sp_Initialize (7, 0);
 sp_Border (BLACK);
-sp_AddMemory (0, NUMBLOCKS, 14, AD_FREE);
+sp_AddMemory (0, NUMBLOCKS, 14, (void *) AD_FREE);
 ```
 
 #### `sp_InitIM2 (isr)`
@@ -247,11 +254,14 @@ sp_AddMemory (0, NUMBLOCKS, 14, AD_FREE);
 #### `sp_RegisterHook (vector, hook)`
 
 - **Qué hace**: añade una función a la lista de hooks del ISR genérico.
-- El hook del motor es `ISR ()`. En 48K (`speccy/isr.h`) sólo cuenta
-  interrupciones (`isr_frames ++`), para la sincronía de frames. En 128K
-  (`speccy_128/wyzplayer.h`) además llama al WYZ player.
-- splib2 guarda el enlace de la lista en los 2 bytes anteriores a la función:
-  por eso `isr.h` pone un `defw 0` justo antes de `ISR`.
+- El hook del motor es `isr_hook`, en ensamblador (una función `__naked`).
+  En 48K (`speccy/isr.h`) sólo cuenta interrupciones (`isr_frames ++`), para
+  la sincronía de frames. En 128K (`speccy_128/wyzplayer.h`) además llama al
+  WYZ player. Acaba con el acarreo a 0 (`or a`) para que sigan los demás
+  hooks.
+- splib2 guarda el enlace de la lista en los 2 bytes anteriores al hook: por
+  eso `isr_hook` empieza con `.dw 0` y se registra su dirección más 2
+  (`ISR_HOOK`).
 
 #### `sp_Initialize (atributo, tile)`
 
@@ -278,22 +288,10 @@ Pone el color del borde.
 
 - **Qué hacen**: reservan y liberan un bloque de una cola.
 - splib2 usa este asignador **por dentro** para crear sprites: cada `sp_SS`
-  y cada `sp_CS` son 14 bytes, y splib2 los pide con `u_malloc`.
-
-#### `u_malloc` / `u_free`
-
-splib2 no sabe cómo reservar memoria: usa dos punteros que el programa tiene
-que definir. El motor los engancha al asignador de bloques
-(`speccy/sysvars.h`):
-
-```c
-void *my_malloc (uint bytes) {
-	return sp_BlockAlloc (0);
-}
-
-void *u_malloc = my_malloc;
-void *u_free = sp_FreeBlock;
-```
+  y cada `sp_CS` son 14 bytes, que `sp_CreateSpr` y `sp_AddColSpr` piden a
+  la cola 0 (y `sp_DeleteSpr` devuelve). En la splib2 original eso pasaba
+  por dos punteros, `u_malloc` y `u_free`, que tenía que definir el
+  programa; en esta copia las rutinas llaman directamente al asignador.
 
 El motor crea sus sprites una vez, al arrancar, y no los destruye nunca.
 
@@ -392,13 +390,13 @@ El motor trabaja en píxeles y splib2 en caracteres más resto. Así coloca al
 jugador:
 
 ```c
-sp_MoveSprAbs (sp_player, spritesClip, player.next_frame - player.current_frame,
+sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame,
 	VIEWPORT_Y + (gpy >> 3), VIEWPORT_X + (gpx >> 3), gpx & 7, gpy & 7);
 player.current_frame = player.next_frame;
 ```
 
 Para esconder un sprite se le manda fuera del clip (por ejemplo, a la fila y
-columna -2).
+columna 254).
 
 `update_this_enemy ()` no llama a `sp_MoveSprAbs` si el enemigo no ha
 cambiado ni de sitio ni de frame: así splib2 no repinta sus celdas sin
@@ -406,15 +404,13 @@ necesidad.
 
 #### El rectángulo de recorte (clip)
 
-`spritesClip` es un `struct sp_Rect` (fila, columna, alto, ancho) que se
-define en ensamblador en `speccy/sysvars.h`:
+`spritesClip` es un `struct sp_Rect` (fila, columna, alto, ancho) constante,
+en `speccy/sysvars.h`; `SPRITES_CLIP` es su dirección, que es lo que se pasa
+a `sp_MoveSprAbs`:
 
 ```c
-extern struct sp_Rect spritesClip [0];
-#asm
-	._spritesClip
-		defb VIEWPORT_Y, VIEWPORT_X, 20, 30
-#endasm
+const struct sp_Rect spritesClip = { VIEWPORT_Y, VIEWPORT_X, 20, 30 };
+#define SPRITES_CLIP ((struct sp_Rect *) &spritesClip)
 ```
 
 Es la zona de juego: 30x20 caracteres a partir de `VIEWPORT_X`,
@@ -502,13 +498,16 @@ columnas:
 - `sprite_N_b`: la columna derecha (16 + 8),
 - `sprite_N_c`: la columna vacía (24 líneas de `0, 255`).
 
-Delante de `sprite_1_a` van las 8 líneas de relleno de arriba. Cada gráfico
-ocupa lo mismo (144 bytes) y van seguidos: esto es importante (sección 7).
+Todo va en una tabla `const`, `sprite_data`, y `sprite_N_a`, `_b` y `_c`
+son punteros dentro de ella. Delante de `sprite_1_a` van las 8 líneas de
+relleno de arriba. Cada gráfico ocupa lo mismo (144 bytes) y van seguidos:
+esto es importante (sección 7). Si la salida acaba en `.bin`, `sprcnv`
+escribe esos mismos bytes en binario (los spritesets de los niveles).
 
 Los sprites extra están escritos a mano, en el mismo formato, en
-`speccy/extrasprites.h`: `sprite_17` (la explosión), `sprite_18` (vacío, para
-los enemigos muertos) y `sprite_19` (la bala, de 8x8). Detrás va
-`_sprites_end`, el final de los gráficos de sprites.
+`speccy/extrasprites.h`: una tabla `const`, `extrasprites`, con `sprite_17`
+(la explosión), `sprite_18` (vacío, para los enemigos muertos) y `sprite_19`
+(la bala, de 8x8), cada uno con sus columnas seguidas.
 
 Con niveles (capítulo 10 del manual), un nivel puede traer su spriteset: se
 descomprime encima de los 16 sprites, en `sprite_1_a - 16` (incluye el relleno
@@ -582,7 +581,7 @@ void hook_game_init (void) {
    `NULL` y el güego se cuelga al moverlo.
 4. Muévelo cada frame con `sp_MoveSprAbs` (por ejemplo, desde
    `HOOK_ENTERING_SCREEN` o desde tu código de `custom.h`), con
-   `spritesClip` como clip.
+   `SPRITES_CLIP` como clip.
 
 ### 8.2. Animar un sprite propio
 
@@ -615,7 +614,7 @@ Usa `sp_KeyPressed (código)` para teclas sueltas, o `pad0` y
   las balas. Si creas más sprites, súbelo (sección 8.1).
 - **El sprite no tiene color propio**: en modo Spectrum el atributo de la
   celda lo pone el tile de fondo; el sprite se dibuja con la tinta de esa
-  celda. Con `FLASHASFG = 1` (en `SPconfig.def`), splib2 no dibuja sprites
+  celda. Con `FLASHASFG = 1` (en `SPconfig.inc`), splib2 no dibuja sprites
   sobre celdas con el bit 7 (FLASH) del atributo puesto: así se hacen los
   tiles que tapan a los sprites.
 - **El orden de dibujo es por planos**: menor plano = delante. Todos los
@@ -624,7 +623,9 @@ Usa `sp_KeyPressed (código)` para teclas sueltas, o `pad0` y
 - **`sp_UpdateNow` es lo único que pinta**: lo que escribas en la pantalla a
   mano sobrevive sólo hasta que se repinten esas celdas.
 - **La interrupción**: el motor ya usa el ISR genérico de `0xF1F1` y su hook.
-  Si añades otro, regístralo con `sp_RegisterHook` (con su `defw 0` delante).
+  Si añades otro, escríbelo como `isr_hook` (función `__naked` con `.dw 0`
+  al principio, acabada en `or a` y `ret`) y regístralo con
+  `sp_RegisterHook` pasando su dirección más 2.
 - **No toques las estructuras** `sp_SS` y `sp_CS` a mano salvo que sepas lo
   que haces: la librería las recorre con desplazamientos fijos.
 
@@ -640,7 +641,7 @@ Usa `sp_KeyPressed (código)` para teclas sueltas, o `pad0` y
 | `sp_Initialize` | Display list vacía, pantalla sucia, tablas de rotación. | `system_init ()` |
 | `sp_Border` | Color del borde. | `system_init ()` |
 | `sp_AddMemory` | Da bloques al asignador. | `system_init ()` |
-| `sp_BlockAlloc`, `sp_FreeBlock` | Asignador de bloques (`u_malloc`, `u_free`). | `speccy/sysvars.h` |
+| `sp_BlockAlloc`, `sp_FreeBlock` | Asignador de bloques (lo usa splib2 por dentro). | — |
 | `sp_TileArray` | Apunta un tile a su gráfico. | `system_init ()` |
 | `sp_PrintAtInv` | Escribe tile + atributo en una celda. | `draw_coloured_tile`, `print_number2`, `print_str`, `draw_objs`… |
 | `sp_UpdateNow` | Repinta las celdas sucias. | `mainloop.h`, `pantallas.h`, `msc.h`… |
@@ -653,12 +654,15 @@ Usa `sp_KeyPressed (código)` para teclas sueltas, o `pad0` y
 ### Ficheros relacionados
 
 - `lib/splib2/` — la librería (fuente en ensamblador, `spritepack.h`,
-  `sp.lst` con los módulos y `Makefile.bat`).
-- `lib/splib2/SPconfig.def` — la configuración con la que se compila la
-  librería (`NOFLICKER = 1`, `FLASHASFG = 1`, `IM2TABLE = $F000`,
-  `SProtatetbl = $F000`…).
+  `sp.lst` con los módulos, `make.bat` y `make.sh`).
+- `lib/splib2/SPconfig.inc` — la configuración con la que se ensambla la
+  librería (`NOFLICKER = 1`, `FLASHASFG = 1`, `IM2TABLE = 0xF000`,
+  `SProtatetbl = 0xF000`…).
+- `src/dev/speccy/splib2.lib`, `src/dev/speccy/spritepack.h` — la librería
+  compilada y su cabecera (las deja ahí `make.bat`).
 - `lib/splib2/readme` — el README original de Sprite Pack 2.2.
 - `src/dev/speccy/` — todo lo que usa splib2 (ver el principio).
-- `src/dev/speccy/sprites.h` — los gráficos de los sprites (generado).
+- `src/dev/speccy/sprites.h` — los gráficos de los sprites (generado por
+  `sprcnv`).
 - `src/dev/speccy/extrasprites.h` — explosión, sprite vacío y bala.
 - `src/utils/sprcnv.bas` — el generador de `sprites.h`.

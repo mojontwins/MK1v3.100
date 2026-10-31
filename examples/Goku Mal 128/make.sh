@@ -7,7 +7,8 @@
 # usa siempre el motor actual. Deja gokumal.tap aquí.
 #
 # Uso: ./make.sh [noclean]     (noclean deja los intermedios en build/dev)
-# Requiere las utilidades compiladas (src/utils/build-linux.sh) y z88dk.
+# Requiere las utilidades compiladas (src/utils/build-linux.sh) y GBDK_HOME
+# (source ~/mk1tools/mk1env.sh).
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"

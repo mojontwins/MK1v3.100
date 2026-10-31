@@ -1,14 +1,13 @@
 #!/bin/bash
 # Instala el entorno de MK1 v3.100 en Linux (x86_64):
 #   * FreeBASIC 1.10.1  -> /usr/local (necesita root)
-#   * z88dk 1.10        -> $TOOLS/z88dk (compilado desde fuente)
-# y genera $TOOLS/z88env.sh, que hay que "source"-ar antes de compilar.
+#   * GBDK-2020 4.3.0   -> $TOOLS/gbdk (su SDCC compila el motor)
+# y genera $TOOLS/mk1env.sh, que hay que "source"-ar antes de compilar.
 #
 # Uso: env/setup-linux.sh [TOOLS_DIR]   (por defecto ~/mk1tools)
 
 set -e
 ENV_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO="$(dirname "$ENV_DIR")"
 TOOLS="${1:-$HOME/mk1tools}"
 mkdir -p "$TOOLS"
 
@@ -36,39 +35,9 @@ for l in Xpm Xrandr GL; do
 	[ -n "$so" ] && [ ! -e /usr/lib/x86_64-linux-gnu/lib$l.so ] && ln -s "$so" /usr/lib/x86_64-linux-gnu/lib$l.so
 done
 
-# --- z88dk 1.10 --------------------------------------------------------------
-Z="$TOOLS/z88dk"
-if [ ! -x "$Z/bin/zcc" ]; then
-	tar xzf "$ENV_DIR/z88dk-1.10.1.tgz" -C "$TOOLS"
-	(
-		cd "$Z" && mkdir -p bin
-		export PATH="$Z/bin:$PATH" Z80_OZFILES="$Z/lib/" ZCCCFG="$Z/lib/config/"
-		# Código C de 2009: hay que pedirle a gcc moderno que sea tolerante.
-		export CC=gcc CFLAGS="-g -O2 -std=gnu89 -fcommon -w -fpermissive" CCOPT=-DUNIX
-		make -e && make -C libsrc && make -C libsrc install
-	)
-fi
+# --- GBDK-2020 -----------------------------------------------------------------
+[ -x "$TOOLS/gbdk/bin/sdcc" ] || tar xzf "$ENV_DIR/gbdk-linux64.tar.gz" -C "$TOOLS"
 
-# crt0 recortado de MK1 (solo coloca la pila y salta a main), para ZX y CPC
-[ -f "$Z/lib/spec_crt0.asm.stock" ] || cp "$Z/lib/spec_crt0.asm" "$Z/lib/spec_crt0.asm.stock"
-cp "$REPO/lib/spec_crt0.asm" "$Z/lib/spec_crt0.asm"
-# El de CPC es igual (ld sp, $FFFF / jp _main); el de serie de z88dk guarda
-# el estado del firmware y baja la pila 6,5K, lo que choca con el mapa de MK1.
-[ -f "$Z/lib/cpc_crt0.asm.stock" ] || cp "$Z/lib/cpc_crt0.asm" "$Z/lib/cpc_crt0.asm.stock"
-sed 's/MODULE  zx82_crt0/MODULE  cpc_crt0/' "$REPO/lib/spec_crt0.asm" > "$Z/lib/cpc_crt0.asm"
+echo "export GBDK_HOME=\"$TOOLS/gbdk\"" > "$TOOLS/mk1env.sh"
 
-# Librerías de los backends
-cp "$REPO/lib/splib2/splib2f.lib" "$Z/lib/clibs/splib2f.lib"
-cp "$REPO/lib/splib2/splib2f.lib" "$Z/lib/clibs/splib2.lib"
-cp "$REPO/lib/splib2/spritepack.h" "$Z/include/"
-cp "$REPO"/lib/cpcrslib-mt/*.lib "$Z/lib/clibs/"
-cp "$REPO/lib/cpcrslib-mt/cpcrslib_mt.h" "$Z/include/"
-
-cat > "$TOOLS/z88env.sh" <<EOF
-export Z88DK="$Z"
-export PATH="$Z/bin:\$PATH"
-export Z80_OZFILES="$Z/lib/"
-export ZCCCFG="$Z/lib/config/"
-EOF
-
-echo "Listo. Ahora:  source $TOOLS/z88env.sh  &&  src/utils/build-linux.sh"
+echo "Listo. Ahora:  source $TOOLS/mk1env.sh  &&  src/utils/build-linux.sh"

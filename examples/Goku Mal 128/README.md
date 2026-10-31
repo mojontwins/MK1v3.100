@@ -6,10 +6,10 @@ propio enganchado al motor con los ganchos de `custom.h`.
 
 ## Compilar
 
-En una ventana de comandos:
+Con GBDK-2020 en `C:\gbdk` (ver el capítulo 0 del manual), en una ventana de
+comandos:
 
 ```bat
-C:\z88dk10-orig\setenv.bat
 cd "C:\ruta\al\repositorio\examples\Goku Mal 128"
 make.bat
 ```

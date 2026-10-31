@@ -8,7 +8,8 @@ rem pone encima los archivos del juego y llama a comp-zx.bat, asi que el juego
 rem usa siempre el motor actual. Deja gokumal.tap aqui.
 rem
 rem Uso: make.bat [noclean]     (noclean deja los intermedios en build\dev)
-rem Requiere las utilidades compiladas (src\utils\build-windows.bat) y z88dk.
+rem Requiere las utilidades compiladas (src\utils\build-windows.bat) y GBDK-2020
+rem en C:\gbdk (o donde diga GBDK_HOME).
 rem
 rem Las carpetas del juego y src\utils se enlazan con uniones de directorio
 rem (mklink /J), que no necesitan permisos de administrador.

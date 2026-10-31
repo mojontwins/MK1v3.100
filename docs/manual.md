@@ -48,7 +48,8 @@ MK1 es un *framework* para hacer juegos de habitaciones fijas (*flick
 screen*) de 15x10 tiles de 16x16: plataformas (vista lateral) o aventuras
 vistas desde arriba (la "vista genital"). Se compone de:
 
-1. **El motor**, en C (z88dk) con algo de ensamblador. Se gobierna con un
+1. **El motor**, en C (SDCC, el compilador de GBDK-2020) con algo de
+   ensamblador. Se gobierna con un
    archivo, `config.h`, en el que se dice qué partes del motor usa el güego y
    cómo se comportan.
 2. **Las herramientas de conversión**, que convierten los gráficos (png), el
@@ -73,7 +74,7 @@ Todo lo necesario para trabajar en Windows está en este repositorio:
 
 | Dónde | Qué es |
 |---|---|
-| `env/z88dk10-orig.zip` | El compilador de C (z88dk 1.10), con las librerías (`splib2` para ZX, `cpcrslib` para CPC), las cabeceras y los `crt0` que usa el motor. |
+| `env/gbdk-win64.zip` | GBDK-2020 4.3.0: el compilador de C (SDCC), su ensamblador y su enlazador. El motor sólo usa eso (no es un güego de Game Boy). Las librerías del motor (`splib2` para ZX, `cpcrslib` para CPC) ya vienen compiladas en `src/dev/speccy` y `src/dev/cpc`. |
 | `env/mappy-mojon.zip` | Mappy, el editor de mapas (capítulo 2). |
 | `env/WYZTracker-0.5.0.2.zip` | WYZ Tracker 0.5.0.2, para hacer la música de **ZX Spectrum 128K** (capítulo 7). |
 | `env/WYZTracker.2.0.1.2.7z` | WYZ Tracker 2.0.1.2, para hacer la música de **Amstrad CPC** (capítulo 7). |
@@ -86,21 +87,18 @@ un editor de textos y un emulador de Spectrum o de CPC para probar el güego.
 
 ## Instalar el entorno
 
-1. Descomprime `env\z88dk10-orig.zip` directamente en `C:\`. Tiene que
-   quedar la carpeta `C:\z88dk10-orig`.
+1. Descomprime `env\gbdk-win64.zip` directamente en `C:\`. Tiene que
+   quedar la carpeta `C:\gbdk`.
 2. Descomprime donde quieras Mappy y el WYZ Tracker que vayas a usar.
 
 Y ya está. Las herramientas de `src\utils` no hay que instalarlas.
 
-Cada vez que abras una ventana de comandos para compilar, lo primero es
-ejecutar
+Si prefieres tener GBDK-2020 en otro sitio, di dónde antes de compilar, en la
+misma ventana de comandos:
 
 ```bat
-C:\z88dk10-orig\setenv.bat
+set GBDK_HOME=D:\herramientas\gbdk
 ```
-
-que le dice a esa ventana dónde está z88dk (sólo a esa ventana: si la
-cierras y abres otra, hay que volver a ejecutarlo).
 
 Si trabajas en Linux, mira el [apéndice A](#apéndice-a---trabajar-en-linux).
 
@@ -142,19 +140,13 @@ docs/                <- la documentación
 
 1. Abre una ventana de comandos (tecla Windows + R, escribe `cmd` y pulsa
    Intro).
-2. Prepara z88dk:
-
-   ```bat
-   C:\z88dk10-orig\setenv.bat
-   ```
-
-3. Ve a la carpeta `src\dev` del repositorio (cambia la ruta por la tuya):
+2. Ve a la carpeta `src\dev` del repositorio (cambia la ruta por la tuya):
 
    ```bat
    cd C:\MK1v3.100\src\dev
    ```
 
-4. Compila:
+3. Compila:
 
    ```bat
    comp-zx.bat
@@ -162,7 +154,7 @@ docs/                <- la documentación
 
    Sale `bootee.tap`, la cinta de Spectrum. Para CPC, `comp-cpc.bat`, que
    deja `bootee.sna` (una instantánea) y `bootee.cdt` (la cinta).
-5. Abre la cinta en tu emulador.
+4. Abre la cinta en tu emulador.
 
 `comp-zx.bat` lo hace todo:
 
@@ -171,7 +163,7 @@ docs/                <- la documentación
 3. Si el güego tiene niveles, los construye (capítulo 10).
 4. En 128K, prepara el reproductor de música y reparte las pantallas y los
    niveles por las páginas de RAM (capítulo 10).
-5. Compila el güego con z88dk.
+5. Compila el güego con SDCC y comprueba que cabe en memoria (`ihx2bin`).
 6. Monta la cinta y borra los ficheros intermedios.
 
 Si algo falla, se para y dice qué. Se le pueden dar dos opciones:
@@ -213,8 +205,7 @@ Si algo falla, se para y dice qué. Se le pueden dar dos opciones:
    hay que coger, cómo se mueve el jugador, qué enemigos hay…
 5. Si hace falta, escribe tu propio código en `dev\custom.h` y `dev\extern.h`
    (capítulo 9).
-6. **Compila**: `C:\z88dk10-orig\setenv.bat` y `comp-zx.bat`, como con el
-   ejemplo.
+6. **Compila** con `comp-zx.bat`, como el ejemplo.
 
 Lo normal es ir poco a poco: primero el tileset y el mapa, compilar y ver que
 se mueve por él; luego los sprites; luego los enemigos…
@@ -492,14 +483,17 @@ frames son otros: ver `move ()` en `engine.h`.
 ..\utils\sprcnv ..\gfx\speccy\sprites.png speccy\sprites.h [nomask]
 ```
 
-genera `speccy/sprites.h` (`sprite_1_a` … `sprite_16_c`). `nomask` genera los
-sprites sin máscara (para `NO_MASKS`, que los pinta con OR).
+genera `speccy/sprites.h`: los gráficos en una tabla `const` (`sprite_data`)
+y `sprite_1_a` … `sprite_16_c` apuntando a cada columna. `nomask` genera los
+sprites sin máscara (para `NO_MASKS`, que los pinta con OR). Si la salida
+acaba en `.bin`, `sprcnv` escribe los mismos bytes en binario, que es lo que
+se usa para los spritesets de los niveles (capítulo 10).
 
 ## Los sprites extra
 
 La explosión (el sprite 17, cuando muere un enemigo), el sprite vacío (18) y
-la bala (19, de 8x8) están en `speccy/extrasprites.h`, escritos como datos
-(`defb gráfico, máscara`). Un güego que quiera los suyos sustituye ese fichero
+la bala (19, de 8x8) están en `speccy/extrasprites.h`, escritos como una
+tabla `const` de C (gráfico y máscara, byte a byte). Un güego que quiera los suyos sustituye ese fichero
 (Goku Mal lo hace). En CPC son pngs: `gfx/cpc/sprites_extra.png` y
 `sprites_bullet.png`.
 
@@ -990,9 +984,10 @@ con los números de MK1 así).
 
 ## Amstrad CPC
 
-También el WYZ player (`cpc/wyz_player.h`), con la música hecha con WYZ
+También el WYZ player (`cpc/wyz_player.s`), con la música hecha con WYZ
 Tracker 2.0.1.2 y los datos en `../ogt/`: `instrumentos.asm` (que
-`wyzTrackerParser` convierte en `cpc/instrumentos.h`), `cpc/efectos.h` y las
+`wyzTrackerParser` convierte en el módulo `instrumentos.s` cada vez que
+compilas), los efectos de `cpc/efectos.s` (los 15 de la tabla de arriba) y las
 canciones comprimidas que lista `cpc/songs.h` (0 título, 1 juego, 2 game
 over).
 
@@ -1158,16 +1153,29 @@ Las variables y funciones más útiles:
 | `wyz_play_music (n)`, `wyz_stop_sound ()` | 128K y CPC: música. |
 | `gpit`, `gpjt`, `gpaux`, `rdx`, `rdy`… | Variables auxiliares globales (el motor las usa también: no confíes en su valor entre llamadas). |
 
-Ojo con `sccz80`, el compilador de z88dk 1.10:
+Unas reglas de SDCC que conviene saber al escribir código propio:
 
-* las variables globales son más rápidas que las locales y que los punteros a
-  estructuras;
-* los desplazamientos por una constante (`x >> 4`) llaman a una rutina; sólo
-  `>> 8` y sacar un byte se hacen en línea;
-* `(unsigned int *) p` y `&(variable)` tras un cast no los entiende: usa
-  `(unsigned char *) (&variable)`;
-* los literales decimales de más de 32767 son `long`: escribe los números
-  grandes en hexadecimal.
+* **Las variables globales no pueden llevar valor inicial.** El motor no las
+  copia al arrancar (sólo las pone a cero), y `ihx2bin` da un error si
+  aparece alguna. Las tablas que no cambian se declaran `const` (van con el
+  código); las que cambian, se rellenan en el código (por ejemplo, con
+  `memcpy` desde una tabla `const`, al empezar la partida).
+* Las cadenas y tablas que se pasan a funciones del motor son `const`:
+  `const unsigned char *`.
+* El ensamblador va dentro de `__asm` … `__endasm;`, con la sintaxis de
+  `sdasz80` (`ld a, #5` para los números, `ld a, 3(ix)`, etiquetas con `:`).
+  Si va dentro de una función normal, tiene que dejar los registros como los
+  encontró; lo cómodo es ponerlo en una función entera de ensamblador,
+  `__naked`, que acaba en `ret`. Las variables de C se llaman igual con `_`
+  delante (`_gpit`).
+* En una función `__naked` el primer argumento llega en A (si es de 8 bits) o
+  en HL (si es de 16) y se devuelve en A (8 bits) o DE (16 bits). Para los
+  demás argumentos, mira la convención `__sdcccall(1)` en el manual de SDCC
+  (`sdccman.pdf`, en la carpeta de GBDK-2020).
+* Con `AT (dirección)` delante de una declaración, la variable va en esa
+  dirección (`AT (BASE_CUSTOM) unsigned char mis_cosas [16];`).
+* Las variables globales siguen siendo algo más rápidas que las locales en
+  muchos casos, y `gpit`, `gpjt`… están ahí para eso.
 
 ---
 
@@ -1192,8 +1200,12 @@ usa con otra página puesta queda por debajo de 0xC000; y monta la cinta.
 
 En 128K la pila va por debajo del programa (24200) y nada que se use con otra
 página en 0xC000 (la pila, el descompresor, la interrupción, los buffers de
-nivel, el tileset y los sprites) puede estar en 0xC000-0xFFFF. Si el programa
-crece tanto que algo de eso pasa de 0xC000, `comp-zx.bat` da un error.
+nivel, el tileset y los sprites) puede estar en 0xC000-0xFFFF. Para eso las
+variables del motor van delante de su código, y el descompresor, la
+interrupción, el tileset y los sprites van al principio del código; el resto
+del código sí puede pasar de 0xC000. Si el programa crece tanto que algo de
+lo que no puede pasa de 0xC000, `comp-zx.bat` da un error (lo comprueba
+`ihx2bin`).
 
 ## Juegos con niveles
 
@@ -1225,8 +1237,7 @@ rem Nivel 1: bundle, tileset y spriteset
 "%U%\buildlevel" map=..\map\mapa1.map ene=..\enems\enems1.ene behs=behs1.txt ^
 	out=level1.bin maxpant=25 scr_ini=0 ini_x=2 ini_y=7 max_objs=10 life=3 2bytes > nul || exit /b 1
 "%U%\ts2bin" ..\gfx\font.png ..\gfx\work1.png ts1.bin 7 > nul || exit /b 1
-"%U%\sprcnv" ..\gfx\sprites1.png spr1.h > nul || exit /b 1
-"%U%\defb2bin" spr1.h spr1.bin > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites1.png spr1.bin > nul || exit /b 1
 
 rem zx0 no sobrescribe: se borra antes la salida
 for %%f in (level1 ts1 spr1) do (
@@ -1307,7 +1318,7 @@ El mismo motor compila para CPC (`comp-cpc.bat`) con la librería `cpcrslib`
   "%U%\mkts_om" %P% mode=strait2x2 greyordered in=..\gfx\cpc\work.png out=work.bin silent
   "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites.png out=sprites.bin max=16 silent
   "%U%\mkts_om" %P% mode=superbuffer in=..\gfx\cpc\title.png out=title.scr silent
-  "%U%\mkts_om" platform=cpc mode=palsasassembly in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent
+  "%U%\mkts_om" platform=cpc mode=pals in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent
   ```
 
 * La música es del WYZ player, hecha con WYZ Tracker 2.0.1.2 (capítulo 7).
@@ -1317,7 +1328,11 @@ El mismo motor compila para CPC (`comp-cpc.bat`) con la librería `cpcrslib`
   cargador.
 * No hay modo 128K ni niveles en CPC (`MODE_128K` se ignora).
 * Los buffers del motor viven en los huecos de la memoria de vídeo
-  (`cpc/sysvars.h`).
+  (`cpc/sysvars.h`). El programa y sus variables tienen que acabar antes de
+  0x8800, donde empiezan los buffers fijos; `ihx2bin` lo comprueba.
+* La librería (`cpcrslib.lib`, en `dev/cpc`) tiene una variante "fg"
+  (`cpcrslib_fg.lib`) con la que los sprites pueden pasar por detrás de los
+  tiles que se marquen; ver `lib/cpcrslib-mt/README.md`.
 
 ---
 
@@ -1437,20 +1452,14 @@ de `custom.h` (capítulo 9).
 
 ### Compilarlo
 
-1. Abre una ventana de comandos y prepara z88dk:
-
-   ```bat
-   C:\z88dk10-orig\setenv.bat
-   ```
-
-2. Ve a la carpeta del ejemplo (las comillas hacen falta por los espacios
+1. Abre una ventana de comandos y ve a la carpeta del ejemplo (las comillas hacen falta por los espacios
    del nombre; cambia la ruta por la tuya):
 
    ```bat
    cd "C:\MK1v3.100\examples\Goku Mal 128"
    ```
 
-3. Compila:
+2. Compila:
 
    ```bat
    make.bat
@@ -1539,8 +1548,7 @@ exit /b 0
 "%U%\buildlevel" map=..\map\mapa%2.MAP ene=..\enems\enems%2.ene behs=..\levels\behs%2.txt ^
 	out=level%1.bin maxpant=25 scr_ini=%3 ini_x=%4 ini_y=%5 max_objs=%6 life=%7 lock=99 2bytes > nul || exit /b 1
 "%U%\ts2bin" ..\gfx\font.png ..\gfx\work%2.png ts%1.bin 7 > nul || exit /b 1
-"%U%\sprcnv" ..\gfx\sprites%2.png spr%1.h > nul || exit /b 1
-"%U%\defb2bin" spr%1.h spr%1.bin > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites%2.png spr%1.bin > nul || exit /b 1
 ...
 ```
 
@@ -1574,21 +1582,21 @@ Están todas en `src\utils`. Normalmente no hay que llamarlas a mano: lo hacen
 | Herramienta | Uso |
 |---|---|
 | `ts2bin font.png work.png ts.bin tinta` | Tileset de ZX (2304 bytes). `nofont`, `notiles` o `blank` en lugar de un png. |
-| `mapcnv mapa.map mapa.h W H 15 10 cerrojo [packed] [fixmappy]` | Mapa a `mapa.h`. |
-| `ene2h enems.ene enems.h [2bytes]` | Enemigos y *hotspots* a `enems.h`. |
-| `sprcnv sprites.png sprites.h [nomask]` | Spriteset de ZX. |
-| `defb2bin sprites.h sprites.bin` | Los `defb` de un `.h` a binario (spritesets por nivel). |
+| `mapcnv mapa.map mapa.h W H 15 10 cerrojo [packed] [fixmappy]` | Mapa a `mapa.h` (tabla `const` y los cerrojos iniciales). |
+| `ene2h enems.ene enems.h [2bytes]` | Enemigos y *hotspots* a `enems.h` (tablas `const` con el estado inicial y sus copias en RAM). |
+| `sprcnv sprites.png sprites.h [nomask]` | Spriteset de ZX. Con salida `.bin`, el binario (spritesets por nivel). |
 | `png2scr imagen.png imagen.scr` | Pantalla de 256x192 a formato Spectrum. |
 | `zx0 entrada salida` | Compresor (el descompresor está en `dev/zx0.h`). |
 | `buildlevel map= ene= behs= out= maxpant= scr_ini= ini_x= ini_y= [max_objs=] [life=] [scr_fin= fin_x= fin_y=] [mapw= maph=] [unpacked] [lock=15] [2bytes] [fixmappy] [noswap]` | Bundle de un nivel. `maxpant` es `MAP_W * MAP_H`; el tamaño del mapa sale del `.ene` (o de `mapw`/`maph`); `lock=99` si no hay cerrojos. |
 | `librarian list=lista.txt out=librarian.h [dir=salida] [pages=3,4,6,7]` | Reparte recursos en páginas de RAM de 128K. |
 | `msc4 in=a.spt[,b.spt] v=3_100 output=c [rooms=N]` | Compila los scripts (ver `msc4.md`). |
 | `mkts_om platform=cpc ...` | Conversor de gráficos de CPC. |
-| `wyzTrackerParser instrumentos.asm instrumentos.h` | Los instrumentos de WYZ Tracker a C (CPC). |
-| `pasmo` | Ensamblador (el WYZ player, el cargador de 128K y los de CPC). |
+| `wyzTrackerParser instrumentos.asm instrumentos.s` | Los instrumentos de WYZ Tracker 2.0 a un módulo de ensamblador (CPC). |
+| `beepola2s beepola.asm music.s` | La exportación de Beepola a un módulo de ensamblador (la música del título de 48K). |
+| `ihx2bin juego.ihx juego.bin dirección [juego.map [128k]]` | Saca el binario del enlazador y comprueba el mapa de memoria. |
+| `pasmo` | Ensamblador (el WYZ player de 128K, el cargador de 128K y los de CPC). |
 | `bin2tap`, `bas2tap` | Cintas de ZX. |
 | `cpctbin2sna`, `cpc2cdt`, `zx7`, `imanol` | Instantáneas, cintas y cargadores de CPC. |
-| `printsize binario` | Tamaño del binario. |
 | `ponedor` | El editor de enemigos (capítulo 5). |
 | `rle44map_sp`, `rle53map_sp`, `rle62map_sp` | Conversores de mapas a formatos RLE (no los usa el motor). |
 
@@ -1601,7 +1609,7 @@ Todo lo de este manual se puede hacer también en Linux. Cada `.bat` tiene un
 
 | Windows | Linux |
 |---|---|
-| `C:\z88dk10-orig\setenv.bat` | `source ~/mk1tools/z88env.sh` |
+| (GBDK-2020 en `C:\gbdk`) | `source ~/mk1tools/mk1env.sh` (pone `GBDK_HOME`) |
 | `comp-zx.bat`, `comp-cpc.bat` | `./comp-zx.sh`, `./comp-cpc.sh` |
 | `game.bat` + `convert.bat` | `game.sh`: pone `game=` y define una función `convert_assets` |
 | `levels.bat` | `levels.sh` (ejecutable) |
@@ -1610,14 +1618,13 @@ Todo lo de este manual se puede hacer también en Linux. Cada `.bat` tiene un
 Para instalar el entorno:
 
 ```sh
-env/setup-linux.sh [directorio]     # FreeBASIC, z88dk 1.10, librerías, crt0
-source ~/mk1tools/z88env.sh         # (o el directorio que le hayas dado)
+env/setup-linux.sh [directorio]     # FreeBASIC y GBDK-2020
+source ~/mk1tools/mk1env.sh         # (o el directorio que le hayas dado)
 src/utils/build-linux.sh            # compila las herramientas en src/utils/linux
 ```
 
-`env/setup-linux.sh` instala FreeBASIC 1.10 y compila z88dk 1.10 desde
-`env/z88dk-1.10.1.tgz`, le pone las librerías y los `crt0` del motor y escribe
-`z88env.sh` con las variables de entorno. `src/utils/build-linux.sh` compila
+`env/setup-linux.sh` instala FreeBASIC 1.10, descomprime GBDK-2020 desde
+`env/gbdk-linux64.tar.gz` y escribe `mk1env.sh`, que pone `GBDK_HOME`. `src/utils/build-linux.sh` compila
 todas las herramientas (las de FreeBASIC, `msc4` y las de C) en
 `src/utils/linux/`, que es donde las buscan los `.sh`. `ponedor` es sólo para
 Windows.
@@ -1645,16 +1652,26 @@ convert_assets () {
 | 23300-23599 (`BASE_ROOM_BUFFERS`) | `map_attr` y `map_buff` de la pantalla actual. |
 | 23600-23727 (`BASE_ARRAYS`) | Arrays de enemigos y balas. |
 | 23728-23877 (`BASE_BRK_BUFF`) | Golpes de los muros rompibles. |
-| 24200 | El programa. |
+| 24200 | El programa y, detrás, sus variables. |
 | `AD_FREE` (0xF000 - bloques) - 0xF000 | Bloques de memoria de los sprites (`NUMBLOCKS`). |
 | 0xF000-0xF100 | Tabla de vectores IM2. |
 | 0xF1F0 hacia abajo | La pila (64 bytes). |
 | 0xF1F1 | La interrupción (ISR). |
 | 0xF200-0xFFFF | Tablas de rotación de splib2. |
 
-**ZX 128K**: igual, salvo que la pila empieza en 24200 y crece hacia abajo, y
-que las páginas 1 (WYZ player), 3, 4, 6 y 7 (recursos) se ponen en
-0xC000-0xFFFF cuando hacen falta.
+**ZX 128K**: igual, salvo que la pila empieza en 24200 y crece hacia abajo;
+que a partir de 24200 van primero el arranque y las librerías, luego las
+variables del motor (los buffers de nivel incluidos) y luego su código, para
+que lo que se usa con otra página puesta quede por debajo de 0xC000; y que
+las páginas 1 (WYZ player), 3, 4, 6 y 7 (recursos) se ponen en 0xC000-0xFFFF
+cuando hacen falta.
 
-**CPC**: el programa en 0x400; los buffers del motor en los huecos de la
-memoria de vídeo (0xC600…, ver `cpc/sysvars.h`).
+**CPC**
+
+| Zona | Qué hay |
+|---|---|
+| 0x100-0x3FF | El nametable (un byte por tile de la pantalla). |
+| 0x400 | El programa y, detrás, sus variables (hasta 0x8800). |
+| 0x8800 | La canción que suena, descomprimida. |
+| 0x9000-0xBFFF | El superbuffer. |
+| 0xC000-0xFFFF | La pantalla; en los huecos de 0x200 bytes de cada bloque de 2K, los buffers del motor (0xC600…, ver `cpc/sysvars.h`), la LUT de transparencias (0xFE00) y la pila (0xFFFF hacia abajo). |

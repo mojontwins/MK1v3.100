@@ -10,6 +10,7 @@ es [`manual.md`](manual.md).
 2. [Probar el motor](#2-probar-el-motor)
 3. [msc4 por dentro](#3-msc4-por-dentro)
 4. [Las utilidades de Windows](#4-las-utilidades-de-windows)
+5. [Compilar con SDCC](#5-compilar-con-sdcc)
 
 ---
 
@@ -204,3 +205,100 @@ msc4) se recompilan con `src/utils/build-windows.bat`, que necesita `fbc`
 
 En Linux, `src/utils/build-linux.sh` lo compila todo (también las de C) en
 `src/utils/linux` (ver el apéndice A del manual).
+
+---
+
+## 5. Compilar con SDCC
+
+El motor se compila con SDCC 4.4 (el de GBDK-2020 4.3.0): `sdcc`, el
+ensamblador `sdasz80`, el enlazador `sdldz80` y el bibliotecario `sdar`. De
+GBDK sólo se usan esas herramientas y la librería de C de Z80
+(`lib/z80/z80.lib`: `memcpy`, `memset` y las rutinas de multiplicar y
+dividir). `comp-zx` y `comp-cpc` buscan GBDK en `GBDK_HOME` (en Windows, por
+defecto `C:\gbdk`).
+
+### Los pasos
+
+1. `sdcc -mz80 --no-std-crt0 -I. -c churromain.c`: todo el motor de una vez
+   (`churromain.c` incluye el resto). En CPC, además, `-DCPC -DMODE_0`; en
+   128K, `--codeseg MAIN --constseg MAIN` (ver más abajo).
+2. `sdasz80 -g` de los módulos en ensamblador: el `crt0` de cada máquina y,
+   según el caso, la música del título de 48K (`speccy/music.s`, de
+   `beepola2s`), o el WYZ player de CPC, sus efectos y los instrumentos
+   (`cpc/wyz_player.s`, `cpc/efectos.s`, `instrumentos.s` de
+   `wyzTrackerParser`).
+3. `sdldz80 -n -m -w -i -b _CODE=dirección`, con la librería gráfica
+   (`speccy/splib2.lib` o `cpc/cpcrslib.lib`) y `z80.lib`.
+4. `ihx2bin juego.ihx juego.bin dirección juego.map [128k]`: el binario, desde
+   la dirección de carga hasta el último byte con datos, y las comprobaciones
+   del mapa de memoria (abajo).
+
+### Las áreas y el `crt0`
+
+`crt0.s` pone la pila (`__stack_top`, que define `churromain.c` a partir de
+`STACK_ADDR`), borra las variables (`_DATA`, las del motor, y `_BSS`, las de
+splib2) y salta a `main`. **No copia variables con valor inicial**: no hay
+ninguna (el motor usa tablas `const`, y las que cambian durante la partida
+tienen una tabla `const` con su estado inicial que se copia al empezar:
+`malotes_ini`, `hotspots_ini`, `cerrojos_ini`).
+
+El orden de las áreas sale del `crt0`:
+
+| Máquina | Orden en memoria |
+|---|---|
+| ZX 48K (24200) | `_CODE` (código y `const`), `_DATA`, `_BSS` |
+| ZX 128K (24200) | `_CODE` (crt0 y librerías), `_DATA`, `_MAIN` (el motor), `_BSS` |
+| CPC (0x400) | `_CODE`, `_DATA`, `_BSS` |
+
+En 128K el motor se compila en el área `_MAIN` para que sus variables (entre
+ellas el buffer del nivel, `level_data`) queden delante del código y por
+debajo de 0xC000, aunque el código pase de esa dirección: lo que se usa con
+otra página de RAM puesta tiene que estar por debajo. Las variables ocupan su
+sitio en la cinta (ceros).
+
+### Lo que comprueba `ihx2bin`
+
+Con el `.map` (`sdldz80 -w`, nombres completos):
+
+* que `_INITIALIZER` está vacía: si hay una variable global con valor
+  inicial, error;
+* que el programa y sus variables (`s__HEAP`) acaban antes de `__mem_limit`
+  (`MEM_LIMIT`: en ZX, el principio de los bloques de los sprites; en CPC,
+  el buffer de la canción, 0x8800);
+* en 128K, que `_low_end` (una función vacía que va justo después de los
+  gráficos en `churromain.c`) está por debajo de 0xC000: antes van el
+  descompresor, la paginación, la ISR, el tileset y los sprites.
+
+### Ensamblador en C
+
+SDCC no admite ensamblador fuera de una función. Los datos y las rutinas en
+ensamblador van en funciones `__naked` que no se llaman nunca (`tileset_data`,
+`zx0_depack`...), con la sintaxis de `sdasz80`. Las rutinas que se llaman
+desde C son `__naked` y acaban en `ret`; con `__sdcccall(1)` (la convención
+por defecto) el primer argumento llega en A o HL y se devuelve en A o DE. IX
+es el puntero de marco de SDCC: quien lo use lo guarda.
+
+### Las librerías
+
+* **splib2** (`lib/splib2`, `make.sh` o `make.bat`, salida en
+  `src/dev/speccy`): los módulos en `.s`; las funciones de C llevan un
+  envoltorio con la convención `__smallc` (argumentos en la pila, de
+  izquierda a derecha, como en z88dk) que guarda IX en `__sp_ixsave`. Las
+  funciones devuelven en L o HL. La memoria de los sprites es la de los
+  bloques de splib2 (`SPBlockAlloc`). Ver [`lib-splib2.md`](lib-splib2.md).
+* **cpcrslib** (`lib/cpcrslib-mt`, salida en `src/dev/cpc`): `.s`, con
+  entradas `__z88dk_fastcall` (el argumento en HL o L) que guardan IX. Ver
+  [`lib-cprslib.md`](lib-cprslib.md) y `lib/cpcrslib-mt/README.md`.
+
+### Lo que generan las herramientas
+
+| Herramienta | Salida |
+|---|---|
+| `mapcnv` | `mapa.h`: `const unsigned char mapa []` y `cerrojos_ini` (const) con su copia `cerrojos` en RAM. |
+| `ene2h` | `enems.h`: `malotes_ini` y `hotspots_ini` (const) con sus copias en RAM, y `enoffs_index`. |
+| `sprcnv` | `sprites.h`: `sprite_data` (const) y `sprite_N_x` como punteros dentro; o el `.bin`. |
+| `msc4 output=c` | `msc-config.h` y `msc-scripts.h` (bytecode y textos, const). |
+| `librarian` | `librarian.h`: los `RES_*`, la tabla `resources` (const) y `get_resource`. |
+| `beepola2s` | `speccy/music.s` con `play_title_music`. |
+| `wyzTrackerParser` | `instrumentos.s` (`TABLA_PAUTAS`, `TABLA_SONIDOS`). |
+| `mkts_om mode=pals` | `cpc/pal.h`: `const unsigned char my_inks []`. |
