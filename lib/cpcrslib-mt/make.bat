@@ -24,12 +24,14 @@ mkdir obj
 for /f "usebackq delims=" %%l in ("CPCconfig.inc") do (
 	if "%%l"=="	PASARPORDETRAS = 0" (echo 	PASARPORDETRAS = %1) else (echo %%l)
 ) >> obj\CPCconfig.inc
+rem sdar no expande *.rel en Windows: cada modulo se anade al ensamblarlo
+if exist %L%\%2 del %L%\%2
 for /f "usebackq delims=" %%m in ("cpcrslib.lst") do (
 	"%B%\sdasz80" -Iobj -o obj\%%m.rel %%m.s
 	if errorlevel 1 exit /b 1
+	"%B%\sdar" -rc %L%\%2 obj\%%m.rel
+	if errorlevel 1 exit /b 1
 )
-if exist %L%\%2 del %L%\%2
-"%B%\sdar" -rc %L%\%2 obj\*.rel
 rmdir /s /q obj
 echo %2 listo
 exit /b 0
