@@ -3,27 +3,41 @@
 
 // Variables dependientes del sistema (Amstrad CPC)
 
-#include <cpcrslib_mt.h>
+#include "cpcrslib_mt.h"
 
 #define PLAY_SFX(n) 		wyz_play_sound(n)
 
-// This hack is necessary to integrate msc :/
+// msc.h y el motor llaman a peta_el_beeper para los efectos
 #define peta_el_beeper(n)	wyz_play_sound(n)
 
+// Colocación de variables en direcciones fijas
+#define AT(a)				__at (a)
+
+// Mapa de memoria. El programa empieza en 0x400 y sus variables van detrás
+// del código, hasta WYZ_SONG_BUFFER (ihx2bin lo comprueba con MEM_LIMIT).
+// Por encima, buffers en direcciones fijas: la canción descomprimida, el
+// superbuffer (0x9000-0xBFFF) y, en la pantalla (32x24 tiles, en cada
+// bloque de 2K solo se usan 0x600 bytes), los huecos de 0x200 bytes que
+// quedan: buffers de la pantalla, tiles tocados, arrays, sprites, la LUT de
+// transparencias y la pila (encima de la LUT).
 #define BASE_TILEMAP 		0x0100
 #define WYZ_SONG_BUFFER 	0x8800
 #define BASE_SUPERBUFF  	0x9000
-// Colocación de variables en direcciones fijas (extensión de sccz80).
-#define AT(a)				@ (a)
 
-#define BASE_ROOM_BUFFERS	0xC000 + 0x600
-#define BASE_DIRTY_CELLS 	0xC800 + 0x600
-#define BASE_ARRAYS 		0xD000 + 0x600
-#define BASE_BRK_BUFF		0xD080 + 0x600	// muros rompibles: 150 bytes
+#define BASE_ROOM_BUFFERS	(0xC000 + 0x600)
+#define BASE_DIRTY_CELLS 	(0xC800 + 0x600)
+#define BASE_ARRAYS 		(0xD000 + 0x600)
+#define BASE_BRK_BUFF		(0xD080 + 0x600)	// muros rompibles: 150 bytes
 #define BASE_WYZ 			0xDF80
-#define BASE_SPRITES 		0xE000 + 0x600
-#define BASE_CUSTOM 		0xF000 + 0x600
-#define BASE_LUT			0xF800 + 0x600
+#define BASE_SPRITES 		(0xE000 + 0x600)
+#define BASE_CUSTOM 		(0xF000 + 0x600)
+#define BASE_LUT			(0xF800 + 0x600)
+
+#define STACK_ADDR			0xFFFF
+#define MEM_LIMIT			WYZ_SONG_BUFFER
+
+// El nametable: un byte por tile de la pantalla (32x24)
+#define nametable			((unsigned char *) BASE_TILEMAP)
 
 #define BLACK_PEN 1
 // Sincronía de frames: interrupciones por frame de juego (GAME_FRAME_TICKS).
@@ -33,37 +47,37 @@
 	#define MIN_FAPS_PER_FRAME 2
 #endif
 
-#asm
-	// Imports
+// cpcrslib recorta los sprites al área de juego: le pasamos dónde está.
+void viewport_symbols (void) __naked {
+	__asm
+		viewport_x == VIEWPORT_X
+		viewport_y == VIEWPORT_Y
+	__endasm;
+}
 
-		XREF _nametable
-		XREF tabla_teclas
-		LIB cpc_KeysData
-		LIB cpc_UpdTileTable
-		LIB cpc_InvalidateRect
-		LIB cpc_TestKeyboard
+// Puertos: el gate array (paleta, borde, modo) y el CRTC
+__sfr __banked __at (0x7F00) gate_array;
+__sfr __banked __at (0xBC00) crtc_select;
+__sfr __banked __at (0xBD00) crtc_data;
 
-	// Exports
-
-		XDEF viewport_x
-		XDEF viewport_y
-
-		defc viewport_x = VIEWPORT_X
-		defc viewport_y = VIEWPORT_Y
-#endasm
-
-#define WYZ_FX_CHANNEL 1
+// WYZ player (cpc/wyz_player.s)
+void wyz_init (void);
+void wyz_play_music (unsigned char m);
+void wyz_play_sound (unsigned char s);
+void wyz_stop_sound (void);
 unsigned char isr_player_on;
 unsigned char wyz_beat_ct;
+
+// Contadores de la ISR: isr_c1 cuenta interrupciones (6 por frame) e isr_c2
+// frames, para la sincronía de sp_UpdateNow.
+unsigned char isr_c1, isr_c2;
 
 // Number of sprites and handy macros
 
 #define MAX_ENEMS 3
 
-// Shortcuts
-		
 // Sprites software: jugador, enemigos y balas.
-#define SW_SPRITES_ALL 		1 + MAX_ENEMS + MAX_BULLETS		// Sin paréntesis: se usa en #asm ("ld b, ...")
+#define SW_SPRITES_ALL 		(1 + MAX_ENEMS + MAX_BULLETS)
 
 #define SP_PLAYER 			0
 #define SP_ENEMS_BASE 		1
@@ -73,72 +87,65 @@ unsigned char wyz_beat_ct;
 	// P_0 P_1 P_2 P_3
 	// 1 0 1 0 1 0 1 0
 	// 3 7 2 6 1 5 0 4
-	#define BLACK_COLOUR_BYTE (BLACK_PEN>>1)|((BLACK_PEN>>1)<<1)\
+	#define BLACK_COLOUR_BYTE ((BLACK_PEN>>1)|((BLACK_PEN>>1)<<1)\
 								|((BLACK_PEN>>1)<<2)|((BLACK_PEN>>1)<<3)\
 								|((BLACK_PEN&1)<<4)|((BLACK_PEN&1)<<5)\
-								|((BLACK_PEN&1)<<6)|((BLACK_PEN&1)<<7)
+								|((BLACK_PEN&1)<<6)|((BLACK_PEN&1)<<7))
 #else
 	// PIXEL 0  PIXEL 1
 	// 3 2 1 0  3 2 1 0
 	// 1 5 3 7  0 4 2 6
-	#define BLACK_COLOUR_BYTE ((BLACK_PEN>>3)&1)|(((BLACK_PEN>>3)&1)<<1)\
+	#define BLACK_COLOUR_BYTE (((BLACK_PEN>>3)&1)|(((BLACK_PEN>>3)&1)<<1)\
 								|(((BLACK_PEN>>1)&1)<<2)|(((BLACK_PEN>>1)&1)<<3)\
 								|(((BLACK_PEN>>2)&1)<<4)|(((BLACK_PEN>>2)&1)<<5)\
-								|((BLACK_PEN&1)<<6)|((BLACK_PEN&1)<<7)
+								|((BLACK_PEN&1)<<6)|((BLACK_PEN&1)<<7))
 #endif
 
-extern unsigned char trpixlutc [0];
-
-#asm
-	; LUT for transparent pixels in sprites
-	; taken from CPCTelera
-	._trpixlutc
-		BINARY "trpixlutc.bin"
-#endasm
+// LUT de pixels transparentes para los sprites (de CPCTelera), comprimida.
+// system_init la descomprime en BASE_LUT.
+extern const unsigned char trpixlutc [];
+void trpixlut_data (void) __naked {
+	__asm
+		_trpixlutc:
+		.incbin "trpixlutc.bin"
+	__endasm;
+}
 
 #define BORDER(b) 				cpc_Border((b))
 
-// Controller
+// Teclas. Cada una es ((0x40 | línea de la matriz) << 8) | bit; los números
+// en https://lronaldo.github.io/cpctelera/files/keyboard/keyboard-txt.html
+// keys tiene las que se usan (pad_read lee las 8 primeras); select_joyfunc
+// copia ahí def_keys o def_keys_joy.
 
-// Look up the numbers @ https://lronaldo.github.io/cpctelera/files/keyboard/keyboard-txt.html)
+#define N_KEYS 12
+unsigned int keys [N_KEYS];
 
-extern unsigned char def_keys [0];
-#asm
-	._def_keys
-		defw $4404 		; LEFT     O
-		defw $4308 		; RIGHT    P
-		defw $4808 		; UP       Q
-		defw $4820 		; DOWN     A
+const unsigned int def_keys [N_KEYS] = {
+	0x4404, 	// LEFT     O
+	0x4308, 	// RIGHT    P
+	0x4808, 	// UP       Q
+	0x4820, 	// DOWN     A
+	0x4580, 	// BUTTON_A SPACE
+	0x4808, 	// BUTTON_B Q
+	0x4801, 	// KEY_AUX3 1
+	0x4802, 	// KEY_AUX4 2
+	0x4880,		// KEY_AUX1 Z
+	0x4780, 	// KEY_AUX2 X
+	0x4204,		// KEY_ENTER
+	0x4804		// KEY_ESC
+};
 
-		defw $4580 		; BUTTON_A SPACE
-		defw $4808 		; BUTTON_B Q
+// Joystick (se lee como teclas)
+const unsigned int def_keys_joy [N_KEYS] = {
+	0x4904, 0x4908, 0x4901, 0x4902, 0x4910, 0x4920,
+	0x4801, 0x4802, 0x4880, 0x4780, 0x4204, 0x4804
+};
 
-		defw $4801 		; KEY_AUX3 1
-		defw $4802 		; KEY_AUX4 2
-
-		defw $4880		; KEY_AUX1 Z
-		defw $4780 		; KEY_AUX2 X
-
-		defw $4204		; KEY_ENTER
-		defw $4804		; KEY_ESC	
-#endasm
-
-// Bindings for keyboard-mapped joystick
-
-extern unsigned char def_keys_joy [0];
-#asm
-	._def_keys_joy
-		defw 0x4904, 0x4908, 0x4901, 0x4902, 0x4910, 0x4920
-		defw 0x4801, 0x4802, 0x4880, 0x4780, 0x4204, 0x4804
-#endasm
-
-// Handy defines
-
-// Códigos de tecla: ((0x40 | línea de la matriz) << 8) | bit
+// Con dos botones, teclas fijas: saltar = Q, disparar = ESPACIO.
 #ifdef USE_TWO_BUTTONS
-	// Con dos botones, teclas fijas: saltar = Q, disparar = ESPACIO.
-	unsigned int key_jump = 0x4808;
-	unsigned int key_fire = 0x4580;
+	#define key_jump 0x4808
+	#define key_fire 0x4580
 #endif
 
 #define KEY_M 0x4440
@@ -166,27 +173,24 @@ extern unsigned char def_keys_joy [0];
 
 #define sp_LEFT           0x01
 #define sp_RIGHT          0x02
-#define sp_UP             0x04		
+#define sp_UP             0x04
 #define sp_DOWN           0x08
 #define sp_FIRE           0x10
 #define sp_FIRE2          0x20
 #define sp_AUX3           0x40
 #define sp_AUX4           0x80
 
-// Sprite structs
+// Sprites software: la estructura que usa cpcrslib (16 bytes)
 
 typedef struct sprite {
-	unsigned int sp0;			// 0
-	unsigned int sp1; 			// 2
-	unsigned int coord0;
+	unsigned int sp0;			// 0	frame actual
+	unsigned int sp1; 			// 2	frame anterior
+	unsigned int coord0;		// 4
 	signed char cox, coy;		// 6 7
-	unsigned char cx, cy; 		// 8 9
+	unsigned char cx, cy; 		// 8 9	posición: byte (0-63) y línea (0-191)
 	unsigned char ox, oy;		// 10 11
 	void *invfunc;				// 12
 	void *updfunc;				// 14
 } SPR;
 
-// Main sprite array. Can contain as many as 16 sprites.
-
 AT (BASE_SPRITES) SPR sp_sw [SW_SPRITES_ALL];
-

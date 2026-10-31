@@ -45,7 +45,7 @@ Area                                    Addr        Size        Decimal Bytes (A
      0000B4FD  s__INITIALIZED                  
      0000C367  s__HEAP                         
      0000C367  s__HOME                         
-     0000EDA8  __ad_free                          churromain
+     0000EDA8  __mem_limit                        churromain
      0000F1F0  __stack_top                        churromain
 
 ASxxxx Linker V03.00/V05.40 + sdld,  page 2.
@@ -62,6 +62,7 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
      00005EB8  _beeper_code                       churromain
      00005FEA  _peta_el_beeper                    churromain
      00005FF0  _zx0_depack                        churromain
+     00005FF0  depack                             churromain
      00006034  _unpack                            churromain
      0000603A  _tileset_data                      churromain
      0000693A  _blackout                          churromain
@@ -106,7 +107,6 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
      00008E3E  _set_map_tile                      churromain
      00008E8C  _init_cerrojos                     churromain
      00008E9A  _init_hotspots                     churromain
-     00008EA8  _init_enems                        churromain
 ASxxxx Linker V03.00/V05.40 + sdld,  page 3.
 Hexadecimal  [32-Bits]
 
@@ -116,6 +116,7 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
+     00008EA8  _init_enems                        churromain
      00008EB6  _do_hotspots                       churromain
      00008F86  _check_and_clear_cerrojo           churromain
      0000900A  _draw_scr_background               churromain
@@ -166,7 +167,6 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
      0000A82A  SPkeyrepeatperiod                  SPGetKey
      0000A82B  SPInkey                            SPGetKey
      0000A83C  SPGetKey                           SPGetKey
-     0000A8B0  _sp_TileArray                      sp_TileArray
 ASxxxx Linker V03.00/V05.40 + sdld,  page 4.
 Hexadecimal  [32-Bits]
 
@@ -176,6 +176,7 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
+     0000A8B0  _sp_TileArray                      sp_TileArray
      0000A8C6  _sp_Initialize                     sp_Initialize
      0000A8DA  SPInitialize                       SPInitialize
      0000A8FE  SProtatetblInitialize              SPInitialize
@@ -212,7 +213,6 @@ _CODE                               00005E88    0000525D =       21085. bytes (R
      0000B0C8  SPbitright2mask                    SPbitright2mask
      0000B0D0  SPDeleteSpr                        SPDeleteSpr
      0000B0DC  SPdsloop                           SPDeleteSpr
-
 ASxxxx Linker V03.00/V05.40 + sdld,  page 5.
 Hexadecimal  [32-Bits]
 

@@ -1,0 +1,295 @@
+; ******************************************************
+; **       Librería de rutinas para Amstrad CPC       **
+; **	   Raúl Simarro, 	  Artaburu 2007           **
+; ******************************************************
+
+; [na_th_an] Modificada por Mojon Twins - eliminamos la "cabecera" de los sprites.
+; [na_th_an] Gracias a Fran Gallego y al código de la CPCTelera, rescrito para usar LUTs
+; [na_th_an] Esta nueva vesión de la rutina imprime al pixel en m0
+; Necesita una LUT en $FE00
+
+	.module cpc_PutTrSp8x8TileMapPx
+	.globl cpc_PutTrSp8x8TileMapPx
+	.include "CPCconfig.inc"
+	.area _CODE
+
+	.globl posiciones_super_buffer
+	.globl tiles
+
+cpc_PutTrSp8x8TileMapPx:
+
+	;según las coordenadas x,y que tenga el sprite, se dibuja en el buffer
+	ex de, hl;4
+	.db 0xdd
+	ld h, d;9
+	.db 0xdd
+	ld l, e;9 
+
+	;lo cambio para la rutina de multiplicar
+	ld e, 8(ix); X - Cuidado ! va a pixel (0-127)
+	ld a, e; Save for later!
+	srl e; X a bytes
+	ld h, 9(ix); Y
+
+pasa_bloque_a_sbuffer:
+
+transferir_sprite:
+	ld d, #0
+
+	; Multiplico HL = H * 64, offset "Y"
+	ld l, #0
+	srl h
+	rr l
+	srl h
+	rr l
+
+	add hl, de; sumo offset "X"
+
+	ld de, #posicion_inicial_superbuffer
+	add hl, de
+
+	;hl apunta a la posición en buffer (destino)
+
+	ld e, 0(ix)
+	ld d, 1(ix);HL apunta al sprite
+
+sp_buffer_mask:
+	.db 0xdd
+	ld h, #8
+	ex de, hl; de -> bg
+	ld b, h
+	ld c, l; bc -> sprite
+
+	; Remember A = X in pixels
+	and #1
+	jr nz, loop_alto_map_sbuffer_shifted
+
+loop_alto_map_sbuffer:
+	ld h, #0xFE; hl -> LUT
+
+	; El ancho está desenrollado: Hay que procesar y copiar 4 bytes.
+
+	ld a, (bc); Get sprite
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	ld a, (bc); Get sprite
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	ld a, (bc); Get sprite
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	ld a, (bc); Get sprite
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	;*************************************************
+
+	.db 0xdd
+	dec h
+	ret z
+
+	; de += 60 (next line in bg)
+	ld hl, #60
+	add hl, de
+	ex de, hl
+
+	jp loop_alto_map_sbuffer
+
+
+loop_alto_map_sbuffer_shifted:
+	ld h, #0xFE; 	; hl -> LUT
+
+	; El ancho está desenrollado. Procesamos 4 bytes que copiamos en 5:
+	; 1. AB -> BA, byte 1 = BA And 0x55                    = 0A
+	; 2. CD -> DC, byte 2 = (BA And 0xAA) OR (DC And 0x55) = BC
+	; 3. EF -> FE, byte 3 = (DC And 0xAA) OR (FE And 0x55) = DE
+	; 4. GH -> HG, byte 4 = (FE And 0xAA) OR (HG And 0x55) = FG
+	; 5.         , byte 5 = (HG And 0xAA)                  = H0
+
+	;; Byte 1 :
+	;; AB -> BA, byte 1 = BA And 0x55                    = 0A
+
+	ld a, (bc); Get sprite byte AB
+
+	;; swap pixels in byte
+	ld l, a
+	rlca
+	rlca
+	xor l
+	and #0x55; 01010101
+	xor l
+	rrca; A = BA
+	.db 0xdd
+	ld l, a; Save for next byte
+
+	and #0x55
+
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save bg + masked sprite
+	inc de
+	inc bc
+
+	;; Byte 2
+	;; CD -> DC, byte 2 = (BA And 0xAA) OR (DC And 0x55) = BC
+
+	.db 0xdd
+	ld a, l; BA
+	and #0xAA; B0
+	.db 0xfd
+	ld l, a; IYL = B0
+
+	ld a, (bc); Get sprite byte CD
+
+	;; swap pixels in byte
+	ld l, a
+	rlca
+	rlca
+	xor l
+	and #0x55; 01010101
+	xor l
+	rrca; A = DC
+	.db 0xdd
+	ld l, a; IXL = DC
+
+	and #0x55; A = 0C
+	.db 0xfd
+	or l; A = BC
+
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	;; Byte 3
+	;; EF -> FE, byte 3 = (DC And 0xAA) OR (FE And 0x55) = DE
+
+	.db 0xdd
+	ld a, l; DC
+	and #0xaa; D0
+	.db 0xfd
+	ld l, a; IYL = D0
+
+	ld a, (bc); Get sprite byte EF
+
+	;; swap pixels in byte
+	ld l, a
+	rlca
+	rlca
+	xor l
+	and #0x55; 01010101
+	xor l
+	rrca; A = FE
+
+	.db 0xdd
+	ld l, a; IXL = FE
+
+	and #0x55; A = 0E
+	.db 0xfd
+	or l; A = DE
+
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	;; Byte 4
+	;; GH -> HG, byte 4 = (FE And 0xAA) OR (HG And 0x55) = FG
+
+	.db 0xdd
+	ld a, l; FE
+	and #0xaa; F0
+	.db 0xfd
+	ld l, a; IYL = F0
+
+	ld a, (bc); Get sprite byte GH
+
+	;; swap pixels in byte
+	ld l, a
+	rlca
+	rlca
+	xor l
+	and #0x55; 01010101
+	xor l
+	rrca; A = HG
+
+	.db 0xdd
+	ld l, a; IXL = HG
+
+	and #0x55; A = 0G
+	.db 0xfd
+	or l; A = FG
+
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+	inc de
+	inc bc
+
+	;; Byte 5
+	;; byte 5 = (HG And 0xAA) = H0
+
+	.db 0xdd
+	ld a, l; HG
+	and #0xaa; H0
+
+	ld l, a; copy to L to index LUT
+	ld a, (de); Get bg
+	and (hl); make a hole
+	or l; draw pixels
+	ld (de), a; save BG
+
+	;*************************************************
+
+	.db 0xdd
+	dec h
+	ret z
+
+	; de += 60 (next line in bg)
+	ld hl, #60
+	add hl, de
+	ex de, hl
+
+	jp loop_alto_map_sbuffer_shifted
+
+
+
+; Entrada desde C: guarda IX, que la rutina usa y SDCC necesita
+_cpc_PutTrSp8x8TileMapPx::
+	push ix
+	call cpc_PutTrSp8x8TileMapPx
+	pop ix
+	ret

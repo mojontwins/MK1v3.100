@@ -1,15 +1,16 @@
 // La Churrera Engine 3.100
 // Copyleft 2010-2013, 2020-2025 by The Mojon Twins
 
-extern unsigned char tileset [0];
-extern unsigned char tspatterns [0];
-#asm
-		XDEF _ts
-		XDEF tiles
-	._tileset
-	.tiles
-	._font
-		BINARY "font.bin" 	// 1024 bytes for 64 patterns
-	._tspatterns
-		BINARY "work.bin"   // 3072 bytes for 192 patterns
-#endasm
+// Tileset de CPC (mkts_om): la fuente (64 patrones) y los tiles (192
+// patrones), seguidos. cpcrslib lo usa con el nombre "tiles".
+extern const unsigned char tileset [];
+extern const unsigned char tspatterns [];
+void tileset_data (void) __naked {
+	__asm
+		_tileset::
+		tiles::
+		.incbin "font.bin"			; 1024 bytes, 64 patrones
+		_tspatterns:
+		.incbin "work.bin"			; 3072 bytes, 192 patrones
+	__endasm;
+}

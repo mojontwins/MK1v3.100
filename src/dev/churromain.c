@@ -46,8 +46,10 @@ unsigned char rand (void);
 // Si, por ejemplo, tu juego además lleva 3 proyectiles, necesitarás
 // 4*10 + 3*5 = 55 bloques.
 
-// Mapa de memoria de la pila y los bloques de sprites, según el modo.
-#ifdef MODE_128K
+// Mapa de memoria de la pila y los bloques de sprites, según el modo (el de
+// CPC está en cpc/sysvars.h).
+#ifdef CPC
+#elif defined MODE_128K
 	// En 128K la pila NO puede estar entre 0xC000 y 0xFFFF: al paginar otra RAM
 	// para descomprimir un recurso se perderían las direcciones de retorno.
 	// Va justo debajo del programa (24200) y crece hacia abajo, hacia la zona
@@ -68,15 +70,12 @@ unsigned char rand (void);
 	#define STACK_ADDR		0xF1F0
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #endif
+// El programa y sus variables tienen que acabar antes de los bloques de los
+// sprites (en CPC, antes de los buffers: ver cpc/sysvars.h).
+#ifndef CPC
+	#define MEM_LIMIT		AD_FREE
+#endif
 
-// crt0 coloca la pila en __stack_top. comp-zx comprueba con __ad_free que el
-// programa y sus variables acaban antes de los bloques de los sprites.
-void memory_map_symbols (void) __naked {
-	__asm
-		__stack_top == STACK_ADDR
-		__ad_free == AD_FREE
-	__endasm;
-}
 
 // Cosas del juego:
 
@@ -87,6 +86,20 @@ void memory_map_symbols (void) __naked {
 #endif
 
 #include "definitions.h"
+
+// Símbolos del mapa de memoria para crt0 (la pila, en __stack_top) e ihx2bin
+// (comprueba que el programa acaba antes de __mem_limit). En CPC, además, las
+// direcciones de los buffers del WYZ player (cpc/wyz_player.s).
+void memory_map_symbols (void) __naked {
+	__asm
+		__stack_top == STACK_ADDR
+		__mem_limit == MEM_LIMIT
+	#ifdef CPC
+		__wyz_song_buffer == WYZ_SONG_BUFFER
+		__base_wyz == BASE_WYZ
+	#endif
+	__endasm;
+}
 
 #ifndef CPC
 	#ifdef MODE_128K
@@ -100,10 +113,9 @@ void memory_map_symbols (void) __naked {
 		void play_title_music (void);
 	#endif
 #else
-	#include "cpc/efectos.h"
-	#include "cpc/instrumentos.h"
+	// El WYZ player, sus efectos y los instrumentos del juego son módulos
+	// aparte (cpc/wyz_player.s, cpc/efectos.s, instrumentos.s).
 	#include "cpc/songs.h"
-	#include "cpc/wyz_player.h"
 #endif
 
 #include "zx0.h"

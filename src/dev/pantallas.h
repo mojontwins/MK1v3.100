@@ -6,9 +6,9 @@
 // Copyleft 2010 The Mojon Twins
 
 #ifndef MODE_128K
-	extern unsigned char s_title [];
-	extern unsigned char s_marco [];
-	extern unsigned char s_ending [];
+	extern const unsigned char s_title [];
+	extern const unsigned char s_marco [];
+	extern const unsigned char s_ending [];
 
 	void pantallas_data (void) __naked {
 		__asm
@@ -32,7 +32,7 @@ void title (void) {
 	#ifdef MODE_128K
 		get_resource (RES_TITLE, 16384);
 	#else		
-		unpack_screen ((unsigned char *) (s_title));
+		unpack_screen (s_title);
 	#endif
 
 	#ifdef CPC

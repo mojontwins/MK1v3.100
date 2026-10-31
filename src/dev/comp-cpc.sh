@@ -1,13 +1,14 @@
 #!/bin/bash
 # Equivalente Linux de comp-cpc.bat
 # Uso: ./comp-cpc.sh [justcompile] [noclean]
-# Requiere z88dk 1.10 en el PATH (source z88env.sh, ver env/setup-linux.sh)
+# Requiere GBDK-2020 (su SDCC): GBDK_HOME apuntando a donde esté instalado.
 
 # Cambia "game" por el nombre de tu güego.
 game=bootee
 mode=0
 
 cd "$(dirname "$0")"
+: "${GBDK_HOME:?Pon en GBDK_HOME la carpeta de GBDK-2020}"
 U=../utils/linux
 P="platform=cpc cpcmode=$mode pal=../gfx/cpc/pal.png"
 
@@ -28,7 +29,7 @@ if [ $justcompile = 0 ]; then
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_extra.png out=sprites_extra.bin max=2 silent > /dev/null
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_bullet.png out=sprites_bullet.bin metasize=1,1 max=1 silent > /dev/null
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_sword.png out=sprites_sword.bin metasize=1,1 max=4 silent > /dev/null
-	$U/mkts_om platform=cpc mode=palsasassembly in=../gfx/cpc/pal.png prefix=my_inks out=cpc/pal.h silent > /dev/null
+	$U/mkts_om platform=cpc mode=pals in=../gfx/cpc/pal.png prefix=my_inks out=cpc/pal.h silent > /dev/null
 
 	for s in marco ending title; do
 		$U/mkts_om $P mode=superbuffer in=../gfx/cpc/$s.png out=$s.scr silent > /dev/null
@@ -54,15 +55,21 @@ fi
 echo "### COMPILANDO GUEGO ###"
 $U/pasmo cpc/cpc_TrPixLutM$mode.asm trpixlut.bin
 rm -f trpixlutc.bin; $U/zx0 trpixlut.bin trpixlutc.bin > /dev/null
-$U/wyzTrackerParser ../ogt/instrumentos.asm cpc/instrumentos.h > /dev/null
+# Instrumentos del WYZ player (de la exportación de WYZ Tracker)
+$U/wyzTrackerParser ../ogt/instrumentos.asm instrumentos.s > /dev/null || exit 1
 
-rm -f zcc_opt.def
-zcc +cpc -a -vn -zorg=1024 -lcpcrslib_mt -o $game.asm cpc/tilemap_conf.asm churromain.c -DCPC -DMODE_$mode > /dev/null 2>&1
-rm -f zcc_opt.def
-if ! zcc +cpc -m -vn -zorg=1024 -lcpcrslib_mt -o $game.bin cpc/tilemap_conf.asm churromain.c -DCPC -DMODE_$mode; then
-	echo "ERROR"; exit 1
-fi
-$U/printsize $game.bin
+# SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
+# WYZ player, sus efectos y los instrumentos son módulos aparte. El programa
+# empieza en 0x400 con crt0 y sus variables van detrás del código. ihx2bin
+# saca el binario y comprueba el mapa de memoria con el .map.
+G="$GBDK_HOME/bin"
+"$G/sdcc" -mz80 --no-std-crt0 -I. -DCPC -DMODE_$mode -c churromain.c || { echo "ERROR"; exit 1; }
+for s in cpc/crt0 cpc/wyz_player cpc/efectos instrumentos; do
+	"$G/sdasz80" -g -o $(basename $s).rel $s.s || { echo "ERROR"; exit 1; }
+done
+"$G/sdldz80" -n -m -w -i -b _CODE=0x400 $game.ihx crt0.rel churromain.rel wyz_player.rel efectos.rel instrumentos.rel \
+	-k cpc -l cpcrslib.lib -k "$GBDK_HOME/lib/z80" -l z80.lib || { echo "ERROR"; exit 1; }
+$U/ihx2bin $game.ihx $game.bin 0x400 $game.map || exit 1
 
 echo "### CONSTRUYENDO SNA Y CDT ###"
 rm -f $game.sna
@@ -95,7 +102,7 @@ echo "Output: $game.cdt"
 
 if [ $noclean = 0 ]; then
 	echo "### LIMPIANDO ###"
-	rm -f *.scr *.bin zcc_opt.def
+	rm -f *.scr *.bin *.rel *.ihx *.asm *.lst *.sym instrumentos.s
 fi
 
 echo "### DONE ###"

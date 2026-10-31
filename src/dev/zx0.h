@@ -14,7 +14,7 @@ void zx0_depack (void) __naked {
 		;   .HL source address (compressed data)
 		;   .DE destination address (decompressing)
 		; -----------------------------------------------------------------------------
-		depack:
+		depack::
 		dzx0_standard:
 		ld bc, #0xffff; preserve default offset 1
 		push bc
@@ -99,7 +99,7 @@ void zx0_depack (void) __naked {
 
 // Descomprime de src a dest (los dos en la RAM visible). SDCC pasa src en HL
 // y dest en DE, que es lo que espera depack. src = 0 no hace nada.
-void unpack (unsigned char *src, unsigned char *dest) __naked {
+void unpack (const unsigned char *src, unsigned char *dest) __naked {
 	(void) src; (void) dest;
 	__asm
 		ld a, h

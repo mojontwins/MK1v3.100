@@ -11,17 +11,15 @@ cd /d "%~dp0"
 fbc buildlevel.bas cmdlineparser.bas
 fbc librarian.bas cmdlineparser.bas
 fbc beepola2s.bas
-fbc defb2bin.bas
 fbc ihx2bin.bas
 fbc ene2h.bas mtparser.bas cmdlineparser.bas
 fbc imanol.bas cmdlineparser.bas
 fbc mapcnv.bas
 fbc mkts_om.bas mtparser.bas cmdlineparser.bas
 fbc png2scr.bas
-fbc printsize.bas
 fbc sprcnv.bas
 fbc ts2bin.bas
-fbc wyzTrackerParser.bas mtparser.bas
+fbc wyzTrackerParser.bas
 fbc rle44map_sp.bas mtparser.bas cmdlineparser.bas
 fbc rle53map_sp.bas mtparser.bas cmdlineparser.bas
 fbc rle62map_sp.bas mtparser.bas cmdlineparser.bas

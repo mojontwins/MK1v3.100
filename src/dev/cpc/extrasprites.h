@@ -2,33 +2,26 @@
 // Copyleft 2010, 2011 by The Mojon Twins
 
 // Extrasprites.h
-// Contiene sprites extra para el modo de matar enemigos de MTE MK1
-// Sólo se incluirá (tras los sprites) si se define PLAYER_KILLS_ENEMIES
-// Copyleft 2010 The Mojon Twins
+// Sprites extra: la explosión (17), el sprite vacío (18) y la bala (19).
 
-// Frames extra por si se pueden eliminar los enemigos:
-
-extern unsigned char sprite_17_a []; 
-extern unsigned char sprite_18_a []; 
-
+extern const unsigned char sprite_17_a [];
+extern const unsigned char sprite_18_a [];
 #ifdef PLAYER_CAN_FIRE
-	extern unsigned char sprite_19_a [];
-	extern unsigned char sprite_19_b [];
+	extern const unsigned char sprite_19_a [];
 #endif
 
-#asm
-	._sprite_17_a
-		BINARY "sprites_extra.bin"
-	._sprite_18_a
-		defs 96, 0
-#endasm
-
-#ifdef PLAYER_CAN_FIRE
-	#asm
-		._sprite_19_a
-			BINARY "sprites_bullet.bin"
-	#endasm
-#endif
+void extrasprites_data (void) __naked {
+	__asm
+		_sprite_17_a:
+		.incbin "sprites_extra.bin"
+		_sprite_18_a:
+		.ds 96
+	#ifdef PLAYER_CAN_FIRE
+		_sprite_19_a:
+		.incbin "sprites_bullet.bin"
+	#endif
+	__endasm;
+}
 
 #define SPRFR_EXPL  sprite_17_a
 #define SPRFR_EMPTY sprite_18_a

@@ -1,8 +1,8 @@
 @echo off
 rem Compila el juego para Amstrad CPC en Windows.
 rem Uso: comp-cpc.bat [justcompile] [noclean]
-rem Antes, en la misma ventana: C:\z88dk10-orig\setenv.bat (z88dk 1.10, ver
-rem env\z88dk10-orig.zip). Las utilidades estan en ..\utils.
+rem Necesita GBDK-2020 (su SDCC) en C:\gbdk, o donde diga GBDK_HOME. Las
+rem utilidades estan en ..\utils.
 rem
 rem Sin expansion retardada: imanol recibe argumentos con "!" (loading_palette=!...).
 
@@ -14,6 +14,8 @@ set mode=0
 
 cd /d "%~dp0"
 set "U=%~dp0..\utils"
+if not defined GBDK_HOME set "GBDK_HOME=C:\gbdk"
+set "G=%GBDK_HOME%\bin"
 set "P=platform=cpc cpcmode=%mode% pal=..\gfx\cpc\pal.png"
 
 set justcompile=0
@@ -34,7 +36,7 @@ echo ### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_extra.png out=sprites_extra.bin max=2 silent > nul
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_bullet.png out=sprites_bullet.bin metasize=1,1 max=1 silent > nul
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_sword.png out=sprites_sword.bin metasize=1,1 max=4 silent > nul
-"%U%\mkts_om" platform=cpc mode=palsasassembly in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent > nul
+"%U%\mkts_om" platform=cpc mode=pals in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent > nul
 
 for %%s in (marco ending title) do "%U%\mkts_om" %P% mode=superbuffer in=..\gfx\cpc\%%s.png out=%%s.scr silent > nul
 rem zx0 no sobrescribe: se borra antes la salida
@@ -64,14 +66,24 @@ echo ### COMPILANDO GUEGO ###
 "%U%\pasmo" cpc\cpc_TrPixLutM%mode%.asm trpixlut.bin
 if exist trpixlutc.bin del trpixlutc.bin
 "%U%\zx0" trpixlut.bin trpixlutc.bin > nul
-"%U%\wyzTrackerParser" ..\ogt\instrumentos.asm cpc\instrumentos.h > nul
+rem Instrumentos del WYZ player (de la exportacion de WYZ Tracker)
+"%U%\wyzTrackerParser" ..\ogt\instrumentos.asm instrumentos.s > nul
+if errorlevel 1 exit /b 1
 
-if exist zcc_opt.def del zcc_opt.def
-zcc +cpc -a -vn -zorg=1024 -lcpcrslib_mt -o %game%.asm cpc\tilemap_conf.asm churromain.c -DCPC -DMODE_%mode% > nul 2>&1
-if exist zcc_opt.def del zcc_opt.def
-zcc +cpc -m -vn -zorg=1024 -lcpcrslib_mt -o %game%.bin cpc\tilemap_conf.asm churromain.c -DCPC -DMODE_%mode%
+rem SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
+rem WYZ player, sus efectos y los instrumentos son modulos aparte. El programa
+rem empieza en 0x400 con crt0 y sus variables van detras del codigo. ihx2bin
+rem saca el binario y comprueba el mapa de memoria con el .map.
+"%G%\sdcc" -mz80 --no-std-crt0 -I. -DCPC -DMODE_%mode% -c churromain.c
 if errorlevel 1 (echo ERROR& exit /b 1)
-"%U%\printsize" %game%.bin
+for %%s in (cpc\crt0 cpc\wyz_player cpc\efectos instrumentos) do (
+	"%G%\sdasz80" -g -o %%~ns.rel %%s.s
+	if errorlevel 1 (echo ERROR& exit /b 1)
+)
+"%G%\sdldz80" -n -m -w -i -b _CODE=0x400 %game%.ihx crt0.rel churromain.rel wyz_player.rel efectos.rel instrumentos.rel -k cpc -l cpcrslib.lib -k "%GBDK_HOME%\lib\z80" -l z80.lib
+if errorlevel 1 (echo ERROR& exit /b 1)
+"%U%\ihx2bin" %game%.ihx %game%.bin 0x400 %game%.map
+if errorlevel 1 exit /b 1
 
 echo ### CONSTRUYENDO SNA Y CDT ###
 if exist %game%.sna del %game%.sna
@@ -105,7 +117,7 @@ echo Output: %game%.cdt
 
 if %noclean%==1 goto :done
 echo ### LIMPIANDO ###
-for %%f in (*.scr *.bin zcc_opt.def) do del "%%f" > nul 2>&1
+for %%f in (*.scr *.bin *.rel *.ihx *.asm *.lst *.sym instrumentos.s) do del "%%f" > nul 2>&1
 
 :done
 echo ### DONE ###

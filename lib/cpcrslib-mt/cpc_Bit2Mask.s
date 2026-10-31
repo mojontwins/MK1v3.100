@@ -1,0 +1,8 @@
+; Converts bit # into mask
+
+	.module cpc_Bit2Mask
+	.globl cpc_Bit2Mask
+	.area _CODE
+
+cpc_Bit2Mask:
+	.db 0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80

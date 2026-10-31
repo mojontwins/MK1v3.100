@@ -11,8 +11,8 @@
 '  * que no hay variables con valor inicial (área _INITIALIZER vacía): el
 '    motor no las copia al arrancar, tienen que ser const o tomar su valor en
 '    el código;
-'  * que el programa con sus variables acaba antes de __ad_free (los bloques
-'    de memoria de los sprites);
+'  * que el programa con sus variables acaba antes de __mem_limit (los bloques
+'    de memoria de los sprites en ZX, los buffers fijos en CPC);
 '  * con "128k", que _low_end queda por debajo de 0xC000: lo que va antes se
 '    usa con otra página de RAM puesta.
 '
@@ -47,7 +47,7 @@ Function isHexStr (s As String) As Integer
 End Function
 
 Dim As String linea, fileIn, fileOut, fileMap, a, b
-Dim As Integer fIn, fOut, n, i, addr, typ, org, hiAddr, p, errors, heap, adFree, lowEnd
+Dim As Integer fIn, fOut, n, i, addr, typ, org, hiAddr, p, errors, heap, memLimit, lowEnd
 
 fileIn = Command (1): fileOut = Command (2): fileMap = Command (4)
 If fileIn = "" Or fileOut = "" Or Command (3) = "" Then
@@ -123,11 +123,11 @@ If symAddr ("l__INITIALIZER") > 0 Then
 	errors += 1
 End If
 
-heap = symAddr ("s__HEAP"): adFree = symAddr ("__ad_free")
-If heap >= 0 And adFree >= 0 Then
-	Print "Programa y variables hasta " & hex4 (heap) & ", libre hasta " & hex4 (adFree) & ": " & (adFree - heap) & " bytes"
-	If heap > adFree Then
-		Print "ERROR: el programa se mete en los bloques de los sprites (" & hex4 (adFree) & ")."
+heap = symAddr ("s__HEAP"): memLimit = symAddr ("__mem_limit")
+If heap >= 0 And memLimit >= 0 Then
+	Print "Programa y variables hasta " & hex4 (heap) & ", libre hasta " & hex4 (memLimit) & ": " & (memLimit - heap) & " bytes"
+	If heap > memLimit Then
+		Print "ERROR: el programa y sus variables pasan de " & hex4 (memLimit) & " (MEM_LIMIT, churromain.c)."
 		errors += 1
 	End If
 End If

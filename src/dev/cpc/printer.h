@@ -2,223 +2,172 @@
 // Copyleft 2010-2014 the Mojon Twins
 
 // printer.h
-// Miscellaneous printing functions (tiles, status, etc).
-unsigned char px, py, pxx, pyy, pt, pn, pt_alt;
-unsigned char *pptr, *pptr_alt; 
+// Pantalla, sprites y teclado del CPC. El fondo es un tilemap de 32x24 (el
+// nametable, un byte por tile); lo que se escribe ahí se marca como tocado
+// y cpcrslib lo vuelca al superbuffer y a la pantalla en sp_UpdateNow.
 
-// Clears the screen
+unsigned char px, py, pxx, pyy, pt, pn;
 
+// Borra la pantalla: en cada bloque de 2K, los 0x600 bytes que se ven (en
+// el resto hay buffers).
 void blackout (void) {
-	rda = BLACK_COLOUR_BYTE;
-	#asm
-			ld  a, 0xc0
-		.bo_l1
-			ld  h, a
-			ld  l, 0
-			ld  b, a
-			ld  a, (_rda)
-			ld  (hl), a
-			ld  a, b
-			ld  d, a
-			ld  e, 1
-			ld  bc, 0x5ff
-			ldir
-
-			add 8
-			jr  nz, bo_l1
-
-	#endasm
+	gpit = 0xC0; do {
+		memset ((void *) (gpit << 8), BLACK_COLOUR_BYTE, 0x600);
+		gpit += 8;
+	} while (gpit);
 }
 
-// Trying to be a drop-in subst
+// Marca como tocados los tiles del rectángulo (px, py) - (pxx, pyy).
+void invalidate_rect (void) __naked {
+	__asm
+		ld a, (_py)
+		ld b, a
+		ld a, (_px)
+		ld c, a
+		ld a, (_pyy)
+		ld d, a
+		ld a, (_pxx)
+		ld e, a
+		jp cpc_InvalidateRect
+	__endasm;
+}
 
+// Estado de las teclas de una línea de la matriz del teclado (bit a 1 =
+// pulsada). line es el byte alto del código de la tecla.
+unsigned char key_line (unsigned char line) __naked {
+	(void) line;
+	__asm
+		jp cpc_TestKeyboard				; A = línea -> A = teclas
+	__endasm;
+}
+
+// Actualiza la pantalla: borra los sprites de donde estaban (restaura el
+// fondo en el superbuffer), vuelca el nametable tocado al superbuffer,
+// dibuja los sprites en su sitio nuevo, espera a que pasen los frames de la
+// sincronía y vuelca lo tocado del superbuffer a la pantalla.
 void sp_UpdateNow (void) {
-	// Invalidate all sprites
+	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
+		#ifdef PLAYER_CAN_FIRE
+			if (gpit >= SP_BULLETS_BASE) {
+				cpc_PutSPTileMap2Bx8 (&sp_sw [gpit]);
+			} else
+		#endif
+		cpc_PutSPTileMap4Bx16 (&sp_sw [gpit]);
+	}
+
+	cpc_UpdScr ();
 
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
 		#ifdef PLAYER_CAN_FIRE
 			if (gpit >= SP_BULLETS_BASE) {
-				cpc_PutSPTileMap2Bx8 ((int) (&sp_sw [gpit]));
+				cpc_PutTrSp2Bx8TileMap (&sp_sw [gpit]);
 			} else
 		#endif
-		cpc_PutSPTileMap4Bx16 ((int) (&sp_sw [gpit]));
+		cpc_PutTrSp4Bx16TileMap (&sp_sw [gpit]);
 	}
 
-	#asm
-		._cpc_screen_update_upd_buffer
-			call cpc_UpdScr 
-	#endasm
+	while (isr_c2 < MIN_FAPS_PER_FRAME);
+	isr_c2 = 0;
 
-	// Redraw all sprites
-
-	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		#ifdef PLAYER_CAN_FIRE
-			if (gpit >= SP_BULLETS_BASE) {
-				cpc_PutTrSp2Bx8TileMap ((int) (&sp_sw [gpit])); // REVISAR!!
-			} else
-		#endif
-		cpc_PutTrSp4Bx16TileMap ((int) (&sp_sw [gpit]));
-	}
-
-	#asm
-		.ml_min_faps_loop
-			ld  a, (isr_c2)
-			cp  MIN_FAPS_PER_FRAME
-			jr  c, ml_min_faps_loop
-
-		.ml_min_faps_loop_end
-			xor a
-			ld  (isr_c2), a
-
-			call cpc_ShowTouchedTiles
-			call cpc_ResetTouchedTiles
-	#endasm			
+	cpc_ShowTouchedTiles ();
+	cpc_ResetTouchedTiles ();
 }
 
-void cpc_MoveSprAbs (unsigned char spr_idx, unsigned char *next_frame, unsigned char cx, unsigned char cy) {
-	px = cx; py = cy; pt = spr_idx; pptr = next_frame;
-
-	#asm
-			ld  a, (_pt)
-			sla a 
-			sla a 
-			sla a 
-			sla a 
-			ld  ixh, #((BASE_SPRITES)/256)
-			ld  ixl, a 
-
-			// H-coordinates: byte offset (0-63)
-			ld  a, (_px)
-			srl a 
-			srl a 
-			add #(VIEWPORT_X*2)
-			ld  (ix + 8), a 
-
-			// V-coordinates: pixel line (0-191)
-			ld  a, (_py)
-			add #(VIEWPORT_Y*8)
-			ld  (ix + 9), a
-
-			ld  a, (_pptr)
-			ld  (ix + 0), a 
-			ld  a, (_pptr + 1)
-			ld  (ix + 1), a
-	#endasm
+// Pone el sprite spr_idx en (cx, cy) (pixels del área de juego) con el
+// frame next_frame. En el CPC la coordenada x va en bytes (4 pixels).
+void cpc_MoveSprAbs (unsigned char spr_idx, const unsigned char *next_frame, unsigned char cx, unsigned char cy) {
+	SPR *s = &sp_sw [spr_idx];
+	s->cx = (cx >> 2) + VIEWPORT_X * 2;
+	s->cy = cy + VIEWPORT_Y * 8;
+	s->sp0 = (unsigned int) next_frame;
 }
 
-// Sets the border
-
-void __FASTCALL__ cpc_Border (unsigned char b) {
-	#asm
-			ld 	a, l
-			ld  bc, 0x7F11
-			out (c), c
-			out (c), a
-	#endasm
+// Color del borde (valor hardware)
+void cpc_Border (unsigned char b) {
+	gate_array = 0x11;
+	gate_array = b;
 }
 
-// Call this first for CPC!
+// La ISR (en 0x38, modo 1 de interrupciones): 6 interrupciones por frame.
+// En cada frame cuenta isr_c2 y, si está sonando, llama al WYZ player.
+void isr (void) __naked {
+	__asm
+		push af
+		push hl
+		push de
+		push bc
+		push ix
+		push iy
 
+		ld a, (_isr_c1)
+		inc a
+		cp #6
+		jr c, isr_done
+
+		ld hl, #_isr_c2
+		inc (hl)
+
+		ld a, (_isr_player_on)
+		or a
+		call nz, WYZ_PLAYER_ISR
+
+		xor a
+	isr_done:
+		ld (_isr_c1), a
+
+		pop iy
+		pop ix
+		pop bc
+		pop de
+		pop hl
+		pop af
+		ei
+		ret
+	__endasm;
+}
+
+// Espera al retrazado vertical
+void wait_vsync (void) __naked {
+	__asm
+		ld b, #0xf5
+	wait_vsync_loop:
+		in a, (c)
+		rra
+		jr nc, wait_vsync_loop
+		ret
+	__endasm;
+}
+
+// Lo primero que se llama: prepara el CPC.
 void system_init (void) {
-	// Inits shit
-
 	wyz_init ();
 
-	#asm
-			di
-			
-			ld  hl, 0xC000
-			xor a
-			ld  (hl), a
-			ld  de, 0xC001
-			ld  bc, 0x3DFF
-			ldir
-			
-			ld  a, 195
-			ld  (0x38), a
-			ld  hl, _isr
-			ld  (0x39), hl
+	__asm__ ("di");
 
-			// Sync with raster to init counter
-			ld  b,0xf5
-		.wait_vsync
-			in a,(c)
-			rra
-			jp nc,wait_vsync   
+	// Pantalla y buffers que hay en ella a cero
+	memset ((void *) 0xC000, 0, 0x3E00);
 
-			xor a 
-			ld  (isr_c1), a
-			ei
-			jp  after_isr
+	// La ISR: jp _isr en 0x38
+	*((unsigned char *) 0x38) = 0xC3;
+	*((unsigned int *) 0x39) = (unsigned int) isr;
 
-		._isr
-			push af 
-			push hl
-			push de
-			push bc
-			push ix
-			push iy 
-			
-			ld  a, (isr_c1)
-			inc a
-
-			cp  6
-			jr  c, _isr_done
-
-			// Inc frame counter
-			ld  hl, isr_c2
-			inc (hl)
-
-			ld  a, (_isr_player_on)
-			or  a
-			jr  z, _skip_ay_player
-
-			call WYZ_PLAYER_ISR
-		._skip_ay_player
-
-			xor a
-
-		._isr_done 
-			ld  (isr_c1), a	
-			
-			pop iy
-			pop ix
-			pop bc
-			pop de 
-			pop hl
-			pop af
-			ei
-			ret
-
-		.isr_c1 
-			defb 0
-		.isr_c2
-			defb 0
-
-		.after_isr
-	#endasm
-	
-	// Border 0
+	// Se sincroniza con el retrazado para empezar a contar
+	wait_vsync ();
+	isr_c1 = 0;
+	__asm__ ("ei");
 
 	cpc_Border (0x54);
-	
-	// Decompress LUT in place
 
-	#asm
-			ld  hl, _trpixlutc
-			ld  de, BASE_LUT
-			call depack
-	#endasm
+	// La LUT de transparencias, descomprimida en su sitio
+	unpack ((unsigned char *) trpixlutc, (unsigned char *) BASE_LUT);
 
 	blackout ();
 
-	// Set palette
-
-	#asm
-			call my_inks
-	#endasm
-	
-	// Set mode
+	// Paleta (cpc/pal.h, de mkts_om)
+	for (gpit = 0; gpit < 16; gpit ++) {
+		gate_array = gpit;
+		gate_array = my_inks [gpit] | 0x40;
+	}
 
 	#ifdef MODE_1
 		cpc_SetMode (1);
@@ -226,298 +175,66 @@ void system_init (void) {
 		cpc_SetMode (0);
 	#endif
 
-	// Set tweaked mode 
-	// (thanks Augusto Ruiz for the code & explanations!)
-	
-	#asm
-			; Horizontal chars (32), CRTC REG #1
-			ld    b, 0xbc
-			ld    c, 1			; REG = 1
-			out   (c), c
-			inc   b
-			ld    c, 32			; VALUE = 32
-			out   (c), c
+	// Modo retocado de 32x24 caracteres (gracias, Augusto Ruiz)
+	crtc_select = 1; crtc_data = 32;		// Caracteres por línea
+	crtc_select = 2; crtc_data = 42;		// Posición horizontal
+	#if defined MODE_1 && defined AUTO_SPLIT
+		crtc_select = 5; crtc_data = 4;		// Ajuste vertical
+	#endif
+	crtc_select = 6; crtc_data = 24;		// Líneas de caracteres
 
-			; Horizontal pos (42), CRTC REG #2
-			ld    b, 0xbc
-			ld    c, 2			; REG = 2
-			out   (c), c
-			inc   b
-			ld    c, 42			; VALUE = 42
-			out   (c), c
+	// Todos los sprites fuera, en la esquina del área de juego
+	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
+		sp_sw [gpit].ox = (VIEWPORT_X * 8) / 4;
+		sp_sw [gpit].oy = VIEWPORT_Y * 8;
+	}
 
-		#if defined MODE_1 && defined AUTO_SPLIT
-				; Vertical pos (4), CRTC REG #5
-				ld    b, 0xbc
-				ld    c, 5			; REG = 5
-				out   (c), c
-				inc   b
-				ld    c, 4			; VALUE = 24
-				out   (c), c
-		#endif
-
-			; Vertical chars (24), CRTC REG #6
-			ld    b, 0xbc
-			ld    c, 6			; REG = 6
-			out   (c), c
-			inc   b
-			ld    c, 24			; VALUE = 24
-			out   (c), c
-	#endasm
-
-	// Turn off all sprites
-
-	#asm
-			ld  ix, BASE_SPRITES
-			ld  de, 16
-			ld  b, SW_SPRITES_ALL
-
-		.sp_sw_init_turnoff_loop			
-			ld  a, #((VIEWPORT_X*8)/4)
-			ld  (ix + 10), a
-			
-			ld  a, #(VIEWPORT_Y*8)
-			ld  (ix + 11), a 
-
-			add ix, de
-			djnz sp_sw_init_turnoff_loop
-	#endasm	
+	// Teclas por defecto (las del teclado)
+	memcpy (keys, def_keys, sizeof (keys));
 }
 
-// We'll be writing directly to the CPC virtual nametable. 
-
-void tile_address (void) {
-	#asm
-			ld  a, (_py)
-
-			add a, a	; 2		4
-			add a, a	; 4		4
-			add a, a	; 8		4
-			ld  h, 0	;		2
-			ld  l, a 	;		4
-			add hl, hl  ; 16	11
-			add hl, hl  ; 32	11
-			;					44 t-states
-
-			; HL = py * 32
-
-			ld 	de, (_px)			
-			ld 	d, 0
-			add hl, de
-
-			; HL = py * 32 + px
-
-			ld  de, _nametable
-			add hl, de
-			
-			ex  de, hl
-
-			; DE = buffer address
-	#endasm
-}
-
+// Dibuja el tile grande t (2x2 caracteres) en (x, y).
 void draw_coloured_tile (unsigned char x, unsigned char y, unsigned char t) {
-	#asm
-			; Copy params for speed & size
-			ld  hl, 6
-			add hl, sp
-			ld  a, (hl)
-			ld  (_px), a
-			dec hl
-			dec hl
-			ld  a, (hl)
-			ld  (_py), a
-			dec hl
-			dec hl
-			ld  a, (hl)
-			ld  (_pt), a
-		._draw_coloured_tile_do
-			/*
-			_t = 64 + (_t << 2);
-			gen_pt = tileset + ATTR_OFFSET + _t;
-			sp_PrintAtInv (_y, _x, *gen_pt ++, _t ++);
-			sp_PrintAtInv (_y, _x + 1, *gen_pt ++, _t ++);
-			sp_PrintAtInv (_y + 1, _x, *gen_pt ++, _t ++);
-			sp_PrintAtInv (_y + 1, _x + 1, *gen_pt, _t);
-			*/
-			// Calculate address in the display list
-
-			call _tile_address	; DE = buffer address
-			ex de, hl
-
-			// Now write 4 chars.
-			ld  a, (_pt)
-			sla a
-			sla a 				// A = _t * 4
-			add 64 				// A = _t * 4 + 64
-			
-			ld  (hl), a
-			inc hl
-			inc a
-			ld  (hl), a
-			ld  bc, 31
-			add hl, bc
-			inc a
-			ld  (hl), a
-			inc hl
-			inc a
-			ld  (hl), a		
-
-			// Finally, invalidate
-
-			ld  a, (_px)
-			ld  e, a
-			ld  a, (_py)
-			ld  d, a
-			call cpc_UpdTileTable
-			inc e
-			call cpc_UpdTileTable
-			dec e
-			inc d
-			call cpc_UpdTileTable
-			inc e
-			call cpc_UpdTileTable		
-	#endasm
+	unsigned char *p = nametable + (y << 5) + x;
+	t = 64 + (t << 2);
+	p [0] = t ++;
+	p [1] = t ++;
+	p [32] = t ++;
+	p [33] = t;
+	px = x; py = y; pxx = x + 1; pyy = y + 1;
+	invalidate_rect ();
 }
 
+// Pone el carácter t en (x, y). El color no se usa en CPC.
 void sp_PrintAtInv (unsigned char y, unsigned char x, unsigned char c, unsigned char t) {
-	px = x; py = y; pt = t;
-	#asm
-
-			// Esto obtiene la direccion del tile en DE
-			call _tile_address
-
-			// Escribimos el tile
-			ld  a, (_pt)
-			ld  (de), a
-
-			// Invalidamos el tile
-			ld  a, (_px)
-			ld  e, a
-			ld  a, (_py)
-			ld  d, a 
-
-			// Esto invalida el tile en E, D
-			call cpc_UpdTileTable 
-	#endasm
+	(void) c;
+	nametable [(y << 5) + x] = t;
+	px = pxx = x; py = pyy = y;
+	invalidate_rect ();
 }
 
+// Número de dos cifras en (x, y)
 void print_number2 (unsigned char x, unsigned char y, unsigned char value) {
-	#asm
-			ld  hl, 6
-			add hl, sp
-			ld  a, (hl)
-			ld  (_px), a
-			dec hl
-			dec hl
-			ld  a, (hl)
-			ld  (_py), a
-			dec hl
-			dec hl
-			ld  a, (hl)
-			
-			// You may call here with _px, _py prefilled 
-			// and the number in A.
-			
-		.draw_2_digits_shortcut
-			ld  d, 0
-			ld  e, a
-			ld  hl, 10
-			call l_div_u 	// HL = division, DE = rest
-
-			ld  a, e
-			add 16
-			ld  (_pn), a 	// _n = units
-			ld  a, l
-			add 16
-			ld  (_pt), a 	// _t = tens
-			
-			call _tile_address	; DE = buffer address
-			ld  a, (_pt)
-			ld  (de), a
-			inc de
-			ld  a, (_pn)
-			ld  (de), a
-
-			ld  a, (_px)
-			ld  e, a
-			ld  a, (_py)
-			ld  d, a
-			call cpc_UpdTileTable
-			inc e
-			call cpc_UpdTileTable
-	#endasm
+	unsigned char *p = nametable + (y << 5) + x;
+	p [0] = 16 + value / 10;
+	p [1] = 16 + value % 10;
+	px = x; pxx = x + 1; py = pyy = y;
+	invalidate_rect ();
 }
 
-void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
-	// Zero terminated strings, supports newlines with %
-	#asm
-			ld  hl, 8
-			add hl, sp
-			
-			ld  a, (hl)
-			ld  (_px), a
-			ld  (_pt), a
-			dec hl
-			dec hl
-
-			ld  a, (hl)
-			ld  (_py), a
-			dec hl
-			dec hl
-			
-			dec hl
-
-			ld  a, (hl)
-			dec hl 
-			ld  l, (hl)
-			ld  h, a
-
-		.draw_text_pre_loop
-			push hl
-
-			xor a 
-			ld  (_pn), a 		; Strlen
-
-			call _tile_address	; DE = buffer address
-			
-			pop hl
-
-		.draw_text_loop
-			ld  a, (hl)
-			or  a
-			jr  z, print_str_inv 
-			
-			cp  0x25
-			jr  z, draw_text_loop
-			
-			sub 32
-			ld  (de), a
-			
-			inc hl
-			inc de 
-
-			ld  a, (_pn)
-			inc a
-			ld  (_pn), a
-
-			jr  draw_text_loop
-
-		.print_str_inv
-
-			; Invalidate cells based upon strlen.
-			ld  a, (_py)
-			ld  b, a
-			ld  d, a
-			ld  a, (_px)
-			ld  c, a
-			ld  a, (_pn)
-			add c
-			dec a
-			ld  e, a
-			call cpc_InvalidateRect
-	
-	#endasm
+// Cadena terminada en 0 en (x, y). El color no se usa en CPC.
+void print_str (unsigned char x, unsigned char y, unsigned char c, const unsigned char *s) {
+	unsigned char *p = nametable + (y << 5) + x;
+	(void) c;
+	px = pxx = x; py = pyy = y;
+	while (*s) {
+		*p ++ = *s ++ - 32;
+		pxx ++;
+	}
+	if (pxx != x) {
+		pxx --;
+		invalidate_rect ();
+	}
 }
 
 #ifndef DEACTIVATE_OBJECTS
@@ -539,66 +256,27 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
 	}
 #endif
 
+// Lee las 8 primeras teclas de keys en pad0 y pad1 (bit a 0 = pulsada,
+// como en el Spectrum) y en pad_this_frame las que se acaban de pulsar.
 void pad_read (void) {
+	unsigned char b;
 	pad_this_frame = pad1;
 
-	// Fill pad1 and pad0 with the status of the first 8 keys in `tabla_teclas`.
-	#asm 
-			ld  hl, cpc_KeysData + 12
-			xor a
-			ld  (_pad0), a
-			ld  b, 1 				// Bit to switch
-		pad_read_loop:
-			push bc
-			ld  d, (hl) 			// LSB: Column
-			inc hl
-			ld  a, (hl) 			// MSB: Line
-			inc hl
-			call cpc_TestKeyboard
-			and d  					// Pressed?
-			pop bc
-			jr  z, pad_read_not_pressed
+	pad0 = 0xff; b = 1;
+	for (gpit = 0; gpit < 8; gpit ++) {
+		if (key_line (keys [gpit] >> 8) & (unsigned char) keys [gpit]) pad0 &= ~b;
+		b <<= 1;
+	}
+	pad1 = pad0;
 
-			ld  a, (_pad0)
-			or  b
-			ld  (_pad0), a
-
-		.pad_read_not_pressed
-			sla b
-			jr  nz, pad_read_loop
-
-
-			ld  a, (_pad0)
-			cpl
-			ld  (_pad0), a
-			ld  (_pad1), a
-	#endasm
-
-	// Keys held this frame
 	pad_this_frame = (~pad_this_frame) | pad1;
 }
 
+// Quita todos los sprites (les pone el frame vacío)
 void saca_a_todo_el_mundo_de_aqui (void) {
-	/*
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		sp_sw [gpit].sp0 = (int) (SPRFR_EMPTY);
+		sp_sw [gpit].sp0 = (unsigned int) (sprite_18_a);
 	}
-	*/
-	#asm
-			; Recorre los SW_SPRITES_ALL sprites (16 bytes cada uno) poniendo
-			; como gráfico el sprite vacío.
-			ld  de, 15
-			ld  b, SW_SPRITES_ALL
-			ld  hl, BASE_SPRITES
-		.clear_sprites_loop
-			ld  a, #(_sprite_18_a%256)
-			ld  (hl), a
-			inc hl
-			ld  a, #(_sprite_18_a/256)
-			ld  (hl), a 
-			add hl, de
-			djnz clear_sprites_loop
-	#endasm
 }
 
 void update_this_enemy (void) {
@@ -619,7 +297,7 @@ void render_sprites (void) {
 			) {
 				_en_x = FIXED_PIX (en_an_x [gpit]);
 				_en_y = FIXED_PIX (en_an_y [gpit]);
-			} else 
+			} else
 		#endif
 		{
 			_en_x = malotes [enoffs + gpit].x;
@@ -646,12 +324,11 @@ void render_sprites (void) {
 				sp_sw [SP_BULLETS_BASE + gpit].sp0 = (unsigned int) (sprite_18_a);
 			}
 		}
-	#endif	
+	#endif
 }
 
 #ifdef PLAYER_STEP_SOUND
 	void step (void) {
-
 	}
 #endif
 
@@ -659,72 +336,52 @@ void cortina (void) {
 	// Do something... someday
 }
 
+// En el título: 1 = teclado, 2 = joystick.
 void select_joyfunc (void) {
-	#asm
-		.title_loop
-			call _pad_read 
-			
-			ld  a, (_pad_this_frame) 
-			and sp_AUX3 
-			jr  nz, title_not_aux3
-
-			ld  hl, _def_keys
-			jr  copy_keys_to_extern
-			
-		.title_not_aux3
-
-			ld  a, (_pad_this_frame) 
-			and sp_AUX4
-			jr  nz, title_loop
-
-			ld  hl, _def_keys_joy
-
-		// Copy keys to extern 
-	
-		.copy_keys_to_extern
-			ld  de, cpc_KeysData + 12
-			ld  bc, 24
-			ldir
-
-		.joyfunc_selected
-	#endasm
+	while (1) {
+		pad_read ();
+		if ((pad_this_frame & sp_AUX3) == 0) {
+			memcpy (keys, def_keys, sizeof (keys));
+			break;
+		}
+		if ((pad_this_frame & sp_AUX4) == 0) {
+			memcpy (keys, def_keys_joy, sizeof (keys));
+			break;
+		}
+	}
 }
 
-void unpack_screen (unsigned char *src) {
-	unpack (src, (unsigned char *)(BASE_SUPERBUFF));
+// Las pantallas fijas se descomprimen en el superbuffer
+void unpack_screen (const unsigned char *src) {
+	unpack (src, (unsigned char *) (BASE_SUPERBUFF));
 }
 
-// Equivalente a sp_KeyPressed de splib2 para CPC.
-// key = ((0x40 | línea de la matriz) << 8) | bit. Devuelve distinto de 0 si
-// la tecla está pulsada.
-unsigned int __FASTCALL__ sp_KeyPressed (unsigned int key) {
-	#asm
-			ld  a, h
-			call cpc_TestKeyboard 	; A = bits pulsados de la línea (1 = pulsada)
-			and l
-			ld  l, a
-			ld  h, 0
-	#endasm
+// Equivalente a sp_KeyPressed de splib2: distinto de 0 si la tecla está
+// pulsada (key = ((0x40 | línea de la matriz) << 8) | bit).
+unsigned char sp_KeyPressed (unsigned int key) {
+	return key_line (key >> 8) & (unsigned char) key;
 }
 
-void sp_WaitForNoKey () {
+void sp_WaitForNoKey (void) {
 	do {
 		pad_read ();
 	} while (pad0 != 0xff);
 }
 
+// Espera hasta que se pulse una tecla o pasen espera frames
 void espera_activa (int espera) {
 	sp_WaitForNoKey ();
 	do {
 		pad_read ();
-		#asm
-				halt
-				halt
-				halt
-				halt
-				halt
-				halt
-		#endasm
+		// 6 interrupciones = 1 frame
+		__asm
+			halt
+			halt
+			halt
+			halt
+			halt
+			halt
+		__endasm;
 		if (pad_this_frame != 0xff) break;
 	} while (espera --);
 }

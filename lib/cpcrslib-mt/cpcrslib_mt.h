@@ -1,85 +1,74 @@
 /*
     cpcrslib_mt.h
 
-    CPCRSLIB "Mojon Tilemap" - pruned for MTE MK1 v3.2.
+    CPCRSLIB "Mojon Tilemap" para SDCC, recortada para MK1 v3.100. Solo
+    declara lo que el motor usa (ver cpcrslib.lst y README.md).
 
-    This header declares ONLY the API that actually exists in
-    cpcrslib_mt.lib / cpcrslib_fg_mt.lib (see cpcrslib.lst) and that the
-    MK1 v3.2 engine uses. The original CPCRSLIB was a general purpose
-    library; everything that was not oriented to the tilemap / dirty cells
-    model (printing, key management, generic sprite and graphic utilities,
-    the tilemap manager, alternative screen updaters) has been removed.
+    Convención: las funciones con un argumento lo reciben en HL (L si es de
+    8 bits), __z88dk_fastcall. cpc_TestKey devuelve en L (__sdcccall(0)).
+    Las que usan IX tienen una entrada que lo guarda.
 
-    Symbols not declared here but needed by the library itself
-    (cpc_Bit2Mask, cpc_TblLookup, cpc_bitleft2mask, cpc_bitright2mask,
-    cpc_UpdTileTableClp) are internal to the library.
-
-    The engine side of the contract lives in dev/system/tilemap_conf.asm
-    (tiles, pantalla_juego, tiles_tocados, posiciones_pantalla,
-    posiciones_super_buffer, posicion_inicial_area_visible,
-    posicion_inicial_superbuffer, ancho_pantalla_bytes,
-    alto_pantalla_bytes, ancho_pantalla_bytes_visible, behindtilemasks)
-    and in dev/cpc.h (viewport_x, viewport_y).
+    El juego aporta viewport_x y viewport_y (cpc/sysvars.h), tiles (el
+    tileset, cpc/tileset.h) y, en la variante fg, behindtilemasks.
 */
 
 #ifndef _CPCRSLIB_MT_H
 #define _CPCRSLIB_MT_H
 
-// Screen, tilemap and dirty cells
+// Pantalla, tilemap y tiles tocados
 
-extern void  __FASTCALL__ __LIB__   cpc_ShowTileMap(int x);
-extern void  __CALLEE__ __LIB__     cpc_UpdScr(void);
-extern void  __CALLEE__ __LIB__     cpc_ShowTouchedTiles(void);
-extern void  __CALLEE__ __LIB__     cpc_ResetTouchedTiles(void);
+void cpc_ShowTileMap (unsigned char only_copy) __z88dk_fastcall;
+void cpc_UpdScr (void);
+void cpc_ShowTouchedTiles (void);
+void cpc_ResetTouchedTiles (void);
 
-// Mode and video
+// Modo de vídeo
 
-extern void  __FASTCALL__ __LIB__   cpc_SetMode(unsigned char mode);
-extern void  __CALLEE__ __LIB__     cpc_MakeM1RotationLUTs(void);
+void cpc_SetMode (unsigned char mode) __z88dk_fastcall;
+void cpc_MakeM1RotationLUTs (void);
 
-// Keyboard
+// Teclado
 
-extern char  __FASTCALL__ __LIB__   cpc_TestKey(unsigned char tecla);
+unsigned char cpc_TestKey (unsigned char tecla) __sdcccall(0) __z88dk_fastcall;
 
-// Sprites: one routine per size and pixel format.
-// The engine picks them from the generated dev/cpc/spriteset_mappings.h
-// (invfunc / updfunc), so the whole matrix has to be declared here.
+// Sprites: una rutina por tamaño y formato de pixel. Reciben la dirección
+// de la estructura del sprite (SPR, cpc/sysvars.h).
 
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap4x8Px(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap8x8Px(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap8x8PxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap8x16Px(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap8x24Px(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap16x16PxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap16x24PxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSpTileMap12x24CA(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSPTileMap2Bx8(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSPTileMap4Bx16(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutSPTileMap4Bx24(int sprite);
+void cpc_PutSpTileMap4x8Px (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap8x8Px (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap8x8PxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap8x16Px (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap8x24Px (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap16x16PxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap16x24PxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutSpTileMap12x24CA (void *sprite) __z88dk_fastcall;
+void cpc_PutSPTileMap2Bx8 (void *sprite) __z88dk_fastcall;
+void cpc_PutSPTileMap4Bx16 (void *sprite) __z88dk_fastcall;
+void cpc_PutSPTileMap4Bx24 (void *sprite) __z88dk_fastcall;
 
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4x8TileMapPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4x8TileMapGPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x8TileMapPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x8TileMapPxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x8TileMapGPxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x16TileMapPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x16TileMapGPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x16TileMapGPxP(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x24TileMapPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x24TileMapGPx(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp8x24TileMapGPxP(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x16TileMapPxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x16TileMapPxM1LUT(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x16TileMapGPxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x16TileMapGPxM1P(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x24TileMapPxM1(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp16x24TileMapGPxM1P(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp12x24TileMapGCA(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp2Bx8TileMap(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp2Bx8TileMapG(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4Bx16TileMap(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4Bx16TileMapG(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4Bx24TileMap(int sprite);
-extern void  __FASTCALL__ __LIB__   cpc_PutTrSp4Bx24TileMapG(int sprite);
+void cpc_PutTrSp4x8TileMapPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp4x8TileMapGPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x8TileMapPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x8TileMapPxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x8TileMapGPxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x16TileMapPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x16TileMapGPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x16TileMapGPxP (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x24TileMapPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x24TileMapGPx (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp8x24TileMapGPxP (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x16TileMapPxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x16TileMapPxM1LUT (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x16TileMapGPxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x16TileMapGPxM1P (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x24TileMapPxM1 (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp16x24TileMapGPxM1P (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp12x24TileMapGCA (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp2Bx8TileMap (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp2Bx8TileMapG (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp4Bx16TileMap (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp4Bx16TileMapG (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp4Bx24TileMap (void *sprite) __z88dk_fastcall;
+void cpc_PutTrSp4Bx24TileMapG (void *sprite) __z88dk_fastcall;
 
 #endif
