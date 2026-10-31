@@ -8,12 +8,12 @@ cells* (bitfield) por na_th_an.
 
 ## Alcance
 
-Quedan 50 módulos (`cpcrslib.lst`):
+Quedan 51 módulos (`cpcrslib.lst`):
 
 * **Núcleo**: `cpc_ShowTileMap`, `cpc_UpdScr`, `cpc_ShowTouchedTiles`,
   `cpc_ResetTouchedTiles`, `cpc_UpdTileTable`, `cpc_InvalidateRect`,
   `cpc_KeysData`, `cpc_TestKeyboard`, `cpc_TestKey`, `cpc_SetMode`,
-  `cpc_MakeM1RotationLUTs`.
+  `cpc_MakeM1RotationLUTs` y las tablas del tilemap (`cpc_TileMapConf`).
 * **Dependencias internas** (no se declaran en la cabecera): `cpc_Bit2Mask`,
   `cpc_TblLookup`, `cpc_bitleft2mask`, `cpc_bitright2mask`.
 * **Sprites**: la matriz completa de tamaños y formatos de pixel que el
@@ -34,19 +34,29 @@ resucitar alguna.
 
 ## Contrato con el motor
 
-La librería no es autonomous: usa símbolos que le aporta el juego.
+La librería no es autónoma: usa símbolos que le aporta el juego.
 
-* `dev/cpc/tilemap_conf.asm` (se ensambla con el juego) exporta:
-  `tiles`, `pantalla_juego`, `tiles_tocados`, `tiles_tocados_ptr`,
-  `posiciones_pantalla`, `posiciones_super_buffer`,
-  `posicion_inicial_area_visible`, `posicion_inicial_superbuffer`,
-  `ancho_pantalla_bytes`, `alto_pantalla_bytes`,
-  `ancho_pantalla_bytes_visible` y `behindtilemasks` (éste último, sólo en la
-  variante FG; ver más abajo).
-* `dev/cpc/sysvars.h` exporta `viewport_x` y `viewport_y`, que se usan para el
-  *clipping* (`CHURRERA_CLIPPING`).
-* `dev/cpc/sysvars.h` importa con `LIB`: `cpc_KeysData`, `cpc_UpdTileTable`,
-  `cpc_InvalidateRect`, `cpc_TestKeyboard`.
+* El tileset, con el nombre `tiles` (`src/dev/cpc/tileset.h`).
+* `viewport_x` y `viewport_y` (`src/dev/cpc/sysvars.h`), para el *clipping*
+  (`CHURRERA_CLIPPING`).
+* `behindtilemasks`, solo en la variante fg (ver más abajo).
+
+Lo que antes ponía cada juego en `tilemap_conf.asm` es fijo en MK1 (pantalla
+retocada de 32x24 tiles) y ahora está en la librería: las constantes en
+`CPCconfig.inc` (`pantalla_juego`, `tiles_tocados`,
+`posicion_inicial_area_visible`, `posicion_inicial_superbuffer`, los tamaños)
+y las tablas `posiciones_pantalla` y `posiciones_super_buffer` en
+`cpc_TileMapConf.s`.
+
+## Llamadas desde C (SDCC)
+
+`cpcrslib_mt.h` declara las funciones que usa el motor. Las que reciben un
+argumento lo toman en HL (o L, si es de 8 bits): `__z88dk_fastcall`.
+`cpc_TestKey` devuelve en L (`__sdcccall(0)`). Cada una tiene una entrada
+`_nombre` para C; si la rutina usa IX, esa entrada lo guarda, porque SDCC lo
+usa como puntero de marco. Las rutinas internas (`cpc_UpdTileTable`,
+`cpc_InvalidateRect`, `cpc_TestKeyboard`...) se llaman desde ensamblador con
+su nombre.
 
 ### `behindtilemasks` (variante FG)
 
@@ -58,49 +68,34 @@ saberlo, lee una tabla de **256 bytes, uno por tile**, en el símbolo
 * `0` → tile normal: el sprite va por delante.
 * `1` → tile en primer plano: el sprite va por detrás.
 
-La tabla **la pone el juego**, en `dev/cpc/tilemap_conf.asm`:
+La tabla la pone el juego, por ejemplo en una función contenedora:
 
-```asm
-    .behindtilemasks
-    XDEF behindtilemasks
-    ; TODO: generate this automaticly
-        defb 0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
-        ...                                ; 256 bytes
+```c
+void behindtilemasks_data (void) __naked {
+	__asm
+		behindtilemasks::
+		.db 0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
+		; ... 256 bytes
+	__endasm;
+}
 ```
 
-Los juegos que usan la variante "fg" la rellenan. Los que usan la variante
-normal no la necesitan: la librería no la mira. El motor enlaza con la
-variante normal y no la define.
+El motor enlaza con la variante normal y no la define.
 
 ## Variantes
 
-* `cpcrslib_mt.lib`: la normal (`CPCconfig_normal.def`).
-* `cpcrslib_fg_mt.lib`: la variante "fg" (`CPCconfig_fg.def`), que activa
-  `PASARPORDETRAS` para que los sprites puedan quedar detrás de ciertos
-  tiles. Necesita la tabla
-  `behindtilemasks` (ver más abajo).
+* `cpcrslib.lib`: la normal (`PASARPORDETRAS = 0`).
+* `cpcrslib_fg.lib`: la variante "fg" (`PASARPORDETRAS = 1`), para que los
+  sprites puedan quedar detrás de ciertos tiles.
 
 ## Reconstruir
 
 ```
-make.bat        REM variante normal
-make.bat fg     REM variante fg
+make.bat          (Windows; o ./make.sh)
 ```
 
-`make.bat` copia la configuración correspondiente a `CPCconfig.def`, ensambla
-todos los módulos de `cpcrslib.lst` con `z80asm -x`, genera las dos librerías
-y las copia a `c:\z88dk10-orig\lib\clibs`. `borra.bat` borra los `.obj` y
-`.sym` intermedios.
-
-El `CPCconfig.def` versionado es el de la variante normal; `make.bat` lo
-restablece al terminar.
-
-Para instalar la cabecera: `copy cpcrslib_mt.h c:\z88dk10-orig\include`.
-
-## Nota
-
-Las 35 rutinas de sprite se eligen por tamaño desde el
-`spriteset_mappings.h` que genera `mkts_om.exe`, así que la matriz completa
-tiene que estar en la librería: si un juego usa un tamaño o un formato de
-pixel que no esté listado arriba, hay que recuperar el módulo correspondiente
-del historial de git.
+Necesita GBDK-2020 (`GBDK_HOME`, por defecto `C:\gbdk`). Ensambla con
+`sdasz80` todos los módulos de `cpcrslib.lst` dos veces (una por variante,
+cambiando `PASARPORDETRAS` en una copia de `CPCconfig.inc`), crea las dos
+librerías con `sdar` y las deja, con `cpcrslib_mt.h`, en `src/dev/cpc`, que
+es donde las busca `comp-cpc`.
