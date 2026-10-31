@@ -641,6 +641,12 @@ void main (void) {
 					}
 				#endif
 			}
+
+			// Se espera a que se suelten las teclas, salvo al saltar a otro
+			// nivel (WARP TO LEVEL): se sigue jugando sin pararse.
+			#ifdef COMPRESSED_LEVELS
+				if (success != LEVEL_WARP)
+			#endif
 			sp_WaitForNoKey ();
 
 			#ifdef HAS_AY_MUSIC
