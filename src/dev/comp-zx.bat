@@ -141,7 +141,19 @@ rem binario (sin las variables, que crt0 pone a cero al arrancar).
 if errorlevel 1 (echo ERROR& exit /b 1)
 "%G%\sdasz80" -g -o crt0.rel speccy\crt0.s
 if errorlevel 1 (echo ERROR& exit /b 1)
-"%G%\sdldz80" -n -m -w -i -b _CODE=24200 %game%.ihx crt0.rel churromain.rel -k speccy -l splib2.lib -k "%GBDK_HOME%\lib\z80" -l z80.lib
+set "objs=crt0.rel churromain.rel"
+if %mode128%==1 goto :link
+rem 48K: la musica del titulo. Si el juego trae su exportacion de Beepola
+rem (..\ogt\beepola.asm), se convierte; si no, se usa speccy\music.s tal cual.
+if exist ..\ogt\beepola.asm (
+	"%U%\beepola2s" ..\ogt\beepola.asm speccy\music.s > nul
+	if errorlevel 1 exit /b 1
+)
+"%G%\sdasz80" -g -o music.rel speccy\music.s
+if errorlevel 1 (echo ERROR& exit /b 1)
+set "objs=%objs% music.rel"
+:link
+"%G%\sdldz80" -n -m -w -i -b _CODE=24200 %game%.ihx %objs% -k speccy -l splib2.lib -k "%GBDK_HOME%\lib\z80" -l z80.lib
 if errorlevel 1 (echo ERROR& exit /b 1)
 "%U%\ihx2bin" %game%.ihx %game%.bin 24200
 if errorlevel 1 exit /b 1

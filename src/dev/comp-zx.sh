@@ -113,7 +113,15 @@ echo "### COMPILANDO GUEGO ###"
 G="$GBDK_HOME/bin"
 "$G/sdcc" -mz80 --no-std-crt0 -c churromain.c || { echo "ERROR"; exit 1; }
 "$G/sdasz80" -g -o crt0.rel speccy/crt0.s || { echo "ERROR"; exit 1; }
-"$G/sdldz80" -n -m -w -i -b _CODE=24200 $game.ihx crt0.rel churromain.rel \
+objs="crt0.rel churromain.rel"
+if [ $mode128 = 0 ]; then
+	# 48K: la música del título. Si el juego trae su exportación de Beepola
+	# (../ogt/beepola.asm), se convierte; si no, se usa speccy/music.s tal cual.
+	[ -f ../ogt/beepola.asm ] && { $U/beepola2s ../ogt/beepola.asm speccy/music.s > /dev/null || exit 1; }
+	"$G/sdasz80" -g -o music.rel speccy/music.s || { echo "ERROR"; exit 1; }
+	objs="$objs music.rel"
+fi
+"$G/sdldz80" -n -m -w -i -b _CODE=24200 $game.ihx $objs \
 	-k speccy -l splib2.lib -k "$GBDK_HOME/lib/z80" -l z80.lib || { echo "ERROR"; exit 1; }
 $U/ihx2bin $game.ihx $game.bin 24200 || exit 1
 

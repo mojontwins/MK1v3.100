@@ -938,12 +938,17 @@ las versiones:
 
 ## ZX Spectrum 48K: beeper
 
-`speccy/beeper.h` tiene los efectos (de Shiru). La música del título es de
-Beepola (`speccy/music.h`).
+`speccy/beeper.h` tiene los efectos (de Shiru). La música del título se hace
+con Beepola, usando el motor *Phaser1*.
 
 ![Beepola](img/beepola.png)
 
 *Beepola: la música del título de 48K se exporta como listado en ensamblador.*
+
+Para cambiarla, compila la canción en Beepola con el motor Phaser1 como listado
+en ensamblador y guárdalo como `ogt/beepola.asm`. `comp-zx`
+lo convierte con `beepola2s` en `dev/speccy/music.s` cada vez que compilas. Si
+no hay `ogt/beepola.asm`, se usa el `music.s` que haya.
 
 Mientras suena un efecto el juego se para (el
 beeper usa la CPU entera), así que los efectos se tocan entre `di` y `ei`.

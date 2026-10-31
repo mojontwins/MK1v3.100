@@ -86,8 +86,9 @@ void stack_top_symbol (void) __naked {
 	#else
 		#include "speccy/isr.h"
 		#include "speccy/beeper.h"
-		// La música del título (Beepola). Phaser engine by Shiru.
-		#include "speccy/music.h"
+		// La música del título (Beepola, Phaser1 de Shiru) está en speccy/music.s,
+		// que genera beepola2s y se enlaza aparte.
+		void play_title_music (void);
 	#endif
 #else
 	#include "cpc/efectos.h"

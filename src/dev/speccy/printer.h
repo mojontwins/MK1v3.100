@@ -368,7 +368,7 @@ void espera_activa (int espera) {
 
 void select_joyfunc (void) {
 	#ifndef MODE_128K
-		// La música del título (Beepola, speccy/music.h)
+		// La música del título (Beepola, speccy/music.s)
 		play_title_music ();
 	#endif
 	
