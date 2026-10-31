@@ -5,49 +5,125 @@
 		[
 			[
 				"ENABLE_CUSO",
-				"ENABLE_CUSTOM_FLICK	(README.md)"
+				"ENABLE_CUSTOM_FLICK\t(README.md)"
 			],
 			[
 				"VIEW",
-				"VIEWPORT_Y	abc"
+				"VIEWPORT_Y\tabc"
 			],
 			[
 				"VIE",
-				"VIEWPORT_X	abc"
+				"VIEWPORT_X\tabc"
 			],
 			[
 				"_run",
-				"_run_text_box	abc"
+				"_run_text_box\tabc"
 			],
 			[
 				"_A",
-				"_addr1	(msc4.bas)"
+				"_addr1\t(msc4.bas)"
 			],
 			[
 				"clear",
-				"clear_papayas_subloop	abc"
+				"clear_papayas_subloop\tabc"
 			],
 			[
 				"shift",
-				"shiftTokens	abc"
+				"shiftTokens\tabc"
 			],
 			[
 				"DEACTIVATE",
-				"DEACTIVATE_MOVING_PLATFORMS	abc"
+				"DEACTIVATE_MOVING_PLATFORMS\tabc"
 			],
 			[
 				"m_vert",
-				"m_vert_jump_down_done	abc"
+				"m_vert_jump_down_done\tabc"
 			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "examples/Goku Mal 128/dev/config.h",
+			"settings":
+			{
+				"buffer_size": 13473,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "examples/Goku Mal 128/make.sh",
+			"settings":
+			{
+				"buffer_size": 893,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "examples/Goku Mal 128/README.md",
+			"settings":
+			{
+				"buffer_size": 3350,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "examples/Goku Mal 128/dev/librarian.txt",
+			"settings":
+			{
+				"buffer_size": 392,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "examples/Goku Mal 128/dev/levelset.h",
+			"settings":
+			{
+				"buffer_size": 440,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "docs/manual.md",
+			"settings":
+			{
+				"buffer_size": 67788,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "docs/msc4.md",
+			"settings":
+			{
+				"buffer_size": 46682,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": ".gitignore",
+			"settings":
+			{
+				"buffer_size": 123,
+				"line_ending": "Windows"
+			}
+		}
 	],
 	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
 	"command_palette":
 	{
 		"height": 375.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -67,7 +143,10 @@
 	},
 	"console":
 	{
-		"height": 491.0
+		"height": 491.0,
+		"history":
+		[
+		]
 	},
 	"distraction_free":
 	{
@@ -78,8 +157,14 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+		"/D/Git/mk1v3.100",
+		"/D/Git/mk1v3.100/docs"
+	],
 	"file_history":
 	[
+		"/D/Git/mk1v3.100/docs/whatsnew.txt",
 		"/C/git/MK1v32/docs/msc4.md",
 		"/C/git/MK1v32/docs/manual_32.md",
 		"/C/git/MK1v32/msc4/msc4.md",
@@ -193,7 +278,7 @@
 	],
 	"find":
 	{
-		"height": 36.0
+		"height": 54.0
 	},
 	"find_in_files":
 	{
@@ -232,6 +317,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"Trucos y errores corregidos",
+			"sp_UpdateNow",
 			"stairs",
 			"ld  (_cx1), a",
 			"markdown",
@@ -357,9 +444,7 @@
 			"indexed_enems",
 			"indexed",
 			"INDEXED_ENEMS",
-			"indexed_enems",
-			"enems_init",
-			"no_max_enems"
+			"indexed_enems"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -386,8 +471,237 @@
 	"groups":
 	[
 		{
+			"selected": 7,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "examples/Goku Mal 128/dev/config.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 13473,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C Improved/C Improved.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 4104.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "examples/Goku Mal 128/make.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 893,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								893,
+								893
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/ShellScript/Bash.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "examples/Goku Mal 128/README.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3350,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 627.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "examples/Goku Mal 128/dev/librarian.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 392,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								196,
+								196
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "examples/Goku Mal 128/dev/levelset.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 440,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								440,
+								440
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C Improved/C Improved.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "docs/manual.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 67788,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								47492,
+								47504
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 21147.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "docs/msc4.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 46682,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								46682,
+								46682
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 33734.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": ".gitignore",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 123,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Git Formats/Git Ignore.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -426,6 +740,12 @@
 	{
 		"height": 96.0
 	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "MK1_v3100.sublime-project",
 	"replace":
 	{
 		"height": 64.0
@@ -434,6 +754,7 @@
 	"select_file":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
@@ -442,15 +763,32 @@
 	"select_project":
 	{
 		"height": 0.0,
+		"last_filter": "",
 		"selected_items":
 		[
 		],
 		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
 	},
 	"show_minimap": true,
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
 	"side_bar_width": 282.0,
-	"status_bar_visible": true
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
 }
