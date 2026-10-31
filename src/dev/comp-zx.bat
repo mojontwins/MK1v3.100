@@ -221,7 +221,7 @@ rem :checkaddr SIMBOLO  -> bad=1 si SIMBOLO esta en 0xC000 o mas en el .map
 rem (z88dk escribe "SIMBOLO   = 5F3E, L: CHURROMAIN")
 :checkaddr
 set "a="
-for /f "usebackq tokens=1,3 delims=	 ," %%a in ("%game%.map") do if not defined a if "%%a"=="%1" set "a=%%b"
+for /f "usebackq tokens=1,3 delims=,	 " %%a in ("%game%.map") do if not defined a if "%%a"=="%1" set "a=%%b"
 if not defined a exit /b 0
 set /a v=0x!a!
 if !v! GEQ 49152 (

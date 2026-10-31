@@ -64,5 +64,5 @@ exit /b 0
 rem :addr SIMBOLO  -> a = direccion hexadecimal de SIMBOLO en el .map
 :addr
 set "a="
-for /f "usebackq tokens=1,3 delims=	 ," %%a in ("%M%") do if not defined a if /i "%%a"=="%1" set "a=%%b"
+for /f "usebackq tokens=1,3 delims=,	 " %%a in ("%M%") do if not defined a if /i "%%a"=="%1" set "a=%%b"
 exit /b 0

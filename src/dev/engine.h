@@ -181,7 +181,8 @@ signed int addsign (signed int n, signed int value) {
 						if ((pad0 & sp_LEFT) == 0 || (pad0 & sp_RIGHT) == 0 || ((pad0 & sp_UP) && (pad0 & sp_DOWN))) 
 					#endif
 					{
-						if (player.facing == 0) {
+						// La bala sale hacia donde mira el jugador
+						if (player.facing == LATERAL_FACING_LEFT) {
 							bullets_x [gpit] = gpx - 4;
 							bullets_mx [gpit] = -PLAYER_BULLET_SPEED;
 						} else {
