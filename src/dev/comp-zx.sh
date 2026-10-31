@@ -12,7 +12,8 @@
 #    wyz_addrs.h;
 #  * reparte los recursos de librarian.txt (o title/marco/ending si no existe)
 #    en las páginas 3, 4, 6 y 7 con librarian, que genera librarian.h;
-#  * comprueba que lo que se usa con otra página puesta queda bajo 0xC000;
+#  * comprueba que lo que se usa con otra página puesta queda bajo 0xC000
+#    (ihx2bin);
 #  * hace una cinta con un cargador que coloca cada página en su sitio.
 
 # Cambia "game" por el nombre de tu güego.
@@ -107,12 +108,15 @@ if [ $mode128 = 1 ]; then
 fi
 
 echo "### COMPILANDO GUEGO ###"
-# SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
-# enlazador pone el código en 24200, detrás las variables, y ihx2bin saca el
-# binario (sin las variables, que crt0 pone a cero al arrancar).
+# SDCC compila todo el motor de una vez (churromain.c incluye el resto). El
+# programa empieza en 24200 con crt0; en 48K las variables van detrás del
+# código y en 128K delante del código del motor (ver speccy_128/crt0.s).
+# ihx2bin saca el binario y comprueba el mapa de memoria con el .map.
 G="$GBDK_HOME/bin"
-"$G/sdcc" -mz80 --no-std-crt0 -c churromain.c || { echo "ERROR"; exit 1; }
-"$G/sdasz80" -g -o crt0.rel speccy/crt0.s || { echo "ERROR"; exit 1; }
+crt0=speccy/crt0.s; m128=""; seg=""
+[ $mode128 = 1 ] && { crt0=speccy_128/crt0.s; m128=128k; seg="--codeseg MAIN --constseg MAIN"; }
+"$G/sdcc" -mz80 --no-std-crt0 -I. $seg -c churromain.c || { echo "ERROR"; exit 1; }
+"$G/sdasz80" -g -o crt0.rel $crt0 || { echo "ERROR"; exit 1; }
 objs="crt0.rel churromain.rel"
 if [ $mode128 = 0 ]; then
 	# 48K: la música del título. Si el juego trae su exportación de Beepola
@@ -123,20 +127,7 @@ if [ $mode128 = 0 ]; then
 fi
 "$G/sdldz80" -n -m -w -i -b _CODE=24200 $game.ihx $objs \
 	-k speccy -l splib2.lib -k "$GBDK_HOME/lib/z80" -l z80.lib || { echo "ERROR"; exit 1; }
-$U/ihx2bin $game.ihx $game.bin 24200 || exit 1
-
-if [ $mode128 = 1 ]; then
-	# Todo lo que se usa con otra página de RAM en 0xC000 tiene que estar por debajo.
-	bad=0
-	for s in _zx0_depack _unpack_RAMn SetRAMBank _isr_hook _tileset _sprites_end _level_data_end _msc_buffer; do
-		a=$(awk -v s=$s '$2 == s { print $1; exit }' $game.map)
-		[ -z "$a" ] && continue
-		if [ $((16#$a)) -ge $((0xC000)) ]; then
-			echo "ERROR 128K: $s está en \$${a:4}, por encima de 0xC000"; bad=1
-		fi
-	done
-	[ $bad = 1 ] && exit 1
-fi
+$U/ihx2bin $game.ihx $game.bin 24200 $game.map $m128 || exit 1
 
 echo "### CONSTRUYENDO CINTA ###"
 $U/bin2tap -o screen.tap -a 16384 loading.scr

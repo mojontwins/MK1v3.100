@@ -22,9 +22,14 @@ de los buffers y de cada sección del bundle. El motor usa siempre
 
 ## Estructura del bundle
 
-Todas las secciones tienen tamaño fijo (dependiente de `MAX_PANT`), para que
-el motor lo descomprima de una vez en `level_data` y cada sección quede en su
-etiqueta (ver `src/dev/levels.h`).
+Todas las secciones tienen tamaño fijo (dependiente de `MAX_PANT`): el bundle
+es la imagen exacta de la estructura `LEVELBUNDLE` de `src/dev/levels.h`. El
+motor lo descomprime de una vez en `level_data`, una variable normal en RAM, y
+cada sección queda en su campo (`level_data.header`, `level_data.malotes`,
+`level_data.mapa`...). Al empezar o repetir un nivel se vuelve a descomprimir,
+así que enemigos, hotspots y cerrojos vuelven a su estado inicial sin copias
+aparte. Lo mismo vale para cualquier máquina: en Game Boy el bundle irá en un
+banco de ROM y se descomprimirá igual en la RAM de trabajo.
 
 | Desplazamiento | Tamaño | Contenido |
 |---|---|---|
@@ -60,7 +65,7 @@ que el motor no distingue entre los dos casos.
 Cada juego la define en `levelset.h` con los recursos que genera `librarian`:
 
 ```c
-LEVEL levels [MAX_LEVELS] = {
+const LEVEL levels [MAX_LEVELS] = {
 	// bundle      tileset        spriteset      música  script
 	{ RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 3,      RES_SCRIPT1C },
 	{ RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   4,      NO_RESOURCE },	// reutiliza los gráficos, sin script
@@ -99,9 +104,8 @@ zx0 level1.bin level1c.bin
 
 rem tileset ZX (2304 bytes)
 ts2bin font.png work1.png tileset1.bin 7
-rem spriteset ZX
-sprcnv sprites1.png sprites1.h
-defb2bin sprites1.h sprites1.bin
+rem spriteset ZX (binario, con los 16 bytes de relleno del principio)
+sprcnv sprites1.png sprites1.bin
 ```
 
 `behs1.txt` contiene los 48 comportamientos separados por comas. El tamaño del
@@ -116,5 +120,8 @@ WYZ player.
 
 Todo lo que se usa con otra página puesta en 0xC000 tiene que estar por debajo
 de esa dirección: la pila, el descompresor, la ISR y los destinos de
-`get_resource` (`level_data`, `tileset` y los sprites). `comp-zx.bat` lo
-comprueba con el `.map` del enlazador.
+`get_resource` (`level_data`, `tileset` y los sprites). Para eso, en 128K las
+variables del motor van delante de su código (ver `speccy_128/crt0.s`), y el
+descompresor, la ISR, el tileset y los sprites van al principio del código,
+antes de `low_end`. `ihx2bin` comprueba con el `.map` del enlazador que
+`low_end` queda por debajo de 0xC000.

@@ -1464,7 +1464,7 @@ void move (void) {
 	// Carga el nivel "level": el bundle (datos de juego) en level_data y, si
 	// el nivel los define, su tileset y su spriteset encima de los actuales.
 	void prepare_level (void) {
-		get_resource (levels [level].bundle, (unsigned int) (level_data));
+		get_resource (levels [level].bundle, (unsigned int) &level_data);
 
 		if (levels [level].tileset != NO_RESOURCE)
 			get_resource (levels [level].tileset, (unsigned int) (tileset));

@@ -25,8 +25,7 @@ exit /b 0
 "%U%\buildlevel" map=..\map\mapa%2.MAP ene=..\enems\enems%2.ene behs=..\levels\behs%2.txt ^
 	out=level%1.bin maxpant=25 scr_ini=%3 ini_x=%4 ini_y=%5 max_objs=%6 life=%7 lock=99 2bytes > nul || exit /b 1
 "%U%\ts2bin" ..\gfx\font.png ..\gfx\work%2.png ts%1.bin 7 > nul || exit /b 1
-"%U%\sprcnv" ..\gfx\sprites%2.png spr%1.h > nul || exit /b 1
-"%U%\defb2bin" spr%1.h spr%1.bin > nul || exit /b 1
+"%U%\sprcnv" ..\gfx\sprites%2.png spr%1.bin > nul || exit /b 1
 for %%f in (level ts spr) do (
 	if exist %%f%1c.bin del %%f%1c.bin
 	"%U%\zx0" %%f%1.bin %%f%1c.bin > nul || exit /b 1

@@ -13,7 +13,8 @@ rem    instrumentos y efectos del juego (..\ogt\zx128 o ..\ogt) en RAM1 y genera
 rem    wyz_addrs.h;
 rem  * reparte los recursos de librarian.txt (o title/marco/ending si no existe)
 rem    en las paginas 3, 4, 6 y 7 con librarian, que genera librarian.h;
-rem  * comprueba que lo que se usa con otra pagina puesta queda bajo 0xC000;
+rem  * comprueba que lo que se usa con otra pagina puesta queda bajo 0xC000
+rem    (ihx2bin);
 rem  * hace una cinta con un cargador que coloca cada pagina en su sitio.
 
 setlocal EnableDelayedExpansion
@@ -134,12 +135,19 @@ if errorlevel 1 exit /b 1
 
 :compile
 echo ### COMPILANDO GUEGO ###
-rem SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
-rem enlazador pone el codigo en 24200, detras las variables, y ihx2bin saca el
-rem binario (sin las variables, que crt0 pone a cero al arrancar).
-"%G%\sdcc" -mz80 --no-std-crt0 -c churromain.c
+rem SDCC compila todo el motor de una vez (churromain.c incluye el resto). El
+rem programa empieza en 24200 con crt0; en 48K las variables van detras del
+rem codigo y en 128K delante del codigo del motor (ver speccy_128\crt0.s).
+rem ihx2bin saca el binario y comprueba el mapa de memoria con el .map.
+set "crt0=speccy\crt0.s"
+set "m128="
+set "seg="
+if %mode128%==1 set "crt0=speccy_128\crt0.s"
+if %mode128%==1 set "m128=128k"
+if %mode128%==1 set "seg=--codeseg MAIN --constseg MAIN"
+"%G%\sdcc" -mz80 --no-std-crt0 -I. %seg% -c churromain.c
 if errorlevel 1 (echo ERROR& exit /b 1)
-"%G%\sdasz80" -g -o crt0.rel speccy\crt0.s
+"%G%\sdasz80" -g -o crt0.rel %crt0%
 if errorlevel 1 (echo ERROR& exit /b 1)
 set "objs=crt0.rel churromain.rel"
 if %mode128%==1 goto :link
@@ -155,20 +163,8 @@ set "objs=%objs% music.rel"
 :link
 "%G%\sdldz80" -n -m -w -i -b _CODE=24200 %game%.ihx %objs% -k speccy -l splib2.lib -k "%GBDK_HOME%\lib\z80" -l z80.lib
 if errorlevel 1 (echo ERROR& exit /b 1)
-"%U%\ihx2bin" %game%.ihx %game%.bin 24200
+"%U%\ihx2bin" %game%.ihx %game%.bin 24200 %game%.map %m128%
 if errorlevel 1 exit /b 1
-
-if %mode128%==0 goto :tape
-rem Todo lo que se usa con otra pagina de RAM en 0xC000 tiene que estar por debajo.
-set bad=0
-for %%s in (_zx0_depack _unpack_RAMn SetRAMBank _isr_hook _tileset _sprites_end _level_data_end _msc_buffer) do call :checkaddr %%s
-if %bad%==1 exit /b 1
-
-:tape
-rem Todo lo que se usa con otra pagina de RAM en 0xC000 tiene que estar por debajo.
-set bad=0
-for %%s in (DEPACK _UNPACK_RAMN SETRAMBANK _ISR _TILESET _SPRITES_END _LEVEL_DATA_END _MSC_BUFFER) do call :checkaddr %%s
-if %bad%==1 exit /b 1
 
 :tape
 echo ### CONSTRUYENDO CINTA ###
@@ -240,17 +236,4 @@ if not defined a (echo ERROR: falta %1 en el WYZ player& exit /b 1)
 set "a=!a:H=!"
 if not "!a:~4,1!"=="" set "a=!a:~1!"
 set "sym_%1=0x!a!"
-exit /b 0
-
-rem :checkaddr SIMBOLO  -> bad=1 si SIMBOLO esta en 0xC000 o mas en el .map
-rem (sdldz80 -w escribe "     0000B0E4  SIMBOLO   modulo")
-:checkaddr
-set "a="
-for /f "usebackq tokens=1,2" %%a in ("%game%.map") do if not defined a if "%%b"=="%1" set "a=%%a"
-if not defined a exit /b 0
-set /a v=0x!a!
-if !v! GEQ 49152 (
-	echo ERROR 128K: %1 esta en $!a:~4!, por encima de 0xC000
-	set bad=1
-)
 exit /b 0

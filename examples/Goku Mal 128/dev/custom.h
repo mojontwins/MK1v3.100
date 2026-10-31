@@ -54,93 +54,28 @@ void blackout_area (void) {
 #define SCREEN_WAIT			250		// Frames que se queda cada dibujo
 #define LANG_TEXT_OFFS		7		// Textos por idioma
 
-extern unsigned char intro_text_1 [0];
-extern unsigned char intro_text_2 [0];
-extern unsigned char intro_text_3 [0];
-extern unsigned char intro_text_4 [0];
-extern unsigned char intro_text_5 [0];
-extern unsigned char intro_text_6 [0];
-extern unsigned char intro_text_7 [0];
-extern unsigned char intro_text_8 [0];
-extern unsigned char intro_text_9 [0];
-extern unsigned char intro_text_10 [0];
-extern unsigned char intro_text_11 [0];
-extern unsigned char intro_text_12 [0];
-extern unsigned char intro_text_13 [0];
-extern unsigned char intro_text_14 [0];
-unsigned char *intro_texts [] = {
-	intro_text_1, intro_text_2, intro_text_3, intro_text_4,
-	intro_text_5, intro_text_6, intro_text_7,
-	intro_text_8, intro_text_9, intro_text_10, intro_text_11,
-	intro_text_12, intro_text_13, intro_text_14
-};
+const unsigned char * const intro_texts [] = {
+	//    "----------------------------OOOOOOOOOOOOOOOOOOOOOOOOOOOO----------------------------OOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+	"'WILL BUILD A PRETTY LADY!'@SAID ELEUTERIO IN HIS NOOK@AND WITH A GRIN SHADY@AWAITS FOR THE MIX TO COOK",
+	"BUT AYE! THIS HAS GONE BAD!@'THIS AIN'T A PRETTY LADY'@'THIS IS A 'GOKU BAD'!'@SAID THE MONKEY, SHAKY",
+	"ANGRY, HE THREW GOKU AWAY,@AND IN A MOUNTAIN OF SOCKS@HE PUT HIM TO LAY@AND FLEW TO THE DOCKS.",
+	"BUT GOKU SOON AWOKE,@AND SWORE LIKE FEY@HE WOULD CHASE THAT BLOKE@AND MAKE HIM PAY!",
+	"MONKEY CALLS GOKU SCOURED:@'WE COULD MAKE A DEAL:@PICK UP SOME FLOWERS@FOR A LADY IN STILETTO HEELS'",
+	"'MONKEY, YOU SHALL PAY!'@'WAIT, MEET THIS LADY HERE'@SAID THE MONKEY IN DISARRAY@'I MADE HER FOR YOU, SEE!'",
+	"'GET OUT OF MY WAY, MAD APE'@SAID GOKU THROWING A PUNCH@AND WITH THE LADY HE ESCAPED@MARRIED AND BRED A BUNCH.",
 
-	#asm
-			;    "----------------------------OOOOOOOOOOOOOOOOOOOOOOOOOOOO----------------------------OOOOOOOOOOOOOOOOOOOOOOOOOOOO"
-		._intro_text_1
-			defm "'WILL BUILD A PRETTY LADY!'@SAID ELEUTERIO IN HIS NOOK@AND WITH A GRIN SHADY@AWAITS FOR THE MIX TO COOK"
-			defb 0
-		._intro_text_2
-			defm "BUT AYE! THIS HAS GONE BAD!@'THIS AIN'T A PRETTY LADY'@'THIS IS A 'GOKU BAD'!'@SAID THE MONKEY, SHAKY"
-			defb 0
-		._intro_text_3
-			defm "ANGRY, HE THREW GOKU AWAY,@AND IN A MOUNTAIN OF SOCKS@HE PUT HIM TO LAY@AND FLEW TO THE DOCKS."
-			defb 0
-		._intro_text_4
-			defm "BUT GOKU SOON AWOKE,@AND SWORE LIKE FEY@HE WOULD CHASE THAT BLOKE@AND MAKE HIM PAY!"
-			defb 0
-		._intro_text_5
-			defm "MONKEY CALLS GOKU SCOURED:@'WE COULD MAKE A DEAL:@PICK UP SOME FLOWERS@FOR A LADY IN STILETTO HEELS'"
-			defb 0
-		._intro_text_6
-			defm "'MONKEY, YOU SHALL PAY!'@'WAIT, MEET THIS LADY HERE'@SAID THE MONKEY IN DISARRAY@'I MADE HER FOR YOU, SEE!'"
-			defb 0
-		._intro_text_7
-			defm "'GET OUT OF MY WAY, MAD APE'@SAID GOKU THROWING A PUNCH@AND WITH THE LADY HE ESCAPED@MARRIED AND BRED A BUNCH."
-			defb 0
-		
-		._intro_text_8
-			defm "'ME HARE UNA MUJER ENCUERA'@DIJO ELEUTERIO EL MONO,@Y EN SU LABORATORIO ESPERA@QUE LA MEZCLA ESTE A TONO."
-			defb 0
-		._intro_text_9
-			defm "SIN EMBARGO, ALGO FUE FATAL:@NO SALIO UNA MUJER ENCUERA.@'ME HA SALIDO UN GOKU MAL!'@DIJO EL MONO CON CARRASPERA."
-			defb 0
-		._intro_text_10
-			defm "ENFADADO, AL GOKU DESECHO,@Y EN UN MONTON DE CALCETINES@DE CABEZA LO TIRO...@Y SE FUE A LOS MULTICINES."
-			defb 0
-		._intro_text_11
-			defm "PERO GOKU DESPERTO,@Y JURO QUE SE VENGARIA@DE AQUEL QUE LO ENGENDRO@Y QUE NO LO QUERIA."
-			defb 0
-		._intro_text_12
-			defm "EL MONO LLAMA A GOKU MAL@'TENGO ALGO QUE PROPONERTE:@REUNE UN RAMILLETE FLORAL,@UNA CHICA QUIERE CONOCERTE'"
-			defb 0
-		._intro_text_13
-			defm "'MONO, TENDRAS TU MERECIDO'@'TU NECESITAS NOVIA FORMAL'@CONTESTO EL MONO CONVENCIDO@'HE HECHO UNA MORTICIA MAL'"
-			defb 0
-		._intro_text_14
-			defm "'QUITA, YA NO ME INTERESAS'@DIJO GOKU DANDO UN MANOTAZO@SE MARCHO CON LA TIPA ESA@Y CERRO DANDO UN PORTAZO."
-			defb 0
-	#endasm
-				#asm
-					halt
-					halt
-					halt
-					halt
-				#endasm
-				#asm
-					xor a
-					in a, (254)
-					cpl
-					and 31
-					jr z, _dafuq
-				#endasm
-				#asm
-					._dafuq
-				#endasm
+	"'ME HARE UNA MUJER ENCUERA'@DIJO ELEUTERIO EL MONO,@Y EN SU LABORATORIO ESPERA@QUE LA MEZCLA ESTE A TONO.",
+	"SIN EMBARGO, ALGO FUE FATAL:@NO SALIO UNA MUJER ENCUERA.@'ME HA SALIDO UN GOKU MAL!'@DIJO EL MONO CON CARRASPERA.",
+	"ENFADADO, AL GOKU DESECHO,@Y EN UN MONTON DE CALCETINES@DE CABEZA LO TIRO...@Y SE FUE A LOS MULTICINES.",
+	"PERO GOKU DESPERTO,@Y JURO QUE SE VENGARIA@DE AQUEL QUE LO ENGENDRO@Y QUE NO LO QUERIA.",
+	"EL MONO LLAMA A GOKU MAL@'TENGO ALGO QUE PROPONERTE:@REUNE UN RAMILLETE FLORAL,@UNA CHICA QUIERE CONOCERTE'",
+	"'MONO, TENDRAS TU MERECIDO'@'TU NECESITAS NOVIA FORMAL'@CONTESTO EL MONO CONVENCIDO@'HE HECHO UNA MORTICIA MAL'",
+	"'QUITA, YA NO ME INTERESAS'@DIJO GOKU DANDO UN MANOTAZO@SE MARCHO CON LA TIPA ESA@Y CERRO DANDO UN PORTAZO."
+};
 
 unsigned char introx, introy, stepbystep, character;
 
-void show_intro_text (unsigned char *s) {
+void show_intro_text (const unsigned char *s) {
 	introx = INTRO_X;
 	introy = INTRO_Y;
 	stepbystep = 1;
@@ -149,12 +84,12 @@ void show_intro_text (unsigned char *s) {
 		if (character != '@') sp_PrintAtInv (introy, introx ++, INTRO_TEXT_COLOUR, character - 32);
 		if (stepbystep) {
 			// Letra a letra, hasta que se pulse una tecla
-			#asm
+			__asm
 				halt
 				halt
 				halt
 				halt
-			#endasm
+			__endasm;
 			sp_UpdateNow ();
 			if (sp_GetKey ()) stepbystep = 0;
 		}
@@ -189,22 +124,15 @@ void do_intro (unsigned char ini, unsigned char fin) {
 #define MENU_Y 			16
 #define MENU_X			11
 
-extern unsigned char passwords [0];
-#asm
-	._passwords
-		defm "TETICA"
-		defm "PICHON"
-		defm "CULETE"
-		defm "BUTACA"
-#endasm
+const unsigned char passwords [] = "TETICA" "PICHON" "CULETE" "BUTACA";
 
-unsigned char *clearout = "          ";
-unsigned char *password = "****** ";
+const unsigned char clearout [] = "          ";
+unsigned char password [PASSWORD_LENGTH + 2];		// Las letras, un espacio y el 0 final
 unsigned char pw_ok;
 
 // Pide una contraseña; devuelve su nivel (0 si no es ninguna).
 unsigned char which_level (void) {
-	unsigned char *passpointer;
+	const unsigned char *passpointer;
 	passpointer = passwords;
 	print_str (MENU_X, MENU_Y, 7, " PASSWORD ");
 	print_str (MENU_X, MENU_Y + 1, 7, clearout);
@@ -275,7 +203,7 @@ unsigned char simple_menu (void) {
 }
 
 void print_password (unsigned char x, unsigned char y, unsigned char lvl) {
-	unsigned char *passpointer;
+	const unsigned char *passpointer;
 	passpointer = passwords + (lvl - 1) * PASSWORD_LENGTH;
 	for (gpit = 0; gpit < PASSWORD_LENGTH; gpit ++) {
 		sp_PrintAtInv (y, x ++, 70, (*passpointer ++) - 32);
@@ -289,7 +217,7 @@ void print_password (unsigned char x, unsigned char y, unsigned char lvl) {
 // El número de cada nivel, en grande: 9x6 caracteres del tileset de la
 // pantalla de zona (RES_LEVELTSC).
 
-unsigned char levelnumbers [54 * 5] = {
+const unsigned char levelnumbers [54 * 5] = {
 	 64, 65, 66, 66, 66, 66, 66,  0,  0,
 	 67, 68, 66, 66, 66, 66, 66,  0,  0,
 	  0,  0, 66, 66, 66, 66, 66,  0,  0,
@@ -372,7 +300,7 @@ unsigned char hook_after_title (void) {
 }
 
 // Antes de cada nivel: cinemática (niveles 1 y 4) y pantalla de zona.
-unsigned char *levelnumbers_ptr;
+const unsigned char *levelnumbers_ptr;
 #define HOOK_LEVEL_INTRO
 void hook_level_intro (void) {
 	blackout_area ();

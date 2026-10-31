@@ -121,7 +121,7 @@ Print #fl, "	unsigned char ramPage;"
 Print #fl, "	unsigned int ramOffset;"
 Print #fl, "} RESOURCE;"
 Print #fl, ""
-Print #fl, "RESOURCE resources [] = {"
+Print #fl, "const RESOURCE resources [] = {"
 For i = 0 To resId - 1
 	Print #fl, "	{" & resPage (i) & ", " & resOffset (i) & "}" & IIf (i < resId - 1, ",", " ") & "	// " & names (i)
 Next i

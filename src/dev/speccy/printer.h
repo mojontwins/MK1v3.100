@@ -165,7 +165,7 @@ void print_number2 (unsigned char x, unsigned char y, unsigned char number) {
 	sp_PrintAtInv (y, x + 1, 7, 16 + number);
 }
 
-void print_str (unsigned char x, unsigned char y, unsigned char c, unsigned char *s) {
+void print_str (unsigned char x, unsigned char y, unsigned char c, const unsigned char *s) {
 	while (*s)	{
 		sp_PrintAtInv (y, x ++, c, (*s ++) - 32);
 	}
@@ -208,7 +208,7 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 	}
 	#ifdef PLAYER_CAN_FIRE
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
-			sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, -2, -2, 0, 0);
+			sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, 254, 254, 0, 0);	// fuera de la pantalla
 	#endif
 
 }
@@ -264,7 +264,7 @@ void render_sprites (void) {
 			if (bullets_estado [gpit] == 1) {
 				sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, VIEWPORT_Y + (bullets_y [gpit] >> 3), VIEWPORT_X + (bullets_x [gpit] >> 3), bullets_x [gpit] & 7, bullets_y [gpit] & 7);
 			} else {
-				sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, -2, -2, 0, 0);
+				sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, 254, 254, 0, 0);	// fuera de la pantalla
 			}
 		}
 	#endif		

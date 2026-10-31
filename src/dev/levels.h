@@ -19,7 +19,7 @@
 //
 // La tabla de niveles la define cada juego en levelset.h:
 //
-//   LEVEL levels [MAX_LEVELS] = {
+//   const LEVEL levels [MAX_LEVELS] = {
 //       // bundle      tileset        spriteset      música  script
 //       { RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 2,      RES_SCRIPT1C },
 //       { RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   3,      RES_SCRIPT2C },
@@ -72,36 +72,36 @@ typedef struct {
 	unsigned char script;					// Recurso del script o NO_RESOURCE
 } LEVEL;
 
-// Buffer del nivel actual. get_resource descomprime el bundle entero aquí y
-// cada sección queda en su etiqueta. El orden y los tamaños tienen que
-// coincidir con buildlevel.
+// Buffer del nivel actual: la imagen exacta del bundle. get_resource lo
+// descomprime entero aquí y cada sección queda en su campo. El orden y los
+// tamaños tienen que coincidir con buildlevel (ver docs/formato-niveles.md).
+// Es RAM normal (crt0 la pone a cero), así que el bundle no ocupa nada en
+// el binario. Al empezar o repetir un nivel se vuelve a descomprimir, y con
+// eso enemigos, hotspots y cerrojos vuelven a su estado inicial.
 
-extern LEVELHEADER level_data [0];
-extern unsigned char comportamiento_tiles [0];
-extern CERROJOS cerrojos [0];
-extern HOTSPOT hotspots [0];
-extern MALOTE malotes [0];
-extern unsigned char mapa [0];
+#ifdef UNPACKED_MAP
+	#define MAP_BYTES		(MAX_PANT * 150)
+#else
+	#define MAP_BYTES		(MAX_PANT * 75)
+#endif
 
-#asm
-	._level_data
-		defs 16
-	._comportamiento_tiles
-		defs 48
-	._cerrojos
-		defs MAX_CERROJOS * 4
-	._hotspots
-		defs MAX_PANT * 3
-	._malotes
-		defs MAX_PANT * 3 * 10
-	._mapa
-	#ifdef UNPACKED_MAP
-		defs MAX_PANT * 150
-	#else
-		defs MAX_PANT * 75
-	#endif
-	._level_data_end
-#endasm
+typedef struct {
+	LEVELHEADER header;
+	unsigned char behs [48];
+	CERROJOS cerrojos [MAX_CERROJOS];
+	HOTSPOT hotspots [MAX_PANT];
+	MALOTE malotes [MAX_PANT * 3];
+	unsigned char mapa [MAP_BYTES];
+} LEVELBUNDLE;
+
+LEVELBUNDLE level_data;
+
+// El motor usa los mismos nombres con niveles y sin ellos
+#define comportamiento_tiles	(level_data.behs)
+#define cerrojos				(level_data.cerrojos)
+#define hotspots				(level_data.hotspots)
+#define malotes					(level_data.malotes)
+#define mapa					(level_data.mapa)
 
 // Tabla de niveles del juego
 #include "levelset.h"

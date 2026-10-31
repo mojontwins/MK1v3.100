@@ -14,8 +14,7 @@ build () {
 	$U/buildlevel map=../map/mapa$m.MAP ene=../enems/enems$m.ene behs=../levels/behs$m.txt \
 		out=level$n.bin maxpant=25 scr_ini=$3 ini_x=$4 ini_y=$5 max_objs=$6 life=$7 lock=99 2bytes > /dev/null
 	$U/ts2bin ../gfx/font.png ../gfx/work$m.png ts$n.bin 7 > /dev/null
-	$U/sprcnv ../gfx/sprites$m.png spr$n.h > /dev/null
-	$U/defb2bin spr$n.h spr$n.bin > /dev/null
+	$U/sprcnv ../gfx/sprites$m.png spr$n.bin > /dev/null
 	for f in level ts spr; do rm -f $f${n}c.bin; $U/zx0 $f$n.bin $f${n}c.bin > /dev/null; done
 }
 

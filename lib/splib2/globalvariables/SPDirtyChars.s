@@ -2,8 +2,8 @@
 	.include "SPconfig.inc"
 
 	.module SPDirtyChars
-	; Variables: van en _DATA (no ocupan sitio en el binario; crt0 las pone a 0)
-	.area _DATA
+	; Variables: van en _BSS, al final (no ocupan sitio en el binario; crt0 las pone a 0)
+	.area _BSS
 	.globl SPDirtyChars
 
 SPDirtyChars:

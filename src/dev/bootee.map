@@ -9,7 +9,6 @@ Area                                    Addr        Size        Decimal Bytes (A
       -----  --------------------------------   ------------------------
      00000000  .__.ABS.                           SPTileArray
      00000000  l__BSEG                         
-     00000000  l__BSS                          
      00000000  l__CABS                         
      00000000  l__DABS                         
      00000000  l__GSFINAL                      
@@ -22,8 +21,9 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  s__DABS                         
      00000004  GENERICLISTDISP                    SPCreateGenericISR
      0000000C  GENERICISRSIZE                     SPCreateGenericISR
-     00001282  l__DATA                         
-     0000525C  l__CODE                         
+     00000418  l__DATA                         
+     00000E6A  l__BSS                          
+     0000525D  l__CODE                         
      00005B04  _map_attr                          churromain
      00005B9A  _map_buff                          churromain
      00005C30  _en_an_frame                       churromain
@@ -36,294 +36,306 @@ Area                                    Addr        Size        Decimal Bytes (A
      00005C71  _destination                       churromain
      00005C73  _ram_page                          churromain
      00005E88  s__CODE                         
-     0000B0E4  s__DATA                         
-     0000B0E4  s__GSFINAL                      
-     0000B0E4  s__GSINIT                       
-     0000B0E4  s__INITIALIZER                  
-     0000C366  s__BSEG                         
-     0000C366  s__BSS                          
-     0000C366  s__HEAP                         
-     0000C366  s__HOME                         
-     0000C366  s__INITIALIZED                  
+     0000B0E5  s__DATA                         
+     0000B0E5  s__GSFINAL                      
+     0000B0E5  s__GSINIT                       
+     0000B0E5  s__INITIALIZER                  
+     0000B4FD  s__BSEG                         
+     0000B4FD  s__BSS                          
+     0000B4FD  s__INITIALIZED                  
+     0000C367  s__HEAP                         
+     0000C367  s__HOME                         
+     0000EDA8  __ad_free                          churromain
      0000F1F0  __stack_top                        churromain
+
 ASxxxx Linker V03.00/V05.40 + sdld,  page 2.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_CODE                               00005E88    0000525C =       21084. bytes (REL,CON)
+_CODE                               00005E88    0000525D =       21085. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     00005EB4  _isr_hook                          churromain
-     00005EB4  _stack_top_symbol                  churromain
-     00005EBC  _beeper_code                       churromain
-     00005FEE  _peta_el_beeper                    churromain
-     00005FF4  _play_title_music                  churromain
-     00005FFE  _music_code                        churromain
-     000063CE  _zx0_depack                        churromain
-     00006412  _unpack                            churromain
-     00006418  _tileset_data                      churromain
-     00006D18  _sprite_18_data                    churromain
-     00006DA8  _blackout                          churromain
-     00006DA8  _sprites_end_mark                  churromain
-     00006DB5  _comportamiento_tiles              churromain
-     00006DE5  _keys                              churromain
-     00006DEF  _spritesClip                       churromain
-     00006DF3  _sprite_data                       churromain
-     00007703  _malotes_ini                       churromain
-     00007A2D  _hotspots_ini                      churromain
-     00007A87  _mapa                              churromain
-     00008351  _cerrojos_ini                      churromain
-     00008361  _system_init                       churromain
-     0000849E  _draw_coloured_tile                churromain
-     0000855B  _print_number2                     churromain
-     000085AF  _print_str                         churromain
-     000085E3  _draw_objs                         churromain
-     000085F0  _pad_read                          churromain
-     00008617  _saca_a_todo_el_mundo_de_aqui      churromain
-     00008682  _update_this_enemy                 churromain
-     000087AA  _render_sprites                    churromain
-     00008874  _cortina                           churromain
-     000088A8  _espera_activa                     churromain
-     000088B7  _select_joyfunc                    churromain
-     00008918  _unpack_screen                     churromain
-     0000891E  _pantallas_data                    churromain
-     00008FFA  _title                             churromain
-     00009009  _player_frames                     churromain
-     00009019  _enem_frames                       churromain
-     00009029  _game_ending                       churromain
-     00009059  _recuadre                          churromain
-     00009091  _game_over                         churromain
-     000090CB  _attr                              churromain
-     000090EB  _mul15                             churromain
-     000090F5  _qtile                             churromain
-     00009109  _cm_two_points                     churromain
-     00009175  _collide                           churromain
-     000091DE  _rand                              churromain
-     00009206  _abs                               churromain
-     00009211  _addsign                           churromain
-     0000921C  _set_map_tile                      churromain
-     0000926A  _init_cerrojos                     churromain
+     00005EB0  _isr_hook                          churromain
+     00005EB0  _memory_map_symbols                churromain
+     00005EB8  _beeper_code                       churromain
+     00005FEA  _peta_el_beeper                    churromain
+     00005FF0  _zx0_depack                        churromain
+     00006034  _unpack                            churromain
+     0000603A  _tileset_data                      churromain
+     0000693A  _blackout                          churromain
+     0000693A  _low_end                           churromain
+     00006947  _comportamiento_tiles              churromain
+     00006977  _keys                              churromain
+     00006981  _spritesClip                       churromain
+     00006985  _sprite_data                       churromain
+     00007295  _extrasprites                      churromain
+     00007325  _malotes_ini                       churromain
+     0000764F  _hotspots_ini                      churromain
+     000076A9  _mapa                              churromain
+     00007F73  _cerrojos_ini                      churromain
+     00007F83  _system_init                       churromain
+     000080C0  _draw_coloured_tile                churromain
+     0000817D  _print_number2                     churromain
+     000081D1  _print_str                         churromain
+     00008205  _draw_objs                         churromain
+     00008212  _pad_read                          churromain
+     00008239  _saca_a_todo_el_mundo_de_aqui      churromain
+     000082A4  _update_this_enemy                 churromain
+     000083CC  _render_sprites                    churromain
+     00008496  _cortina                           churromain
+     000084CA  _espera_activa                     churromain
+     000084D9  _select_joyfunc                    churromain
+     0000853A  _unpack_screen                     churromain
+     00008540  _pantallas_data                    churromain
+     00008C1C  _title                             churromain
+     00008C2B  _player_frames                     churromain
+     00008C3B  _enem_frames                       churromain
+     00008C4B  _game_ending                       churromain
+     00008C7B  _recuadre                          churromain
+     00008CB3  _game_over                         churromain
+     00008CED  _attr                              churromain
+     00008D0D  _mul15                             churromain
+     00008D17  _qtile                             churromain
+     00008D2B  _cm_two_points                     churromain
+     00008D97  _collide                           churromain
+     00008E00  _rand                              churromain
+     00008E28  _abs                               churromain
+     00008E33  _addsign                           churromain
+     00008E3E  _set_map_tile                      churromain
+     00008E8C  _init_cerrojos                     churromain
+     00008E9A  _init_hotspots                     churromain
+     00008EA8  _init_enems                        churromain
 ASxxxx Linker V03.00/V05.40 + sdld,  page 3.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_CODE                               00005E88    0000525C =       21084. bytes (REL,CON)
+_CODE                               00005E88    0000525D =       21085. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     00009278  _init_hotspots                     churromain
-     00009286  _init_enems                        churromain
-     00009294  _do_hotspots                       churromain
-     00009364  _check_and_clear_cerrojo           churromain
-     000093E8  _draw_scr_background               churromain
-     000095A8  _draw_scr                          churromain
-     00009653  _set_player_at                     churromain
-     00009670  _init_player                       churromain
-     000096C2  _kill_player                       churromain
-     000096CF  _check_lock_or_box_horz            churromain
-     00009706  _check_lock_or_box_vert            churromain
-     0000973A  _move                              churromain
-     00009C5C  _mons_col_sc_x                     churromain
-     00009C97  _mons_col_sc_y                     churromain
-     00009CD1  _platform_get_player               churromain
-     00009D00  _mueve_bicharracos                 churromain
-     0000A165  _main                              churromain
-     0000A362  _sp_WaitForNoKey                   sp_WaitForNoKey
-     0000A36E  _sp_MoveSprAbs                     sp_MoveSprAbs
-     0000A37F  _sp_JoyKeyboard                    sp_JoyKeyboard
-     0000A397  SPMoveSprAbs                       SPMoveSprAbs
-     0000A3A5  SPMoveSprAbsNC                     SPMoveSprAbs
-     0000A3BE  SPMoveSprAbsC                      SPMoveSprAbs
-     0000A522  SPWaitForNoKey                     SPWaitForNoKey
-     0000A52C  SPJoyKeyboard                      SPJoyKeyboard
-     0000A54B  _sp_PrintAtInv                     sp_PrintAtInv
-     0000A565  SPPrintAtInv                       SPPrintAtInv
-     0000A57D  sp_moveabshelp                     sp_moveabshelp
-     0000A5AC  sp_fixcliprect                     sp_fixcliprect
-     0000A5C6  _sp_CreateGenericISR               sp_CreateGenericISR
-     0000A5D7  SPCreateGenericISR                 SPCreateGenericISR
-     0000A61F  _sp_AddMemory                      sp_AddMemory
-     0000A63E  SPInvalidate                       SPInvalidate
-     0000A646  SPInvalidateP                      SPInvalidate
-     0000A691  _sp_JoyKempston                    sp_JoyKempston
-     0000A6A2  SPAddMemory                        SPAddMemory
-     0000A6BE  SPJoyKempston                      SPJoyKempston
-     0000A6E9  ___sdcc_call_hl                    
-     0000A6EA  SPNullSprPtr                       SPNullSprPtr
-     0000A6FA  _sp_GetKey                         sp_GetKey
-     0000A70D  _sp_CreateSpr                      sp_CreateSpr
-     0000A72E  _memset                            
-     0000A743  ___memcpy                          
-     0000A743  _memcpy                            
-     0000A789  SPbitleft2mask                     SPbitleft2mask
-     0000A791  SPCreateSpr                        SPCreateSpr
-     0000A827  SPkeydebounce                      SPGetKey
-     0000A828  SPkeystartrepeat                   SPGetKey
-     0000A829  SPkeyrepeatperiod                  SPGetKey
-     0000A82A  SPInkey                            SPGetKey
-     0000A83B  SPGetKey                           SPGetKey
+     00008EB6  _do_hotspots                       churromain
+     00008F86  _check_and_clear_cerrojo           churromain
+     0000900A  _draw_scr_background               churromain
+     000091CA  _draw_scr                          churromain
+     00009275  _set_player_at                     churromain
+     00009292  _init_player                       churromain
+     000092E4  _kill_player                       churromain
+     000092F1  _check_lock_or_box_horz            churromain
+     00009328  _check_lock_or_box_vert            churromain
+     0000935C  _move                              churromain
+     0000987E  _mons_col_sc_x                     churromain
+     000098B9  _mons_col_sc_y                     churromain
+     000098F3  _platform_get_player               churromain
+     00009922  _mueve_bicharracos                 churromain
+     00009D87  _main                              churromain
+     00009F84  _play_title_music                  music
+     0000A363  _sp_WaitForNoKey                   sp_WaitForNoKey
+     0000A36F  _sp_MoveSprAbs                     sp_MoveSprAbs
+     0000A380  _sp_JoyKeyboard                    sp_JoyKeyboard
+     0000A398  SPMoveSprAbs                       SPMoveSprAbs
+     0000A3A6  SPMoveSprAbsNC                     SPMoveSprAbs
+     0000A3BF  SPMoveSprAbsC                      SPMoveSprAbs
+     0000A523  SPWaitForNoKey                     SPWaitForNoKey
+     0000A52D  SPJoyKeyboard                      SPJoyKeyboard
+     0000A54C  _sp_PrintAtInv                     sp_PrintAtInv
+     0000A566  SPPrintAtInv                       SPPrintAtInv
+     0000A57E  sp_moveabshelp                     sp_moveabshelp
+     0000A5AD  sp_fixcliprect                     sp_fixcliprect
+     0000A5C7  _sp_CreateGenericISR               sp_CreateGenericISR
+     0000A5D8  SPCreateGenericISR                 SPCreateGenericISR
+     0000A620  _sp_AddMemory                      sp_AddMemory
+     0000A63F  SPInvalidate                       SPInvalidate
+     0000A647  SPInvalidateP                      SPInvalidate
+     0000A692  _sp_JoyKempston                    sp_JoyKempston
+     0000A6A3  SPAddMemory                        SPAddMemory
+     0000A6BF  SPJoyKempston                      SPJoyKempston
+     0000A6EA  ___sdcc_call_hl                    
+     0000A6EB  SPNullSprPtr                       SPNullSprPtr
+     0000A6FB  _sp_GetKey                         sp_GetKey
+     0000A70E  _sp_CreateSpr                      sp_CreateSpr
+     0000A72F  _memset                            
+     0000A744  ___memcpy                          
+     0000A744  _memcpy                            
+     0000A78A  SPbitleft2mask                     SPbitleft2mask
+     0000A792  SPCreateSpr                        SPCreateSpr
+     0000A828  SPkeydebounce                      SPGetKey
+     0000A829  SPkeystartrepeat                   SPGetKey
+     0000A82A  SPkeyrepeatperiod                  SPGetKey
+     0000A82B  SPInkey                            SPGetKey
+     0000A83C  SPGetKey                           SPGetKey
+     0000A8B0  _sp_TileArray                      sp_TileArray
 ASxxxx Linker V03.00/V05.40 + sdld,  page 4.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_CODE                               00005E88    0000525C =       21084. bytes (REL,CON)
+_CODE                               00005E88    0000525D =       21085. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     0000A8AF  _sp_TileArray                      sp_TileArray
-     0000A8C5  _sp_Initialize                     sp_Initialize
-     0000A8D9  SPInitialize                       SPInitialize
-     0000A8FD  SProtatetblInitialize              SPInitialize
-     0000A91B  _sp_RegisterHook                   sp_RegisterHook
-     0000A91E  SPCompNullSprPtr                   SPCompNullSprPtr
-     0000A926  _sp_UpdateNow                      sp_UpdateNow
-     0000A932  SPBlockAlloc                       SPBlockAlloc
-     0000A93C  SPalloc                            SPBlockAlloc
-     0000A94D  SPCompDirtyAddr                    SPCompDirtyAddr
-     0000A962  _sp_JoySinclair1                   sp_JoySinclair1
-     0000A97A  SPUpdateNow                        SPUpdateNow
-     0000AE07  SPJoySinclair1                     SPJoySinclair1
-     0000AE33  _sp_AddColSpr                      sp_AddColSpr
-     0000AE56  _sp_InitIM2                        sp_InitIM2
-     0000AE69  SPInitIM2                          SPInitIM2
-     0000AE81  SPAddColSpr                        SPAddColSpr
-     0000AF23  SPtbllookup                        SPtbllookup
-     0000AF2B  _sp_Border                         sp_Border
-     0000AF3C  SPbit2mask                         SPbit2mask
-     0000AF44  SPBorderClr                        SPBorder
-     0000AF45  SPBorder                           SPBorder
-     0000AF4D  SPTileEntry                        SPTileEntry
-     0000AF5E  _sp_RegisterHookLast               sp_RegisterHookLast
-     0000AF75  SPRegisterHook                     SPRegisterHookLast
-     0000AF75  SPRegisterHookLast                 SPRegisterHookLast
-     0000AF92  SPCompDListAddr                    SPCompDListAddr
-     0000AFA3  SPFreeBlock                        SPFreeBlock
-     0000AFA8  SPfb1                              SPFreeBlock
-     0000AFB3  SPfb2                              SPFreeBlock
-     0000AFBE  SPkeytranstbl                      SPkeytranstbl
-     0000B05E  SPIntRect                          SPIntRect
-     0000B08F  SPIntSmallIval                     SPIntRect
-     0000B0B4  SPPtInSmallIval                    SPIntRect
-     0000B0C7  SPbitright2mask                    SPbitright2mask
-     0000B0CF  SPDeleteSpr                        SPDeleteSpr
-     0000B0DB  SPdsloop                           SPDeleteSpr
+     0000A8C6  _sp_Initialize                     sp_Initialize
+     0000A8DA  SPInitialize                       SPInitialize
+     0000A8FE  SProtatetblInitialize              SPInitialize
+     0000A91C  _sp_RegisterHook                   sp_RegisterHook
+     0000A91F  SPCompNullSprPtr                   SPCompNullSprPtr
+     0000A927  _sp_UpdateNow                      sp_UpdateNow
+     0000A933  SPBlockAlloc                       SPBlockAlloc
+     0000A93D  SPalloc                            SPBlockAlloc
+     0000A94E  SPCompDirtyAddr                    SPCompDirtyAddr
+     0000A963  _sp_JoySinclair1                   sp_JoySinclair1
+     0000A97B  SPUpdateNow                        SPUpdateNow
+     0000AE08  SPJoySinclair1                     SPJoySinclair1
+     0000AE34  _sp_AddColSpr                      sp_AddColSpr
+     0000AE57  _sp_InitIM2                        sp_InitIM2
+     0000AE6A  SPInitIM2                          SPInitIM2
+     0000AE82  SPAddColSpr                        SPAddColSpr
+     0000AF24  SPtbllookup                        SPtbllookup
+     0000AF2C  _sp_Border                         sp_Border
+     0000AF3D  SPbit2mask                         SPbit2mask
+     0000AF45  SPBorderClr                        SPBorder
+     0000AF46  SPBorder                           SPBorder
+     0000AF4E  SPTileEntry                        SPTileEntry
+     0000AF5F  _sp_RegisterHookLast               sp_RegisterHookLast
+     0000AF76  SPRegisterHook                     SPRegisterHookLast
+     0000AF76  SPRegisterHookLast                 SPRegisterHookLast
+     0000AF93  SPCompDListAddr                    SPCompDListAddr
+     0000AFA4  SPFreeBlock                        SPFreeBlock
+     0000AFA9  SPfb1                              SPFreeBlock
+     0000AFB4  SPfb2                              SPFreeBlock
+     0000AFBF  SPkeytranstbl                      SPkeytranstbl
+     0000B05F  SPIntRect                          SPIntRect
+     0000B090  SPIntSmallIval                     SPIntRect
+     0000B0B5  SPPtInSmallIval                    SPIntRect
+     0000B0C8  SPbitright2mask                    SPbitright2mask
+     0000B0D0  SPDeleteSpr                        SPDeleteSpr
+     0000B0DC  SPdsloop                           SPDeleteSpr
+
 ASxxxx Linker V03.00/V05.40 + sdld,  page 5.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_DATA                               0000B0E4    00001282 =        4738. bytes (REL,CON)
+_DATA                               0000B0E5    00000418 =        1048. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     0000B0E4  _joyfunc                           churromain
-     0000B0E6  _sp_player                         churromain
-     0000B0E8  _sp_moviles                        churromain
-     0000B0EE  _isr_frames                        churromain
-     0000B0EF  _pad0                              churromain
-     0000B0F0  _pad1                              churromain
-     0000B0F1  _pad_this_frame                    churromain
-     0000B0F2  _player                            churromain
-     0000B112  _ptgmx                             churromain
-     0000B114  _ptgmy                             churromain
-     0000B116  _gpx                               churromain
-     0000B117  _gpy                               churromain
-     0000B118  _enoffs                            churromain
-     0000B119  _enoffsmasi                        churromain
-     0000B11A  _map_pointer                       churromain
-     0000B11C  __en_x                             churromain
-     0000B11D  __en_y                             churromain
-     0000B11E  __en_x1                            churromain
-     0000B11F  __en_x2                            churromain
-     0000B120  __en_y1                            churromain
-     0000B121  __en_y2                            churromain
-     0000B122  __en_t                             churromain
-     0000B123  __en_life                          churromain
-     0000B124  __en_mx                            churromain
-     0000B125  __en_my                            churromain
-     0000B126  _lasttimehit                       churromain
-     0000B127  _hotspot_x                         churromain
-     0000B128  _hotspot_y                         churromain
-     0000B129  _orig_tile                         churromain
-     0000B12A  _pant_final                        churromain
-     0000B12B  _o_pant                            churromain
-     0000B12C  _n_pant                            churromain
-     0000B12D  _level                             churromain
-     0000B12E  _maincounter                       churromain
-     0000B12F  _objs_old                          churromain
-     0000B130  _keys_old                          churromain
-     0000B131  _life_old                          churromain
-     0000B132  _killed_old                        churromain
-     0000B133  _seed                              churromain
-     0000B135  _half_life                         churromain
-     0000B136  _playing                           churromain
-     0000B137  _mlplaying                         churromain
-     0000B138  _success                           churromain
-     0000B139  _rds                               churromain
-     0000B13B  _rda                               churromain
-     0000B13C  _rdc                               churromain
-     0000B13D  _rdd                               churromain
-     0000B13E  _rdt                               churromain
-     0000B13F  _rdx                               churromain
-     0000B140  _rdy                               churromain
+     0000B0E5  _joyfunc                           churromain
+     0000B0E7  _sp_player                         churromain
+     0000B0E9  _sp_moviles                        churromain
+     0000B0EF  _isr_frames                        churromain
+     0000B0F0  _pad0                              churromain
+     0000B0F1  _pad1                              churromain
+     0000B0F2  _pad_this_frame                    churromain
+     0000B0F3  _player                            churromain
+     0000B113  _ptgmx                             churromain
+     0000B115  _ptgmy                             churromain
+     0000B117  _gpx                               churromain
+     0000B118  _gpy                               churromain
+     0000B119  _enoffs                            churromain
+     0000B11A  _enoffsmasi                        churromain
+     0000B11B  _map_pointer                       churromain
+     0000B11D  __en_x                             churromain
+     0000B11E  __en_y                             churromain
+     0000B11F  __en_x1                            churromain
+     0000B120  __en_x2                            churromain
+     0000B121  __en_y1                            churromain
+     0000B122  __en_y2                            churromain
+     0000B123  __en_t                             churromain
+     0000B124  __en_life                          churromain
+     0000B125  __en_mx                            churromain
+     0000B126  __en_my                            churromain
+     0000B127  _lasttimehit                       churromain
+     0000B128  _hotspot_x                         churromain
+     0000B129  _hotspot_y                         churromain
+     0000B12A  _orig_tile                         churromain
+     0000B12B  _pant_final                        churromain
+     0000B12C  _o_pant                            churromain
+     0000B12D  _n_pant                            churromain
+     0000B12E  _level                             churromain
+     0000B12F  _maincounter                       churromain
+     0000B130  _objs_old                          churromain
+     0000B131  _keys_old                          churromain
+     0000B132  _life_old                          churromain
+     0000B133  _killed_old                        churromain
+     0000B134  _seed                              churromain
+     0000B136  _half_life                         churromain
+     0000B137  _playing                           churromain
+     0000B138  _mlplaying                         churromain
+     0000B139  _success                           churromain
+     0000B13A  _rds                               churromain
+     0000B13C  _rda                               churromain
+     0000B13D  _rdc                               churromain
+     0000B13E  _rdd                               churromain
+     0000B13F  _rdt                               churromain
+     0000B140  _rdx                               churromain
+     0000B141  _rdy                               churromain
 ASxxxx Linker V03.00/V05.40 + sdld,  page 6.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-_DATA                               0000B0E4    00001282 =        4738. bytes (REL,CON)
+_DATA                               0000B0E5    00000418 =        1048. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     0000B141  _possee                            churromain
-     0000B142  _hit_v                             churromain
-     0000B143  _hit_h                             churromain
-     0000B144  _hit                               churromain
-     0000B145  _gpen_cx                           churromain
-     0000B146  _gpen_cy                           churromain
-     0000B147  _gpen_xx                           churromain
-     0000B148  _gpen_yy                           churromain
-     0000B149  _gpaux                             churromain
-     0000B14A  _tocado                            churromain
-     0000B14B  _active                            churromain
-     0000B14C  _gpit                              churromain
-     0000B14D  _gpjt                              churromain
-     0000B14E  _cx1                               churromain
-     0000B14F  _cx2                               churromain
-     0000B150  _cy1                               churromain
-     0000B151  _cy2                               churromain
-     0000B152  _at1                               churromain
-     0000B153  _at2                               churromain
-     0000B154  _allpurposepuntero                 churromain
-     0000B156  _malotes                           churromain
-     0000B480  _hotspots                          churromain
-     0000B4DA  _cerrojos                          churromain
-     0000B4EA  _px                                churromain
-     0000B4EB  _py                                churromain
-     0000B4EC  _pxx                               churromain
-     0000B4ED  _pyy                               churromain
-     0000B4EE  _pt                                churromain
-     0000B4EF  _pt_alt                            churromain
-     0000B4F0  _pptr                              churromain
-     0000B4F2  _pptr_alt                          churromain
-     0000B4F4  _en_an_last_x                      churromain
-     0000B4F7  _en_an_last_y                      churromain
-     0000B4FA  __sp_ixsave                        sp_ixsave
-     0000B4FC  SPDisplayList                      SPDisplayList
-     0000C0FC  SPqueuetable                       SPqueuetable
-     0000C106  SPDirtyChars                       SPDirtyChars
-     0000C166  SPTileArray                        SPTileArray
-
+     0000B142  _possee                            churromain
+     0000B143  _hit_v                             churromain
+     0000B144  _hit_h                             churromain
+     0000B145  _hit                               churromain
+     0000B146  _gpen_cx                           churromain
+     0000B147  _gpen_cy                           churromain
+     0000B148  _gpen_xx                           churromain
+     0000B149  _gpen_yy                           churromain
+     0000B14A  _gpaux                             churromain
+     0000B14B  _tocado                            churromain
+     0000B14C  _active                            churromain
+     0000B14D  _gpit                              churromain
+     0000B14E  _gpjt                              churromain
+     0000B14F  _cx1                               churromain
+     0000B150  _cx2                               churromain
+     0000B151  _cy1                               churromain
+     0000B152  _cy2                               churromain
+     0000B153  _at1                               churromain
+     0000B154  _at2                               churromain
+     0000B155  _allpurposepuntero                 churromain
+     0000B157  _malotes                           churromain
+     0000B481  _hotspots                          churromain
+     0000B4DB  _cerrojos                          churromain
+     0000B4EB  _px                                churromain
+     0000B4EC  _py                                churromain
+     0000B4ED  _pxx                               churromain
+     0000B4EE  _pyy                               churromain
+     0000B4EF  _pt                                churromain
+     0000B4F0  _pt_alt                            churromain
+     0000B4F1  _pptr                              churromain
+     0000B4F3  _pptr_alt                          churromain
+     0000B4F5  _en_an_last_x                      churromain
+     0000B4F8  _en_an_last_y                      churromain
+     0000B4FB  __sp_ixsave                        sp_ixsave
 ASxxxx Linker V03.00/V05.40 + sdld,  page 7.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+_BSS                                0000B4FD    00000E6A =        3690. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     0000B4FD  SPDisplayList                      SPDisplayList
+     0000C0FD  SPqueuetable                       SPqueuetable
+     0000C107  SPDirtyChars                       SPDirtyChars
+     0000C167  SPTileArray                        SPTileArray
+
+ASxxxx Linker V03.00/V05.40 + sdld,  page 8.
 
 Files Linked                              [ module(s) ]
 
 crt0.rel                                  [ crt0 ]
 churromain.rel                            [ churromain ]
+music.rel                                 [ music ]
 
 
 Libraries Linked                          [ object file ]
@@ -388,7 +400,7 @@ speccy/splib2.lib                         [ SPDirtyChars.rel ]
 speccy/splib2.lib                         [ SPDeleteSpr.rel ]
 speccy/splib2.lib                         [ SPTileArray.rel ]
 
-ASxxxx Linker V03.00/V05.40 + sdld,  page 8.
+ASxxxx Linker V03.00/V05.40 + sdld,  page 9.
 
 User Base Address Definitions
 

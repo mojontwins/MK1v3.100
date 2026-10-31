@@ -218,16 +218,16 @@
 // El motor usa siempre estas macros: LEVEL_MAP_W en lugar de MAP_W, etc.
 // MAP_W y MAP_H pasan a ser el tamaño máximo (el de los buffers).
 #ifdef COMPRESSED_LEVELS
-	#define LEVEL_MAP_W			(level_data [0].map_w)
-	#define LEVEL_MAP_H			(level_data [0].map_h)
-	#define LEVEL_SCR_INI		(level_data [0].scr_ini)
-	#define LEVEL_INI_X			(level_data [0].ini_x)
-	#define LEVEL_INI_Y			(level_data [0].ini_y)
-	#define LEVEL_MAX_OBJS		(level_data [0].max_objs)
-	#define LEVEL_ENEMS_LIFE	(level_data [0].enems_life)
-	#define LEVEL_SCR_FIN		(level_data [0].scr_fin)
-	#define LEVEL_FIN_X			(level_data [0].fin_x)
-	#define LEVEL_FIN_Y			(level_data [0].fin_y)
+	#define LEVEL_MAP_W			(level_data.header.map_w)
+	#define LEVEL_MAP_H			(level_data.header.map_h)
+	#define LEVEL_SCR_INI		(level_data.header.scr_ini)
+	#define LEVEL_INI_X			(level_data.header.ini_x)
+	#define LEVEL_INI_Y			(level_data.header.ini_y)
+	#define LEVEL_MAX_OBJS		(level_data.header.max_objs)
+	#define LEVEL_ENEMS_LIFE	(level_data.header.enems_life)
+	#define LEVEL_SCR_FIN		(level_data.header.scr_fin)
+	#define LEVEL_FIN_X			(level_data.header.fin_x)
+	#define LEVEL_FIN_Y			(level_data.header.fin_y)
 #else
 	#define LEVEL_SCR_INI		SCR_INICIO
 	#define LEVEL_INI_X			PLAYER_INI_X

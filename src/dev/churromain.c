@@ -62,10 +62,12 @@ void *memset (void *s, int c, unsigned int n) __sdcccall(0) __z88dk_callee;
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #endif
 
-// crt0 coloca la pila en __stack_top.
-void stack_top_symbol (void) __naked {
+// crt0 coloca la pila en __stack_top. comp-zx comprueba con __ad_free que el
+// programa y sus variables acaban antes de los bloques de los sprites.
+void memory_map_symbols (void) __naked {
 	__asm
 		__stack_top == STACK_ADDR
+		__ad_free == AD_FREE
 	__endasm;
 }
 
@@ -129,6 +131,14 @@ void stack_top_symbol (void) __naked {
 	#include "enems.h"
 	#include "mapa.h"
 #endif
+
+// Hasta aquí, lo que se usa con otra página de RAM en 0xC000 (descompresor,
+// paginación, ISR, tileset y sprites, que cargan los niveles). En 128K
+// comp-zx comprueba que low_end queda por debajo de 0xC000.
+void low_end (void) __naked {
+	__asm
+	__endasm;
+}
 
 // Scripts (bytecode) y textos, generado por msc4
 #ifdef ACTIVATE_SCRIPTING
