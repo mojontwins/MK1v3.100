@@ -33,6 +33,7 @@ End Type
 
 Const PLATFORM_ZX = 0
 Const PLATFORM_CPC = 1
+Const PLATFORM_GB = 2
 
 Dim Shared As Integer silent, flipped, upsideDown, debug, cpcMode, greyOrdered, gng
 
@@ -145,7 +146,7 @@ End Sub
 Sub usage
 	Puts "Usage:"
 	Puts ""
-	Puts "$ mkts_om.exe platform=[zx|cpc] [brickInput] [pal=palette.png] [prefix=prefix]"
+	Puts "$ mkts_om.exe platform=[zx|cpc|gb] [brickInput] [pal=palette.png] [prefix=prefix]"
 	Puts "              in=file.png out=output.bin mode=mode [offset=x,y] [size=w,h]"
 	Puts "              [metasize=w,h] [tmapoffs=offset] [max=n] [silent] [defaultink=i]"
 	Puts "              [cpcmode=m] [pixelperfectm0] [pixelperfectm1] [greyordered] [gng]"
@@ -161,6 +162,16 @@ Sub usage
 	Puts "greyordered is used with chars and strait2x2"
 	Puts "mappings is for sprite modes and for mapped mode"
 	Puts "gng is for OR sprites with suited palete, Ghosts'n Goblins style"
+	Puts ""
+	Puts "platform=gb (Game Boy, 2bpp): the 4 shades are detected by brightness"
+	Puts "(white, light grey, dark grey, black = colours 0 to 3); transparent or"
+	Puts "non-grey (e.g. magenta) pixels are colour 0, transparent in sprites."
+	Puts "  chars, strait2x2: patterns as they are."
+	Puts "  sprites: each sprite column top to bottom, for 8x16 sprites (an odd"
+	Puts "           number of rows gets a blank pattern below)."
+	Puts "  scr: a 160x144 fixed screen: up to 192 patterns (3072 bytes, the"
+	Puts "       unused ones blank) and its 32x18 map, with pattern k as tile"
+	Puts "       (192 + k) AND 255. Warns if there are more than 192 patterns."
 End Sub
 
 Sub mbWrite (v As uByte)
@@ -380,6 +391,38 @@ Function cpcMode1GetBitmapFrom (Byval x0 As Integer, Byval y0 As Integer, img As
 	End If
 End Function
 
+' Game Boy: colour (0 = white ... 3 = black) of a pixel by its brightness,
+' with some allowance. Transparent pixels and clearly non-grey ones
+' (magenta...) are colour 0, which is transparent in sprites.
+Function gbShade (Byval c As uInteger) As Integer
+	Dim As Integer r, g, b, l, mx, mn
+	If RGBA_A (c) < 128 Then Return 0
+	r = RGBA_R (c): g = RGBA_G (c): b = RGBA_B (c)
+	mx = r: If g > mx Then mx = g
+	If b > mx Then mx = b
+	mn = r: If g < mn Then mn = g
+	If b < mn Then mn = b
+	If mx - mn > 96 Then Return 0
+	l = (r * 299 + g * 587 + b * 114) \ 1000
+	Return 3 - ((l + 42) \ 85)
+End Function
+
+' Game Boy: the 16 bytes of the pattern at (x0, y0): for each row, the low
+' bit plane and then the high one.
+Sub gbGetPatternFrom (x0 As Integer, y0 As Integer, img As Any Ptr, pattern () As uByte)
+	Dim As Integer x, y, c
+	For y = 0 To 7
+		pattern (y + y) = 0: pattern (y + y + 1) = 0
+		For x = 0 To 7
+			c = gbShade (Point (x0 + x, y0 + y, img))
+			If c > 3 Then c = 3
+			If c < 0 Then c = 0
+			If c And 1 Then pattern (y + y) = pattern (y + y) Or (128 Shr x)
+			If c And 2 Then pattern (y + y + 1) = pattern (y + y + 1) Or (128 Shr x)
+		Next x
+	Next y
+End Sub
+
 Function cpcGetBitmapFrom (Byval x0 As Integer, Byval y0 As Integer, img As Any Ptr) As uByte
 	If cpcMode = 0 Then 
 		cpcGetBitmapFrom = cpcMode0GetBitmapFrom (x0, y0, img)
@@ -405,6 +448,9 @@ Sub extractPatternFrom (x0 As Integer, y0 As Integer, img As Any Ptr, pattern ()
 				pattern (y + y) = cpcGetBitmapFrom (x0, y + y0, img)
 				pattern (y + y + 1) = cpcGetBitmapFrom (x0 + 2 * brickMultiplier, y + y0, img)
 			Next y
+
+		Case PLATFORM_GB:
+			gbGetPatternFrom x0, y0, img, pattern ()
 	End Select		
 End Sub
 
@@ -631,8 +677,77 @@ Sub cpcDoScr (img As Any Ptr)
 	Puts textpal 
 End Sub
 
+' Game Boy fixed screen (160x144): its patterns, without repeats, and the
+' 20x18 map, written as rows of 32 so that, unpacked at 0x8C00, the 192
+' patterns fill 0x8C00-0x97FF (tiles 192-255 and 0-127 in 0x8800 mode,
+' after the font in 128-191) and the map lands on the nametable at 0x9800.
+Sub gbDoScr (img As Any Ptr)
+	Dim As Integer x, y, i, n, wasNew, k
+	Dim As uByte attr
+	Dim As uByte pattern (15)
+	Dim As uByte map (32 * 18 - 1)
+	Dim As uByte pats (255, 15)
+
+	cPoolIndex = 0: n = 0
+	For y = 0 To 17
+		For x = 0 To 19
+			extractPatternFrom x * 8, y * 8, img, pattern (), attr
+			k = findPatternInPoolAndAdd (patternToString (pattern ()), wasNew)
+			If wasNew Then
+				If k < 192 Then
+					For i = 0 To 15: pats (k, i) = pattern (i): Next i
+				End If
+				n = n + 1
+			End If
+			If k >= 192 Then k = 0
+			map (y * 32 + x) = (192 + k) And 255
+		Next x
+	Next y
+
+	For k = 0 To 191
+		For i = 0 To 15: mbWrite pats (k, i): Next i
+	Next k
+	For i = 0 To 32 * 18 - 1: mbWrite map (i): Next i
+
+	If n > 192 Then
+		Puts "mkts_om v0.11.20250501 ~ WARNING: " & n & " patterns, more than 192! The extra ones are drawn as the first one."
+	End If
+	Puts "mkts_om v0.11.20250501 ~ GB fixed screen, " & n & " patterns (3648 bytes)."
+End Sub
+
+' Game Boy sprites (8x16 mode): each column of each sprite, top to bottom.
+' With an odd number of rows, a blank pattern completes the 8x16 sprite.
+Sub gbDoSprites (img As Any Ptr, xc0 As Integer, yc0 As Integer, w As Integer, h As Integer, wMeta As Integer, hMeta As Integer, max As Integer)
+	Dim As Integer x, y, xx, yy, i, ct, curIndex
+	Dim As uByte attr
+	Dim As uByte pattern (15)
+
+	curIndex = mainIndex
+	ct = 0
+	For y = yc0 * 8 To yc0 * 8 + h * hMeta * 8 - 1 Step hMeta * 8
+		For x = xc0 * 8 To xc0 * 8 + w * wMeta * 8 - 1 Step wMeta * 8
+			For xx = 0 To wMeta - 1
+				For yy = 0 To hMeta - 1
+					extractPatternFrom x + xx * 8, y + yy * 8, img, pattern (), attr
+					copyPartialArrayToMainBin pattern (), 16
+				Next yy
+				If hMeta And 1 Then
+					For i = 0 To 15: mbWrite 0: Next i
+				End If
+			Next xx
+			ct = ct + 1
+			If max > 0 And ct = max Then Goto gbDoSpritesBreak
+		Next x
+	Next y
+gbDoSpritesBreak:
+	cutSpriteCount = ct
+	Puts "mkts_om v0.11.20250501 ~ GB sprites mode, " & ct & " " & (wMeta * 8) & "x" & (hMeta * 8) & " sprites (" & (mainIndex - curIndex) & " bytes)."
+End Sub
+
 Sub doScr (img As Any Ptr)
 	Select Case platform
+		Case PLATFORM_GB
+			gbDoScr img
 		Case PLATFORM_CPC
 			cpcDoScr img
 		Case PLATFORM_ZX
@@ -812,6 +927,8 @@ Sub doSprites (img As Any Ptr, xc0 As Integer, yc0 As Integer, w As Integer, h A
 			zxDoSprites img, xc0, yc0, w, h, wMeta, hMeta, max
 		Case PLATFORM_CPC
 			cpcDoSprites img, xc0, yc0, w, h, wMeta, hMeta, max
+		Case PLATFORM_GB
+			gbDoSprites img, xc0, yc0, w, h, wMeta, hMeta, max
 	End Select
 End Sub
 
@@ -1643,6 +1760,10 @@ If sclpGetValue ("platform") = "cpc" Then
 		
 		extractGlobalPalette img
 	End If
+ElseIf sclpGetValue ("platform") = "gb" Then
+	platform = PLATFORM_GB
+	patternSize = 16
+	patternWidthInPixels = 8
 Else
 	platform = PLATFORM_ZX
 	patternSize = 8

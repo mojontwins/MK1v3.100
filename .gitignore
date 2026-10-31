@@ -5,3 +5,5 @@ tests/out/
 tests/cpcrun/cpcrun
 tests/zxrun/zxrun.exe
 tests/cpcrun/cpcrun.exe
+tests/gbrun/gbrun
+tests/gbrun/gbrun.exe

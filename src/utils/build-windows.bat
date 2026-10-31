@@ -12,6 +12,7 @@ fbc buildlevel.bas cmdlineparser.bas
 fbc librarian.bas cmdlineparser.bas
 fbc beepola2s.bas
 fbc ihx2bin.bas
+fbc gbcheck.bas
 fbc ene2h.bas mtparser.bas cmdlineparser.bas
 fbc imanol.bas cmdlineparser.bas
 fbc mapcnv.bas

@@ -25,6 +25,7 @@ no coincide con `src/dev`, **manda el código**.
 | [11](#capítulo-11---amstrad-cpc) | Amstrad CPC. |
 | [12](#capítulo-12---tu-güego-aparte-del-motor-y-el-ejemplo-de-goku-mal) | Tu güego aparte del motor: `game.bat`, `convert.bat` y el ejemplo de Goku Mal. |
 | [13](#capítulo-13---las-herramientas) | Referencia de las herramientas. |
+| [14](#capítulo-14---game-boy-en-desarrollo) | Game Boy (en desarrollo). |
 | [A](#apéndice-a---trabajar-en-linux) | Trabajar en Linux. |
 | [B](#apéndice-b---mapa-de-memoria) | Mapa de memoria. |
 
@@ -1619,8 +1620,11 @@ Están todas en `src\utils`. Normalmente no hay que llamarlas a mano: lo hacen
 | `zx0 entrada salida` | Compresor (el descompresor está en `dev/zx0.h`). |
 | `buildlevel map= ene= behs= out= maxpant= scr_ini= ini_x= ini_y= [max_objs=] [life=] [scr_fin= fin_x= fin_y=] [mapw= maph=] [unpacked] [lock=15] [2bytes] [fixmappy] [noswap]` | Bundle de un nivel. `maxpant` es `MAP_W * MAP_H`; el tamaño del mapa sale del `.ene` (o de `mapw`/`maph`); `lock=99` si no hay cerrojos. |
 | `librarian list=lista.txt out=librarian.h [dir=salida] [pages=3,4,6,7]` | Reparte recursos en páginas de RAM de 128K. |
+| `librarian platform=gb list=lista.txt out=librarian.h [firstbank=3]` | Reparte recursos en bancos de ROM de Game Boy (un `res_bankN.s` por banco). |
+| `gbcheck juego.map [stack=512]` | Game Boy: comprueba que el banco 0, cada banco de ROM y la RAM (con la pila) caben. |
 | `msc4 in=a.spt[,b.spt] v=3_100 output=c [rooms=N]` | Compila los scripts (ver `msc4.md`). |
 | `mkts_om platform=cpc ...` | Conversor de gráficos de CPC. |
+| `mkts_om platform=gb mode=chars\|strait2x2\|sprites\|scr ...` | Conversor de gráficos de Game Boy (capítulo 14). |
 | `wyzTrackerParser instrumentos.asm instrumentos.s` | Los instrumentos de WYZ Tracker 2.0 a un módulo de ensamblador (CPC). |
 | `beepola2s beepola.asm music.s` | La exportación de Beepola a un módulo de ensamblador (la música del título de 48K). |
 | `ihx2bin juego.ihx juego.bin dirección [juego.map [128k]]` | Saca el binario del enlazador y comprueba el mapa de memoria. |
@@ -1629,6 +1633,76 @@ Están todas en `src\utils`. Normalmente no hay que llamarlas a mano: lo hacen
 | `cpctbin2sna`, `cpc2cdt`, `zx7`, `imanol` | Instantáneas, cintas y cargadores de CPC. |
 | `ponedor` | El editor de enemigos (capítulo 5). |
 | `rle44map_sp`, `rle53map_sp`, `rle62map_sp` | Conversores de mapas a formatos RLE (no los usa el motor). |
+
+---
+
+# Capítulo 14 - Game Boy (en desarrollo)
+
+El port de Game Boy está a medio hacer: esto es lo que hay de momento y se
+irá completando. El objetivo es que el mismo juego (con sus gráficos de Game
+Boy) funcione igual que en ZX y CPC, en un cartucho MBC1 de DMG. Los juegos
+de Game Boy son siempre de niveles (`COMPRESSED_LEVELS`).
+
+## Compilar
+
+```bat
+cd src\dev
+comp-gb.bat
+```
+
+Deja `bootee.gb`. De momento solo arranca, enseña el título y, con START, el
+final, con fundidos. (En Linux: `./comp-gb.sh`.)
+
+## La memoria
+
+* **Banco 0** (0x0000-0x3FFF, siempre visible): el arranque y las librerías
+  de GBDK, `gb/home.c` (paletas, fundidos, recursos, pantallas fijas) y
+  `gb/zx0.s` (el descompresor, en ensamblador del SM83).
+* **Banco 1** (0x4000-0x7FFF mientras se juega): el motor.
+* **Bancos 3 en adelante**: los recursos (`librarian platform=gb`), cada uno
+  comprimido con zx0. `get_resource (res, destino)` pone su banco, lo
+  descomprime en la RAM o, con la pantalla apagada, en la VRAM, y deja el
+  banco que había.
+* **RAM**: 8K (0xC000-0xDFFF) para todo, con la pila arriba. `gbcheck`
+  comprueba al compilar que nada se desborda.
+
+La VRAM:
+
+| Zona | Qué hay |
+|---|---|
+| 0x8000-0x87FF | Sprites: 128 patrones (en modo 8x16, 32 sprites de 16x16). |
+| 0x8800-0x8BFF | La fuente: tiles 128-191 del fondo. |
+| 0x8C00-0x97FF | 192 patrones: el tileset del nivel o una pantalla fija (tiles 192-255 y 0-127). |
+| 0x9800 | El fondo (32x32: la pantalla de 30x20 cabe entera). |
+| 0x9C00 | La ventana: el marcador, los mensajes y los textos. |
+
+## Los gráficos
+
+Van en `gfx/gb` y los convierte `mkts_om platform=gb`. Los cuatro tonos se
+detectan por el brillo (blanco, gris claro, gris oscuro y negro son los
+colores 0 a 3); un píxel transparente o de un color que no sea gris (magenta,
+por ejemplo) es el color 0, que en los sprites es transparente.
+
+| Modo | Para qué |
+|---|---|
+| `chars` | La fuente: 64 patrones. |
+| `strait2x2` | El tileset: 48 tiles de 2x2 patrones, 192 en total. |
+| `sprites` (`metasize=2,2`) | Sprites de 16x16 para el modo 8x16: cada columna de arriba abajo. Con un número impar de filas (`metasize=1,1`, la bala) se añade un patrón vacío debajo. |
+| `scr` | Una pantalla fija de 160x144: sus patrones sin repetir (como mucho 192; si hay más, avisa) y su mapa de 20x18, escritos de forma que, descomprimidos en 0x8C00, los patrones llenan 0x8C00-0x97FF y el mapa cae en el fondo, en 0x9800. |
+
+## Paletas y fundidos
+
+Las paletas (`GB_PAL_BG`, `GB_PAL_OBJ0`, `GB_PAL_OBJ1` en `config.h`, por
+defecto `0xE4`) dicen qué tono tiene cada color: así se eligen los tres
+tonos visibles de los sprites. `gb_fade_out (0)` / `gb_fade_in (0)` funden
+a negro y desde negro; con 1, a blanco y desde blanco. `GB_FADE_FRAMES` es
+la duración de cada paso.
+
+## Pruebas
+
+`tests/gbrun` es un Game Boy sin pantalla (con Peanut-GB) para las pruebas,
+como `zxrun`: `gbrun juego.gb -f frames -k "60:sta+,62:sta-" -s 100 -o
+captura`.
 
 ---
 

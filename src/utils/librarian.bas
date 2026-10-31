@@ -9,16 +9,24 @@
 '  * Páginas configurables (por defecto 3, 4, 6, 7). La 1 es del WYZ player.
 '  * En la lista se ignoran las líneas vacías y los comentarios (#).
 '
+' Con platform=gb (Game Boy, MBC1) reparte los recursos en bancos de ROM de
+' 16K desde firstbank (por defecto 3): escribe un res_bankN.s por banco (con
+' .incbin de los ficheros, para el enlazador) y librarian.h con la tabla de
+' recursos (banco y dirección, entre 0x4000 y 0x7FFF). get_resource la pone
+' el motor (gb/home.c).
+'
 ' Uso: librarian list=lista.txt out=librarian.h [dir=salida] [pages=3,4,6,7]
+'      librarian platform=gb list=lista.txt out=librarian.h [firstbank=3]
 
 #include "cmdlineparser.bi"
 
 Dim As Integer f1, f2, fl, i, n, mempointer, currentMem, ramPage, resId, nPages
-Dim As Integer ramPages (7)
+Dim As Integer ramPages (127)
 Dim myBin (16383) As uByte
 Dim currentBin (16383) As uByte
 Dim As String linea, outDir, resName, pagesStr, baseName
-Dim As String names (255)
+Dim As String names (255), files (255)
+Dim As Integer gbMode, firstBank, gbBank, fb
 Dim As Integer resPage (255), resOffset (255)
 
 Sub fail (msg As String)
@@ -42,6 +50,8 @@ If Not sclpGIsDef ("list") Or Not sclpGIsDef ("out") Then
 	End 1
 End If
 
+gbMode = (sclpGetValue ("platform") = "gb")
+firstBank = 3: If sclpGetValue ("firstbank") <> "" Then firstBank = Val (sclpGetValue ("firstbank"))
 outDir = sclpGetValue ("dir"): If outDir = "" Then outDir = "."
 pagesStr = sclpGetValue ("pages"): If pagesStr = "" Then pagesStr = "3,4,6,7"
 nPages = 0
@@ -58,6 +68,12 @@ f1 = FreeFile
 If Open (sclpGetValue ("list") For Input As f1) Then fail "no puedo abrir " & sclpGetValue ("list")
 
 ramPage = 0: mempointer = 0: resId = 0
+If gbMode Then
+	' Bancos de ROM: tantos como hagan falta
+	nPages = 0
+	For i = 0 To 7: ramPages (i) = firstBank + i: Next i
+	nPages = 8
+End If
 
 While Not Eof (f1)
 	Line Input #f1, linea
@@ -73,8 +89,9 @@ While Not Eof (f1)
 
 	' ¿Cabe en la página actual?
 	If currentMem + mempointer > 16384 Then
-		writePage outDir, ramPages (ramPage), myBin (), mempointer
+		If Not gbMode Then writePage outDir, ramPages (ramPage), myBin (), mempointer
 		ramPage = ramPage + 1
+		If gbMode And ramPage >= nPages Then ramPages (ramPage) = firstBank + ramPage: nPages = ramPage + 1
 		mempointer = 0
 		If ramPage >= nPages Then fail "no quedan páginas de RAM para " & linea
 	End If
@@ -95,6 +112,7 @@ While Not Eof (f1)
 	Next i
 
 	names (resId) = resName
+	files (resId) = linea
 	resPage (resId) = ramPages (ramPage)
 	resOffset (resId) = 49152 + mempointer
 	Print "  " & resName & " (" & linea & "): RAM" & ramPages (ramPage) & " + " & mempointer & ", " & currentMem & " bytes"
@@ -104,7 +122,23 @@ While Not Eof (f1)
 Wend
 Close f1
 
-If mempointer > 0 Then writePage outDir, ramPages (ramPage), myBin (), mempointer
+If mempointer > 0 And Not gbMode Then writePage outDir, ramPages (ramPage), myBin (), mempointer
+
+If gbMode Then
+	' Un res_bankN.s por banco: los ficheros, uno detrás de otro
+	For gbBank = 0 To ramPage
+		fb = FreeFile
+		Open outDir & "/res_bank" & ramPages (gbBank) & ".s" For Output As fb
+		Print #fb, "; Recursos del banco " & ramPages (gbBank) & " (generado por librarian)"
+		Print #fb, !"\t.module res_bank" & ramPages (gbBank)
+		Print #fb, !"\t.area _CODE_" & ramPages (gbBank)
+		For i = 0 To resId - 1
+			If resPage (i) = ramPages (gbBank) Then Print #fb, !"\t.incbin \"" & files (i) & !"\"\t; " & names (i)
+		Next i
+		Close fb
+	Next gbBank
+	Print "  bancos " & firstBank & " a " & ramPages (ramPage)
+End If
 
 fl = FreeFile
 Open sclpGetValue ("out") For Output As fl
@@ -121,14 +155,25 @@ Print #fl, "	unsigned char ramPage;"
 Print #fl, "	unsigned int ramOffset;"
 Print #fl, "} RESOURCE;"
 Print #fl, ""
+If gbMode Then Print #fl, "// La tabla solo la incluye el banco 0 (gb/home.c define LIBRARIAN_TABLE)"
+If gbMode Then Print #fl, "#ifdef LIBRARIAN_TABLE"
 Print #fl, "const RESOURCE resources [] = {"
 For i = 0 To resId - 1
-	Print #fl, "	{" & resPage (i) & ", " & resOffset (i) & "}" & IIf (i < resId - 1, ",", " ") & "	// " & names (i)
+	If gbMode Then
+		Print #fl, "	{" & resPage (i) & ", 0x" & Hex (resOffset (i) - 49152 + 16384, 4) & "}" & IIf (i < resId - 1, ",", " ") & "	// " & names (i)
+	Else
+		Print #fl, "	{" & resPage (i) & ", " & resOffset (i) & "}" & IIf (i < resId - 1, ",", " ") & "	// " & names (i)
+	End If
 Next i
 Print #fl, "};"
-Print #fl, ""
-Print #fl, "void get_resource (unsigned char res, unsigned int dest) {"
-Print #fl, "	unpack_RAMn (resources [res].ramPage, (unsigned char *) resources [res].ramOffset, (unsigned char *) dest);"
-Print #fl, "}"
+If gbMode Then
+	Print #fl, "#endif"
+	Print #fl, "#define RES_LAST_BANK			" & ramPages (ramPage)
+Else
+	Print #fl, ""
+	Print #fl, "void get_resource (unsigned char res, unsigned int dest) {"
+	Print #fl, "	unpack_RAMn (resources [res].ramPage, (unsigned char *) resources [res].ramOffset, (unsigned char *) dest);"
+	Print #fl, "}"
+End If
 Close fl
 Print resId & " recursos en " & (ramPage + 1) & " página(s)"
