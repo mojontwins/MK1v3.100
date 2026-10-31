@@ -153,7 +153,7 @@ else
 		pages="$pages:LOAD \"\"CODE:POKE VAL \"25000\",VAL \"$p\":RANDOMIZE USR VAL \"25002\""
 		tapes="$tapes ram$p.tap"
 	done
-	echo "10 BORDER NOT PI:PAPER NOT PI:INK VAL \"6\":CLS:CLEAR VAL \"24199\":LOAD \"\"SCREEN\$:LOAD \"\"CODE$pages:LOAD \"\"CODE:RANDOMIZE USR VAL \"24200\"" > loader128.bas
+	echo "10 BORDER NOT PI:PAPER NOT PI:INK VAL \"6\":CLS:CLEAR VAL \"24199\":LOAD \"\"SCREEN\$:POKE VAL \"23739\",CODE \"o\":LOAD \"\"CODE$pages:LOAD \"\"CODE:RANDOMIZE USR VAL \"24200\"" > loader128.bas
 	$U/bas2tap -a10 -s$(echo $game | tr a-z A-Z) loader128.bas loader.tap > /dev/null
 	cat loader.tap $tapes main.tap > $game.tap
 fi
