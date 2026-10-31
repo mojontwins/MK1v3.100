@@ -8,7 +8,7 @@
 // I. General configuration
 // ============================================================================
 
-#define MODE_128K
+#define MODE_128K						// ZX Spectrum 128K
 
 // In this section we define map dimmensions, initial and authomatic ending conditions, etc.
 

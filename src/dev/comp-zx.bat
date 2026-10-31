@@ -222,13 +222,15 @@ rem Subrutinas
 
 rem :hasdef NOMBRE  -> errorlevel 0 si config.h tiene "#define NOMBRE" activo
 :hasdef
-findstr /R /C:"^[^/]*#define[^A-Za-z0-9_]*%1\>" config.h > nul
-exit /b %errorlevel%
+rem (por palabras y no con "\>": findstr no ve el final de palabra al final
+rem de una linea con fin de linea LF, como "#define MODE_128K" sin comentario)
+for /f "tokens=1,2" %%a in ('findstr /R /C:"^[ 	]*#define" config.h') do if "%%a"=="#define" if "%%b"=="%1" exit /b 0
+exit /b 1
 
 rem :getdef NOMBRE VAR  -> VAR = valor de "#define NOMBRE valor" en config.h
 :getdef
 set "%2=0"
-for /f "tokens=3" %%v in ('findstr /R /C:"^#define[^A-Za-z0-9_]*%1\>" config.h') do set "%2=%%v"
+for /f "tokens=1,2,3" %%a in ('findstr /R /C:"^[ 	]*#define" config.h') do if "%%a"=="#define" if "%%b"=="%1" set "%2=%%c"
 exit /b 0
 
 rem :scriptlist  -> scripts = script.spt o las lineas de scripts.txt separadas
