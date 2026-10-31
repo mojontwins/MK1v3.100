@@ -912,7 +912,7 @@ script. Se compilan todos juntos (la lista va en `dev/scripts.txt`) y cada
 el recurso del script en el último campo:
 
 ```c
-LEVEL levels [MAX_LEVELS] = {
+const LEVEL levels [MAX_LEVELS] = {
 	// bundle      tileset        spriteset      música  script
 	{ RES_LEVEL1C, RES_TILESET1C, RES_SPRITES1C, 2,      RES_SCRIPT1C },
 	{ RES_LEVEL2C, NO_RESOURCE,   NO_RESOURCE,   3,      NO_RESOURCE },

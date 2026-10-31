@@ -26,6 +26,7 @@ if not errorlevel 1 if exist bootee.bin set ok=1
 copy /y config.h "%out%.config.h" > nul
 if %ok%==1 (
 	copy /y bootee.bin "%out%" > nul
+	if exist bootee.map copy /y bootee.map "%~dpn2.map" > nul
 	rem CPC: el .sna, para tests\cpcrun
 	if exist bootee.sna copy /y bootee.sna "%~dpn2.sna" > nul
 	rem 128K: paginas de RAM

@@ -46,6 +46,7 @@ if [ -n "$extra" ]; then printf '%s' "$extra" | cat - "$cfg" > "$cfg.new"; mv "$
 cd "$T/src/dev"
 if ./comp-$target.sh noclean > "$out.log" 2>&1 && [ -f bootee.bin ]; then
 	cp bootee.bin "$out"
+	cp bootee.map "${out%.bin}.map"		# Para buscar direcciones (bench.sh)
 	[ -f bootee.sna ] && cp bootee.sna "${out%.bin}.sna"	# CPC: para tests/cpcrun
 	for r in RAM?.bin; do [ -f "$r" ] && cp "$r" "${out%.bin}.$r"; done	# 128K: páginas de RAM
 	cp config.h "$out.config.h"

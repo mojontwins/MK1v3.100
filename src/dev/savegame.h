@@ -16,8 +16,8 @@
 // [SG_NFLAGS + 4]       tiempo
 unsigned char sg_pool [SG_NFLAGS + 5];
 unsigned char sgit;
-unsigned char sg_saved = 0;
-unsigned char sg_do_load = 0;
+unsigned char sg_saved;			// crt0 las pone a 0
+unsigned char sg_do_load;
 unsigned char sg_level;
 
 void clear_gamearea_tiles (void);

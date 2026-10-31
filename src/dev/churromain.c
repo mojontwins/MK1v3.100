@@ -9,6 +9,13 @@
 void *memcpy (void *dest, const void *src, unsigned int n);
 void *memset (void *s, int c, unsigned int n) __sdcccall(0) __z88dk_callee;
 
+// Funciones del motor que se usan antes de definirlas
+unsigned char rand (void);
+
+// Según la configuración, algunas funciones no usan todos sus argumentos o
+// variables locales: el aviso 85 de SDCC no dice nada útil aquí.
+#pragma disable_warning 85
+
 #include "config.h"
 
 #ifdef CPC

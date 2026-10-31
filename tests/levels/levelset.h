@@ -8,7 +8,7 @@
 	#define TEST_SCRIPT2 NO_RESOURCE
 #endif
 
-LEVEL levels [MAX_LEVELS] = {
+const LEVEL levels [MAX_LEVELS] = {
 	// bundle      tileset      spriteset    música  script
 	{ RES_LEVEL1C, NO_RESOURCE, NO_RESOURCE, 1,      TEST_SCRIPT1 },
 	{ RES_LEVEL2C, RES_TS2C,    NO_RESOURCE, 1,      TEST_SCRIPT2 },

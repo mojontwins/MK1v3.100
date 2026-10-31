@@ -46,8 +46,8 @@
 // Estado del intérprete
 // ---------------------------------------------------------------------------
 
-unsigned char *msc_script;		// Script activo (empieza por el índice)
-unsigned char *msc_ptr;			// Siguiente byte a leer
+const unsigned char *msc_script;		// Script activo (empieza por el índice)
+const unsigned char *msc_ptr;			// Siguiente byte a leer
 unsigned char msc_stop;			// Para cortar la ejecución (ver MSC_STOP_*)
 
 #define MSC_STOP_NO		0
@@ -87,9 +87,9 @@ unsigned int msc_read_word (void) {
 
 #ifdef MSC_TEXTS
 	// msc_text_buf está en definitions.h (lo pueden usar los ganchos de custom.h)
-	unsigned char *msc_tptr;
+	const unsigned char *msc_tptr;
 	unsigned char msc_tbyte, msc_tbits;
-	unsigned char msc_punct [] = ",.?! ";
+	const unsigned char msc_punct [] = ",.?! ";
 
 	// Lee los siguientes 5 bits (del más alto al más bajo).
 	unsigned char msc_5bits (void) {
@@ -595,7 +595,7 @@ void msc_actions (void) {
 			#ifdef MSC_AU_F4
 				case 0xF4:								// CALL SUB
 					{
-						unsigned char *ret;
+						const unsigned char *ret;
 						unsigned int offset;
 						offset = msc_read_word ();
 						ret = msc_ptr;
@@ -618,7 +618,7 @@ void msc_actions (void) {
 
 // Ejecuta las cláusulas desde msc_ptr hasta el final de la sección.
 void msc_clausules (void) {
-	unsigned char *next;
+	const unsigned char *next;
 	while (*msc_ptr != 0xFF) {
 		next = msc_ptr + *msc_ptr;
 		msc_ptr ++;

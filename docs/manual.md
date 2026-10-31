@@ -1251,7 +1251,7 @@ de `buildlevel` están en el capítulo 13.
 ### La tabla de niveles: `levelset.h`
 
 ```c
-LEVEL levels [MAX_LEVELS] = {
+const LEVEL levels [MAX_LEVELS] = {
 	// bundle      tileset   spriteset  música  script
 	{ RES_LEVEL1C, RES_TS1C, RES_SPR1C, 3,      NO_RESOURCE },
 	{ RES_LEVEL2C, RES_TS2C, RES_SPR2C, 4,      NO_RESOURCE },

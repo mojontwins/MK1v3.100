@@ -1394,7 +1394,7 @@ End Function
 Sub writeCArray (fOut As Integer, arrName As String, bytes () As uByte, size As Integer)
 	Dim As Integer i
 	Dim As String l
-	Print #fOut, "unsigned char " & arrName & " [] = {"
+	Print #fOut, "const unsigned char " & arrName & " [] = {"
 	l = ""
 	For i = 0 To size - 1
 		l = l & Trim (Str (bytes (i)))
@@ -1844,7 +1844,7 @@ If outC Then
 
 	' Índice de scripts: msc_scripts [SCRIPT_X] apunta al bytecode de X.
 	Print #fScripts, "#ifndef MSC_SCRIPTS_AS_RESOURCES"
-	Print #fScripts, "unsigned char *msc_scripts [] = {"
+	Print #fScripts, "const unsigned char * const msc_scripts [] = {"
 	For j = 0 To nScripts - 1
 		Print #fScripts, "	script_" & LCase (cName (fileIns (j))) & IIf (j < nScripts - 1, ",", "")
 	Next j

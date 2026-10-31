@@ -244,10 +244,7 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 	#endif
 	#ifdef MSC_RV_E6
 		// DIALOG: una cadena por opción (msc_options [0..2])
-		unsigned char msc_option1 [MSC_TEXT_MAX_LEN + 1];
-		unsigned char msc_option2 [MSC_TEXT_MAX_LEN + 1];
-		unsigned char msc_option3 [MSC_TEXT_MAX_LEN + 1];
-		unsigned char *msc_options [] = { msc_option1, msc_option2, msc_option3 };
+		unsigned char msc_options [3][MSC_TEXT_MAX_LEN + 1];
 		unsigned char msc_n_options;
 	#endif
 
