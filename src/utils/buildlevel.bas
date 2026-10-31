@@ -20,7 +20,8 @@
 ' Cabecera:
 '   0 map_w   1 map_h   2 scr_ini   3 ini_x   4 ini_y   5 max_objs
 '   6 enems_life   7 scr_fin   8 fin_x   9 fin_y   10 n_cerrojos
-'   11 flags (bit 0: mapa unpacked)   12 versión del formato (1)   13-15 0
+'   11 flags (bit 0: mapa unpacked)   12 versión del formato (1)
+'   13 engine (0 salto, 1 nado)   14 facing (0 derecha, 1 izquierda)   15 0
 
 #include "cmdlineparser.bi"
 
@@ -34,7 +35,7 @@ Sub usage
 	Print "$ buildlevel map=mapa.map ene=enems.ene behs=behs.txt out=level.bin maxpant=N"
 	Print "             scr_ini=N ini_x=X ini_y=Y [max_objs=N] [life=N]"
 	Print "             [scr_fin=N fin_x=X fin_y=Y] [mapw=W maph=H] [unpacked]"
-	Print "             [lock=15] [2bytes] [fixmappy] [noswap]"
+	Print "             [engine=0|1] [facing=0|1] [lock=15] [2bytes] [fixmappy] [noswap]"
 	Print
 	Print "  map       mapa de Mappy en bruto (.map, un byte por tile)"
 	Print "  ene       enemigos y hotspots del colocador (.ene)"
@@ -47,6 +48,8 @@ Sub usage
 	Print "  fixmappy  resta 1 a cada tile leído (mapas de Mappy con offset)"
 	Print "  noswap    no ordena x1 < x2, y1 < y2 en los enemigos"
 	Print "  scr_fin, fin_x, fin_y: pantalla y tile de final (99 = desactivado)"
+	Print "  engine    motor del jugador en el nivel: 0 salto, 1 nado (SWITCHABLE_ENGINES)"
+	Print "  facing    hacia dónde mira al empezar: 0 derecha, 1 izquierda"
 End Sub
 
 Sub fail (msg As String)
@@ -211,6 +214,8 @@ header (9) = numArg ("fin_y", 99)
 header (10) = nBolts
 header (11) = IIf (unpacked, 1, 0)
 header (12) = FORMAT_VERSION
+header (13) = numArg ("engine", 0)
+header (14) = numArg ("facing", 0)
 
 fOut = FreeFile
 Kill sclpGetValue ("out")

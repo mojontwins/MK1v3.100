@@ -93,3 +93,27 @@ void wyz_stop_sound (void) __naked {
 		ret
 	__endasm;
 }
+
+// Sample (extra.asm del juego con PLAY_SAMPLE): se toca con las
+// interrupciones deshabilitadas. El número de sample llega en A.
+#ifdef WYZ_PLAY_SAMPLE
+	void wyz_play_sample (unsigned char sample_number) __naked {
+		(void) sample_number;
+		__asm
+			di
+			push af
+			ld b, #1
+			call SetRAMBank
+			pop af
+			push ix
+			push iy
+			call WYZ_PLAY_SAMPLE
+			pop iy
+			pop ix
+			ld b, #0
+			call SetRAMBank
+			ei
+			ret
+		__endasm;
+	}
+#endif

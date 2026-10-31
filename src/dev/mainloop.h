@@ -4,7 +4,70 @@
 // mainloop.h
 // Churrera copyleft 2011 by The Mojon Twins.
 
-// Special keys
+// Música del nivel (level_music: la de la tabla de niveles o la que ponga
+// MUSIC n en el script)
+void play_level_music (void) {
+	#ifdef HAS_AY_MUSIC
+		wyz_play_music (level_music);
+	#endif
+}
+
+// Entra en la pantalla n_pant: la pinta y ejecuta sus scripts de entrada y
+// el gancho HOOK_ENTERING_SCREEN.
+void enter_screen (void) {
+	#ifdef ACTIVATE_SCRIPTING
+		// Durante draw_scr, o_pant es la pantalla de la que venimos
+		// (OPANT en los scripts). Si un script de ENTERING cambia
+		// n_pant (WARP TO...), en la siguiente vuelta se pinta la nueva. Con
+		// REENTER se vuelve a entrar en la misma.
+		rdn = n_pant;
+		msc_reenter = 0;
+		draw_scr ();
+		o_pant = msc_reenter ? 0xff : rdn;
+	#else
+		draw_scr ();
+		o_pant = n_pant;
+	#endif
+	#ifdef PLAYER_CHECK_MAP_BOUNDARIES
+		// Por si se ha llegado sin pasar por un borde (warp, respawn...)
+		x_pant = o_pant % LEVEL_MAP_W;
+		y_pant = o_pant / LEVEL_MAP_W;
+	#endif
+	#ifdef HOOK_ENTERING_SCREEN
+		hook_entering_screen ();
+	#endif
+}
+
+#ifdef DIE_AND_RESPAWN
+	// Tras morir (p_killme): el gancho HOOK_PLAYER_DIES (o un sonido y una
+	// pausa) y, si quedan vidas y no se está nadando, se vuelve al último
+	// sitio seguro: el primer tile a partir de él con suelo debajo y sin
+	// obstáculo.
+	void respawn (void) {
+		sp_UpdateNow ();
+		#ifdef HOOK_PLAYER_DIES
+			hook_player_dies ();
+		#else
+			PLAY_SFX (4);
+			espera_activa (50);
+		#endif
+		if (player.life && !SWIMMING) {
+			if (n_pant != p_safe_pant) {
+				n_pant = p_safe_pant;
+				enter_screen ();
+			}
+			while (p_safe_x < 14 && (
+				!(attr (p_safe_x, p_safe_y + 1) & 12) ||
+				(attr (p_safe_x, p_safe_y) & 8)
+			)) p_safe_x ++;
+			set_player_at (p_safe_x << 4, p_safe_y << 4);
+			player.vx = player.vy = 0;
+			player.saltando = 0;
+		}
+		p_killme = 0;
+		play_level_music ();
+	}
+#endif
 
 void main (void) {
 	// La pila la coloca crt0 (en STACK_ADDR, ver churromain.c).
@@ -20,12 +83,32 @@ void main (void) {
 	while (1) {
 		title ();
 
+		// La música del título sigue durante el gancho HOOK_AFTER_TITLE (un
+		// menú), que la para cuando quiera; si no, se para aquí.
+		#if defined HAS_AY_MUSIC && !defined HOOK_AFTER_TITLE
+			wyz_stop_sound ();
+		#endif
+
 		#ifdef ENABLE_CHECKPOINTS
 			sg_submenu ();
 		#endif
 
 		mlplaying = 1;
+
+		// Flags de la partida (con KEEP_FLAGS_BETWEEN_LEVELS duran toda la
+		// partida y no se borran en cada nivel)
+		#if defined ACTIVATE_SCRIPTING && defined KEEP_FLAGS_BETWEEN_LEVELS
+			msc_clear_flags ();
+		#endif
+
 		#ifdef COMPRESSED_LEVELS
+			// La vida se pone antes del gancho, que puede cambiarla (una
+			// contraseña puede llevar la vida y los flags).
+			#ifndef REFILL_ME
+				player.life = PLAYER_LIFE;
+			#endif
+			level_warped = silent_level = 0;
+
 			// Nivel inicial: el gancho puede devolver otro (menú, contraseñas...)
 			#ifdef HOOK_AFTER_TITLE
 				level = hook_after_title ();
@@ -35,10 +118,6 @@ void main (void) {
 			#ifdef ENABLE_CHECKPOINTS
 				if (sg_do_load) level = sg_level;
 			#endif
-
-			#ifndef REFILL_ME
-				player.life = PLAYER_LIFE;
-			#endif
 		#elif defined HOOK_AFTER_TITLE
 			hook_after_title ();
 		#endif
@@ -47,33 +126,45 @@ void main (void) {
 			#ifndef COMPRESSED_LEVELS
 				mlplaying = 0;
 			#else
-				// Presentación del nivel: la del juego o "LEVEL XX".
-				#ifdef HOOK_LEVEL_INTRO
-					hook_level_intro ();
-				#else
-					clear_gamearea_tiles ();
-					memcpy (level_str, " LEVEL 00 ", 11);
-					level_str [7] = '0' + (level + 1) / 10;
-					level_str [8] = '0' + (level + 1) % 10;
-					print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
-					sp_UpdateNow ();
-					PLAY_SFX (2);
-					espera_activa (100);
-				#endif
+				// Presentación del nivel: la del juego o "LEVEL XX". Un WARP TO
+				// LEVEL "silencioso" se la salta.
+				if (!silent_level) {
+					#ifdef HOOK_LEVEL_INTRO
+						hook_level_intro ();
+					#else
+						clear_gamearea_tiles ();
+						memcpy (level_str, " LEVEL 00 ", 11);
+						level_str [7] = '0' + (level + 1) / 10;
+						level_str [8] = '0' + (level + 1) % 10;
+						print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
+						sp_UpdateNow ();
+						PLAY_SFX (2);
+						espera_activa (100);
+					#endif
+				}
 
 				prepare_level ();
 			#endif
 
 			#ifndef DIRECT_TO_PLAY
-				// Clear screen and show game frame
-				cortina ();
-				sp_UpdateNow();
-
-				#ifdef MODE_128K
-					get_resource (RES_MARCO, 16384);
-				#else
-					unpack_screen (s_marco);
+				// Clear screen and show game frame (salvo en un WARP TO LEVEL
+				// silencioso, que sigue con la pantalla que había)
+				#ifdef COMPRESSED_LEVELS
+					if (!silent_level)
 				#endif
+				{
+					cortina ();
+					sp_UpdateNow();
+
+					#ifdef MODE_128K
+						get_resource (RES_MARCO, 16384);
+					#else
+						unpack_screen (s_marco);
+					#endif
+				}
+			#endif
+			#ifdef COMPRESSED_LEVELS
+				silent_level = 0;
 			#endif
 
 			// Let's do it.
@@ -96,6 +187,18 @@ void main (void) {
 
 			n_pant = LEVEL_SCR_INI;
 			o_pant = 0xff;
+
+			#ifdef COMPRESSED_LEVELS
+				// Llegando por un WARP TO LEVEL: donde diga el script
+				if (level_warped) {
+					n_pant = warp_pant;
+					set_player_at (warp_x << 4, warp_y << 4);
+					#ifdef DIE_AND_RESPAWN
+						p_safe_pant = warp_pant; p_safe_x = warp_x; p_safe_y = warp_y;
+					#endif
+					level_warped = 0;
+				}
+			#endif
 
 			#ifdef PLAYER_CAN_FIRE
 				init_bullets ();
@@ -122,8 +225,11 @@ void main (void) {
 
 			half_life = 0;
 			maincounter = 0;
-			success = 0;
+			success = LEVEL_FAILED;
 			objs_old = keys_old = life_old = killed_old = 0xff;
+			#ifdef PLAYER_SHOW_FLAG
+				flag_old = 0xff;
+			#endif
 			#ifdef MSC_SHOW_ITEM
 				item_old = 0xff;
 			#endif
@@ -150,16 +256,12 @@ void main (void) {
 			#endif
 
 			// Música del nivel
-			#ifdef MODE_128K
-				#ifdef COMPRESSED_LEVELS
-					wyz_play_music (levels [level].music);
-				#else
-					wyz_play_music (1);
-				#endif
+			#ifdef COMPRESSED_LEVELS
+				level_music = levels [level].music;
+			#else
+				level_music = 1;
 			#endif
-			#ifdef CPC
-				wyz_play_music (1);
-			#endif
+			play_level_music ();
 
 			#ifdef HOOK_LEVEL_START
 				hook_level_start ();
@@ -167,22 +269,7 @@ void main (void) {
 
 			playing = 1;
 			while (playing) {
-				if (o_pant != n_pant) {
-					#ifdef ACTIVATE_SCRIPTING
-						// Durante draw_scr, o_pant es la pantalla de la que venimos
-						// (OPANT en los scripts). Si un script de ENTERING cambia
-						// n_pant (WARP TO...), en la siguiente vuelta se pinta la nueva.
-						rdn = n_pant;
-						draw_scr ();
-						o_pant = rdn;
-					#else
-						draw_scr ();
-						o_pant = n_pant;
-					#endif
-					#ifdef HOOK_ENTERING_SCREEN
-						hook_entering_screen ();
-					#endif
-				}
+				if (o_pant != n_pant) enter_screen ();
 			
 				#ifdef TIMER_ENABLE
 					// Timer
@@ -283,6 +370,14 @@ void main (void) {
 					}
 				#endif
 
+				#ifdef PLAYER_SHOW_FLAG
+					// Un flag del script en el marcador (monedas...)
+					if (flags [PLAYER_SHOW_FLAG] != flag_old) {
+						print_number2 (FLAG_X, FLAG_Y, flags [PLAYER_SHOW_FLAG]);
+						flag_old = flags [PLAYER_SHOW_FLAG];
+					}
+				#endif
+
 				#ifdef SHOW_TIMER
 					if (ctimer.t != timer_old) {
 						print_number2 (TIMER_X, TIMER_Y, ctimer.t);
@@ -295,6 +390,10 @@ void main (void) {
 			
 				// Move player
 				move ();
+
+				#ifdef PLAYER_CAN_PUNCH
+					if (hitter_on) do_hitter ();
+				#endif
 
 				#ifdef ACTIVATE_SCRIPTING
 					#ifdef PUSHED_SCRIPTING
@@ -317,6 +416,14 @@ void main (void) {
 				// Move enemies
 				mueve_bicharracos ();
 
+				#ifdef ENABLE_COCOS
+					move_cocos ();
+				#endif
+
+				#ifdef BREAKABLE_ANIM
+					if (do_process_breakable) process_breakable ();
+				#endif
+
 				#ifdef PLAYER_CAN_FIRE
 					// Move bullets 			
 					mueve_bullets ();
@@ -336,6 +443,12 @@ void main (void) {
 						}	
 					}
 				#endif			
+
+				// Lo que el juego haga en cada frame (puede acabar el nivel:
+				// playing = 0 y success = LEVEL_*)
+				#ifdef HOOK_EACH_FRAME
+					hook_each_frame ();
+				#endif
 
 				// Update to screen
 				sp_UpdateNow();
@@ -411,6 +524,10 @@ void main (void) {
 					if (sp_KeyPressed (KEY_Y)) {
 						playing = 0;
 					}
+				#endif
+
+				#ifdef DIE_AND_RESPAWN
+					if (p_killme) respawn ();
 				#endif
 
 				// Change screen
@@ -515,6 +632,14 @@ void main (void) {
 				) {
 					playing = 0;
 				}
+
+				// WARP TO LEVEL y GAME ENDING del script
+				#if defined ACTIVATE_SCRIPTING && defined COMPRESSED_LEVELS
+					if (script_result > 2) {
+						success = script_result;
+						playing = 0;
+					}
+				#endif
 			}
 			sp_WaitForNoKey ();
 
@@ -525,6 +650,23 @@ void main (void) {
 			saca_a_todo_el_mundo_de_aqui ();
 			sp_UpdateNow ();
 
+			#ifdef COMPRESSED_LEVELS
+				if (success == LEVEL_WARP) {
+					// Al nivel que dice el script, en su pantalla y su tile
+					level = warp_to_level;
+					level_warped = 1;
+				} else if (success == LEVEL_GAME_ENDING) {
+					// El script termina el juego
+					mlplaying = 0;
+					#ifdef HOOK_GAME_ENDING
+						hook_game_ending ();
+					#else
+						game_ending ();
+					#endif
+				} else if (success == LEVEL_REPEAT) {
+					// Se vuelve a empezar el nivel (lo pide un gancho)
+				} else
+			#endif
 			if (success) {
 				#ifdef HOOK_LEVEL_END
 					hook_level_end ();

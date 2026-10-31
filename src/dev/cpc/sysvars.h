@@ -76,12 +76,21 @@ unsigned char isr_c1, isr_c2;
 
 #define MAX_ENEMS 3
 
-// Sprites software: jugador, enemigos y balas.
-#define SW_SPRITES_ALL 		(1 + MAX_ENEMS + MAX_BULLETS)
+// Sprites software: jugador y enemigos (16x16) y los pequeños (8x8): balas,
+// cocos y puño.
+#ifdef PLAYER_CAN_PUNCH
+	#define SW_HITTER		1
+#else
+	#define SW_HITTER		0
+#endif
+#define SW_SMALL_SPRITES	(MAX_BULLETS + MAX_COCOS + SW_HITTER)
+#define SW_SPRITES_ALL 		(1 + MAX_ENEMS + SW_SMALL_SPRITES)
 
 #define SP_PLAYER 			0
 #define SP_ENEMS_BASE 		1
 #define SP_BULLETS_BASE 	(SP_ENEMS_BASE + MAX_ENEMS)
+#define SP_COCOS_BASE		(SP_BULLETS_BASE + MAX_BULLETS)
+#define SP_HITTER			(SP_COCOS_BASE + MAX_COCOS)
 
 #ifdef MODE_1
 	// P_0 P_1 P_2 P_3

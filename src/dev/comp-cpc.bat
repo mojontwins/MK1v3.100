@@ -35,7 +35,7 @@ echo ### CONVIRTIENDO COSAS QUE HAY QUE CONVERTIR ###
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites.png out=sprites.bin max=16 silent > nul
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_extra.png out=sprites_extra.bin max=2 silent > nul
 "%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_bullet.png out=sprites_bullet.bin metasize=1,1 max=1 silent > nul
-"%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_sword.png out=sprites_sword.bin metasize=1,1 max=4 silent > nul
+"%U%\mkts_om" %P% mode=sprites in=..\gfx\cpc\sprites_punch.png out=sprites_punch.bin metasize=1,1 max=2 silent > nul
 "%U%\mkts_om" platform=cpc mode=pals in=..\gfx\cpc\pal.png prefix=my_inks out=cpc\pal.h silent > nul
 
 for %%s in (marco ending title) do "%U%\mkts_om" %P% mode=superbuffer in=..\gfx\cpc\%%s.png out=%%s.scr silent > nul

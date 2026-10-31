@@ -90,6 +90,9 @@ unsigned int msc_read_word (void) {
 	const unsigned char *msc_tptr;
 	unsigned char msc_tbyte, msc_tbits;
 	const unsigned char msc_punct [] = ",.?! ";
+	#ifdef MSC_TEXTS_RES
+		unsigned char msc_text_enc [MSC_TEXT_MAX_ENC];
+	#endif
 
 	// Lee los siguientes 5 bits (del más alto al más bajo).
 	unsigned char msc_5bits (void) {
@@ -114,7 +117,18 @@ unsigned int msc_read_word (void) {
 	void msc_decode_text (unsigned int offset, unsigned char *dest) {
 		unsigned char c;
 		if (offset != 0xffff) {
-			msc_tptr = msc_texts + offset;
+			#ifdef MSC_TEXTS_RES
+				// Los textos están en una página de RAM: se copia el trozo
+				// (lo que ocupa como mucho un texto) aquí abajo.
+				ram_page = resources [MSC_TEXTS_RES].ramPage;
+				address = (unsigned char *) (resources [MSC_TEXTS_RES].ramOffset + offset);
+				destination = msc_text_enc;
+				ram_copy_len = MSC_TEXT_MAX_ENC;
+				copy_from_RAMn ();
+				msc_tptr = msc_text_enc;
+			#else
+				msc_tptr = msc_texts + offset;
+			#endif
 			msc_tbits = 0;
 			while (1) {
 				c = msc_5bits ();
@@ -165,7 +179,7 @@ unsigned int msc_read_word (void) {
 // Variables: flags y variables especiales
 // ---------------------------------------------------------------------------
 //
-// Los números de flag a partir de 0xE6 son variables del motor. msc4 las
+// Los números de flag a partir de 0xE5 son variables del motor. msc4 las
 // traduce: NPANT -> 0xFE, PX -> 0xFD...
 
 unsigned char msc_value (void);
@@ -259,6 +273,9 @@ unsigned char msc_var (unsigned char n) {
 		#ifdef MSC_RV_E6
 			case 0xE6:									// DIALOG "1", "2", "3"
 				return msc_dialog ();
+		#endif
+		#ifdef MSC_RV_E5
+			case 0xE5: return level;					// LEVEL
 		#endif
 	}
 	return n < MAX_FLAGS ? flags [n] : 0;
@@ -398,6 +415,13 @@ unsigned char msc_conditions (void) {
 					if (player.vx || player.vy) return 0;
 					break;
 			#endif
+			#ifdef MSC_CU_27
+				case 0x27:								// IF PLAYER NEAR X, Y
+					// A 15 píxeles o menos de (X * 16, Y * 16) en los dos ejes
+					a = msc_value (); b = msc_value ();
+					if (abs ((int) gpx - (a << 4)) > 15 || abs ((int) gpy - (b << 4)) > 15) return 0;
+					break;
+			#endif
 			// TILE AT / BEH AT son expresiones (msc_var), no condiciones.
 			// 0xF0 (IF TRUE) y cualquier otra: se cumple.
 		}
@@ -465,6 +489,12 @@ void msc_actions (void) {
 					msc_set_var (a, msc_var (a) - msc_value ());
 					break;
 			#endif
+			#ifdef MSC_AU_03
+				case 0x03:								// FLIPFLOP $A
+					a = msc_value ();
+					msc_set_var (a, 1 - msc_var (a));
+					break;
+			#endif
 			#ifdef MSC_AU_20
 				case 0x20:								// SET TILE X, Y = T
 					a = msc_value (); b = msc_value ();
@@ -526,6 +556,68 @@ void msc_actions (void) {
 					set_player_at (a << 4, msc_value () << 4);
 					break;
 			#endif
+			#ifdef MSC_AU_62
+				case 0x62:								// REPOSTN X, Y
+					// El jugador al tile (X, Y), quieto, y REENTER
+					a = msc_value ();
+					set_player_at (a << 4, msc_value () << 4);
+					player.vx = player.vy = 0;
+					// (sigue en REENTER)
+			#endif
+			#if defined MSC_AU_60 || defined MSC_AU_62
+				#ifdef MSC_AU_60
+				case 0x60:								// REENTER
+				#endif
+					// Se vuelve a entrar en la pantalla (dibujo y ENTERING) sin
+					// resucitar a los enemigos. Termina la cláusula.
+					#ifdef RESPAWN_ON_ENTER
+						no_respawn = 1;
+					#endif
+					msc_reenter = 1;
+					o_pant = 0xff;
+					return;
+			#endif
+			#ifdef MSC_AU_61
+				case 0x61:								// REDRAW
+					redraw_scr ();
+					break;
+			#endif
+			#ifdef MSC_AU_63
+				case 0x63:								// ENEMY N ON
+					malotes [enoffs + msc_value ()].t &= ~16;
+					break;
+			#endif
+			#ifdef MSC_AU_64
+				case 0x64:								// ENEMY N OFF
+					a = msc_value ();
+					malotes [enoffs + a].t |= 16;
+					en_an_next_frame [a] = sprite_18_a;
+					break;
+			#endif
+			#ifdef MSC_AU_65
+				#ifndef DIE_AND_RESPAWN
+					#error "SAFE necesita DIE_AND_RESPAWN"
+				#endif
+				case 0x65:								// SAFE X, Y
+					p_safe_pant = n_pant;
+					p_safe_x = msc_value ();
+					p_safe_y = msc_value ();
+					break;
+			#endif
+			#ifdef MSC_AU_6E
+				#ifndef COMPRESSED_LEVELS
+					#error "WARP TO LEVEL necesita COMPRESSED_LEVELS"
+				#endif
+				case 0x6E:								// WARP TO LEVEL L, N, X, Y, S
+					warp_to_level = msc_value ();
+					warp_pant = msc_value ();
+					warp_x = msc_value ();
+					warp_y = msc_value ();
+					silent_level = msc_value ();
+					script_result = 3;
+					msc_stop = MSC_STOP_ALL;
+					return;
+			#endif
 			#ifdef MSC_AU_E0
 				case 0xE0:								// SOUND N
 					PLAY_SFX (msc_value ());
@@ -568,6 +660,16 @@ void msc_actions (void) {
 					msc_text_box (msc_read_word ());
 					break;
 			#endif
+			#ifdef MSC_AU_E7
+				case 0xE7:								// MUSIC N
+					// Pasa a ser la música del nivel (la que vuelve a sonar
+					// tras morir, por ejemplo)
+					level_music = msc_value ();
+					#ifdef HAS_AY_MUSIC
+						wyz_play_music (level_music);
+					#endif
+					break;
+			#endif
 			#ifdef MSC_AU_F0
 				case 0xF0:								// WIN GAME
 					script_result = 1;
@@ -577,6 +679,12 @@ void msc_actions (void) {
 			#ifdef MSC_AU_F1
 				case 0xF1:								// GAME OVER
 					script_result = 2;
+					msc_stop = MSC_STOP_ALL;
+					return;
+			#endif
+			#ifdef MSC_AU_F5
+				case 0xF5:								// GAME ENDING
+					script_result = 4;
 					msc_stop = MSC_STOP_ALL;
 					return;
 			#endif
@@ -667,10 +775,19 @@ void msc_run_screen (unsigned char sect) {
 
 // Al empezar la partida (o el nivel): flags a 0, sin objeto y sin zona de
 // fuego. Con niveles, el script del nivel ya está en msc_buffer.
-void msc_init (void) {
+// Todos los flags a 0. Al empezar cada nivel o, con
+// KEEP_FLAGS_BETWEEN_LEVELS, solo al empezar la partida.
+void msc_clear_flags (void) {
 	for (gpit = 0; gpit < MAX_FLAGS; gpit ++) flags [gpit] = 0;
 	#ifdef MSC_AU_30
 		flags [MSC_ITEM_SLOT] = MSC_ITEM_EMPTY;
+	#endif
+}
+
+// Al empezar un nivel: su script, sin resultado.
+void msc_init (void) {
+	#ifndef KEEP_FLAGS_BETWEEN_LEVELS
+		msc_clear_flags ();
 	#endif
 	#ifdef FIRE_ZONE
 		f_zone_ac = 0;

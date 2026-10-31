@@ -34,8 +34,13 @@ unsigned char rand (void);
 // Configurar bien este número es MUY IMPORTANTE
 
 // Bloques de memoria que necesita splib2 para mover los sprites: 10 por cada
-// sprite de 16x16 (jugador y 3 enemigos) y 5 por cada bala.
-#define NUMBLOCKS (40 + 5 * MAX_BULLETS)
+// sprite de 16x16 (jugador y 3 enemigos) y 5 por cada bala, coco o puño.
+#ifdef PLAYER_CAN_PUNCH
+	#define HITTER_BLOCKS	5
+#else
+	#define HITTER_BLOCKS	0
+#endif
+#define NUMBLOCKS (40 + 5 * MAX_BULLETS + 5 * MAX_COCOS + HITTER_BLOCKS)
 
 // La regla es esta: cada sprite de 16x16 ocupa 10 bloques.
 // Cada proyectil ocupa 5 bloques.

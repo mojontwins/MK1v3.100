@@ -75,9 +75,33 @@ typedef struct {
 #ifdef MAX_AMMO
 	unsigned char ammo;
 #endif	
+#ifdef SWITCHABLE_ENGINES
+	unsigned char engine;			// ENGINE_JUMP, ENGINE_SWIM
+#endif
 } INERCIA;
 
 INERCIA player;
+
+#ifdef DIE_AND_RESPAWN
+	// Al morir se vuelve al último sitio seguro (donde se pisó suelo por
+	// última vez, o donde se entró en la pantalla nadando; SAFE en el script)
+	unsigned char p_killme;
+	unsigned char p_safe_pant, p_safe_x, p_safe_y;
+#endif
+
+#ifdef PLAYER_CAN_PUNCH
+	// El puño: 5 frames desde que se pulsa FIRE
+	unsigned char hitter_on, hitter_frame;
+	unsigned char hitter_x, hitter_y;
+	const unsigned char *hitter_current_frame, *hitter_next_frame;
+#endif
+
+#ifdef ENABLE_COCOS
+	// Proyectiles de los enemigos de tipo 8 y 9
+	unsigned char coco_x [MAX_COCOS], coco_y [MAX_COCOS], coco_s [MAX_COCOS];
+	signed char coco_vx [MAX_COCOS], coco_vy [MAX_COCOS];
+	unsigned char coco_it, coco_d, coco_x0;
+#endif
 signed int ptgmx, ptgmy; 			// Arrastre de las plataformas móviles
 unsigned char gpx, gpy; 			// Coordenadas de pixel
 
@@ -167,15 +191,35 @@ unsigned char n_pant;
 #endif
 
 unsigned char level;
+unsigned char level_music;			// Canción del nivel (MUSIC n del script la cambia)
 unsigned char maincounter;
 
+// REENTER / REPOSTN del script: se vuelve a entrar en la pantalla sin
+// resucitar a los enemigos.
+#ifdef ACTIVATE_SCRIPTING
+	unsigned char msc_reenter;
+#endif
+#ifdef RESPAWN_ON_ENTER
+	unsigned char no_respawn;
+#endif
+
 unsigned char objs_old, keys_old, life_old, killed_old;
+#ifdef PLAYER_SHOW_FLAG
+	unsigned char flag_old;
+#endif
 
 // Breakable walls/etc
 // Golpes recibidos por cada tile de la pantalla (BASE_BRK_BUFF lo fija cada
 // plataforma en su sysvars.h).
-#ifdef BREAKABLE_WALLS
+#ifdef BREAKABLE_WALLS_HAVE_LIFE
 	AT (BASE_BRK_BUFF) unsigned char brk_buff [150];
+#endif
+
+// Muros que se están rompiendo (BREAKABLE_ANIM): se ven como BREAKABLE_TILE
+// durante MAX_BREAKABLE_FRAMES frames y después desaparecen.
+#ifdef BREAKABLE_ANIM
+	unsigned char breaking_x [MAX_BREAKABLE], breaking_y [MAX_BREAKABLE], breaking_f [MAX_BREAKABLE];
+	unsigned char breaking_idx, do_process_breakable;
 #endif
 
 // Scripting (msc4, ver msc.h)
@@ -277,7 +321,21 @@ int seed;
 unsigned char half_life;
 unsigned char playing;
 unsigned char mlplaying;
-unsigned char success;
+unsigned char success;			// Cómo acaba el nivel: LEVEL_*
+
+// Resultados de un nivel (success)
+#define LEVEL_FAILED		0		// Game over (o abortado)
+#define LEVEL_CLEARED		1		// Superado: al siguiente
+#define LEVEL_REPEAT		2		// Se vuelve a empezar (p.ej. muerte en la lava)
+#define LEVEL_WARP			3		// WARP TO LEVEL del script
+#define LEVEL_GAME_ENDING	4		// GAME ENDING del script
+
+#ifdef COMPRESSED_LEVELS
+	// LEVEL_WARP: nivel, pantalla y tile al que se va y si se salta la
+	// presentación del nivel. level_warped dice que se acaba de llegar así.
+	unsigned char warp_to_level, warp_pant, warp_x, warp_y;
+	unsigned char silent_level, level_warped;
+#endif
 
 // Aux vars
 

@@ -6,8 +6,8 @@
 // Sólo se incluirá (tras los sprites) si se define PLAYER_KILLS_ENEMIES
 // Copyleft 2010 The Mojon Twins
 
-// Sprites extra: la explosión (17), el sprite vacío (18) y la bala (19), en
-// un solo array. Cada sprite tiene sus columnas (a, b, c) una tras otra y del
+// Sprites extra: la explosión (17), el sprite vacío (18), la bala (19) y el
+// puño (20 hacia la derecha, 21 hacia la izquierda), en un solo array. Cada sprite tiene sus columnas (a, b, c) una tras otra y del
 // mismo tamaño, como los de sprites.h, para que la animación funcione.
 
 const unsigned char extrasprites [] = {
@@ -45,6 +45,20 @@ const unsigned char extrasprites [] = {
 	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
 	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
 #endif
+#ifdef NEEDS_PUNCH_SPRITES
+	// sprite_20_a (puño hacia la derecha)
+	0, 255, 0, 0, 190, 0, 183, 0, 171, 0, 175, 0, 14, 0, 0, 224,
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+	// sprite_20_b
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+	// sprite_21_a (puño hacia la izquierda)
+	0, 255, 0, 0, 125, 0, 237, 0, 213, 0, 245, 0, 112, 0, 0, 7,
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+	// sprite_21_b
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+	0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255,
+#endif
 };
 
 #ifdef NEEDS_EXPLOSION_SPRITE
@@ -65,4 +79,10 @@ const unsigned char extrasprites [] = {
 	#define EXTRA_19_END	(EXTRA_18_END + 64)
 #else
 	#define EXTRA_19_END	EXTRA_18_END
+#endif
+#ifdef NEEDS_PUNCH_SPRITES
+	#define sprite_20_a     (extrasprites + EXTRA_19_END + 0)
+	#define sprite_20_b     (extrasprites + EXTRA_19_END + 32)
+	#define sprite_21_a     (extrasprites + EXTRA_19_END + 64)
+	#define sprite_21_b     (extrasprites + EXTRA_19_END + 96)
 #endif

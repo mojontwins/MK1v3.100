@@ -12,7 +12,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 target=$1; out=$(realpath -m "$2"); shift 2
 
 T="$(mktemp -d)"
-trap 'rm -rf "$T"' EXIT
+[ -n "$KEEP_BUILD" ] && echo "build en $T" || trap 'rm -rf "$T"' EXIT
 cp -r "$REPO/src" "$T/src"
 cfg="$T/src/dev/config.h"
 

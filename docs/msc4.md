@@ -161,6 +161,8 @@ msc4 in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]
 | `allopcodes` | no | Activa en `msc-config.h` **todas** las condiciones y acciones, se usen o no. Para pruebas. |
 | `debug` | no | Traza de la compilación: los tokens que ve el compilador y el bytecode que produce para cada línea. |
 | `textdebug` | no | Vuelca la codificación en 5 bits de cada texto. |
+| `text=` | no | Fichero con los textos codificados (por defecto `text.bin`). |
+| `textres` | no | Los textos van **solo** en `text=`, que el juego pone como recurso de 128K (sin comprimir) en `librarian.txt`; no ocupan RAM. `comp-zx` lo pasa si `config.h` tiene `SCRIPT_TEXTS_AS_RESOURCE`. |
 
 `debug` es *muy* útil mientras escribes un script.
 
@@ -482,7 +484,7 @@ o pasarle directamente a `RERUN`.
 
 Además de los flags normales (`$0 … $254`), el compilador expone un conjunto
 de **variables especiales** respaldadas por el estado del motor. Se codifican
-como pseudo-flags en el rango `$E6 … `$FE`.
+como pseudo-flags en el rango `$E5 … `$FE`.
 
 | Nombre | Pseudo-flag | Significado | Lectura | Escritura |
 |---|---|---|---|---|
@@ -511,6 +513,7 @@ como pseudo-flags en el rango `$E6 … `$FE`.
 | `TILE AT (x,y)` | `$E8` | Expresión, ver la [sección 8.4](#84-expresiones). | ✔ | ✘ |
 | `BEH AT (x,y)` | `$E7` | Expresión. | ✔ | ✘ |
 | `DIALOG …` | `$E6` | Expresión. | ✔ | ✘ |
+| `LEVEL` | `$E5` | El nivel (con `COMPRESSED_LEVELS`): su posición en la tabla de `levelset.h`. `IF LEVEL = 3`. | ✔ | ✘ |
 
 Notas:
 
@@ -565,10 +568,11 @@ codifica como una condición "siempre cierta" (el opcode `$F0`).
 | `IF PLAYER FALLING` | El jugador está cayendo: `vy > 0` **y** `player.possee` es 0 (o sea, no está apoyado en nada). |
 | `IF PLAYER NOT_FALLING` | La negación de lo anterior: `vy <= 0` **o** `player.possee != 0`. También se puede escribir `PLAYER NOT FALLING`. |
 | `IF PLAYER STILL` | `vx == 0 && vy == 0`. |
+| `IF PLAYER NEAR (x, y)` | El jugador (su esquina, `PX`, `PY`) está a 15 píxeles o menos de `(x*16, y*16)` en los dos ejes: está tocando el tile `(x, y)` con cualquier parte del sprite. Es el `PLAYER_TOUCHES` de los scripts antiguos. |
 
 > **`TOUCHES` no quiere decir "cualquier parte del sprite toca el tile".**
 > `TOUCHES` y `AT` son lo mismo: comparan el *tile del centro* del jugador con
-> `(x, y)`. Usa `PX`/`PY` si necesitas más precisión.
+> `(x, y)`. Para "tocar" con cualquier parte del sprite está `NEAR`.
 
 > **`IN_X` / `IN_Y` van en píxeles, no en tiles.** Para comprobar tiles, usa
 > `TX`/`TY`:
@@ -603,6 +607,7 @@ una asignación debe ser un *flag* (o una variable especial escribible).
 | `$A = B` | `flags[A] = B` |
 | `SET $A = B` | lo mismo |
 | `INC $A, B` | `flags[A] += B` |
+| `FLIPFLOP $A` | `flags[A] = 1 - flags[A]` (alterna entre 0 y 1) |
 | `DEC $A, B` | `flags[A] -= B` |
 | `ADD FLAGS x, y` | `flags[x] += flags[y]` |
 | `SUB FLAGS x, y` | `flags[x] -= flags[y]` |
@@ -622,6 +627,11 @@ vale 0 da 255.
 | `SET BEH (x, y) = b` | Cambia el *comportamiento* del tile en `(x, y)` sin tocar el tile en sí. |
 | `PRINT TILE (x, y) = t` | Dibuja un tile de color sobre la pantalla en `(x, y)` (overlay, no toca el mapa). `x`, `y` son coordenadas de **carácter** de la pantalla (para pintar en el marcador), no de tile. |
 | `WARP TO n, x, y` | Teletransporta al jugador a la pantalla `n`, posición en píxeles `(x*16, y*16)`. |
+| `WARP TO LEVEL l, n, x, y [, s]` | Termina el nivel y pasa al nivel `l` (con `COMPRESSED_LEVELS`), a su pantalla `n` y al tile `(x, y)`. Con `s` distinto de 0, sin la presentación del nivel ni el marco (sigue la pantalla que había). Termina el script. |
+| `REENTER` | Se vuelve a entrar en la pantalla: se repinta y se ejecutan otra vez sus `ENTERING`, pero sin resucitar a los enemigos (`RESPAWN_ON_ENTER`). Termina la **cláusula** (las siguientes sí se evalúan). |
+| `REPOSTN x, y` | El jugador al tile `(x, y)`, quieto, y `REENTER`. |
+| `REDRAW` | Repinta la pantalla tal y como está (después de un `TEXT BOX`, por ejemplo). |
+| `ENEMY n ON` / `ENEMY n OFF` | Resucita / quita al enemigo `n` (0, 1 o 2) de la pantalla. |
 | `SET FIRE ZONE x1, y1, x2, y2` | Define una zona (en píxeles) en la que estar equivale a pulsar la tecla de acción: se ejecutan `PRESS FIRE AT ANY` y `PRESS FIRE AT SCREEN n` cada frame mientras el jugador esté dentro. Se apaga al cambiar de pantalla, así que se define en `ENTERING`. |
 | `SET FIRE ZONE TILES x1, y1, x2, y2` | Lo mismo con coordenadas de tile (la zona va de la esquina del tile `(x1, y1)` al final del tile `(x2, y2)`). |
 
@@ -630,6 +640,7 @@ vale 0 da 255.
 | Se escribe | Efecto |
 |---|---|
 | `RECHARGE` | Pone la vida del jugador a `PLAYER_LIFE` (el de `config.h`). |
+| `SAFE x, y` | Con `DIE_AND_RESPAWN`: el sitio al que se vuelve al perder una vida pasa a ser el tile `(x, y)` de esta pantalla. |
 | `SHOW` | Fuerza un refresco de pantalla (`sp_UpdateNow ()`). |
 | `PAUSE n` | Espera `n` cincuentavos de segundo. |
 
@@ -638,6 +649,7 @@ vale 0 da 255.
 | Se escribe | Efecto |
 |---|---|
 | `SOUND n` | Toca el efecto de sonido `n` (`PLAY_SFX (n)`: beeper en 48K, WYZ player en 128K y CPC). Los números están en el capítulo 7 del manual. |
+| `MUSIC n` | Toca la canción `n`, que pasa a ser la del nivel (la que vuelve a sonar tras perder una vida con `DIE_AND_RESPAWN`). |
 | `TEXT "…"` | Escribe una línea corta de texto en la fila `LINE_OF_TEXT`, columna `LINE_OF_TEXT_X`, con el color `LINE_OF_TEXT_ATTR` (los tres en `config.h`). La línea se borra al entrar en cada pantalla. |
 | `TEXT BOX "…"` | Muestra una caja de texto: la pinta tu `text_box ()` de `extern.h` (ver la [sección 15](#15-tu-código-externh)). |
 | `EXTERN n, m` | Llama a tu `do_extern_action (n, m)` de `extern.h`. El segundo parámetro vale 0 por defecto. Es la salida hacia tu propio código C. |
@@ -682,6 +694,7 @@ END
 | `BREAK` | Para la ejecución de la sección entera. Las cláusulas restantes no se evalúan. |
 | `WIN GAME` | Termina la sección y supera el nivel (o el güego, si no hay niveles o es el último). |
 | `GAME OVER` | Termina la sección y la partida. |
+| `GAME ENDING` | Termina el juego (con `COMPRESSED_LEVELS`): se acaba la partida y se muestra el final (`HOOK_GAME_ENDING`). |
 | `RERUN v` | Pone `PARAM` a `v` y reinicia la sección actual desde arriba. |
 | `CALL nombre` | Ejecuta la subrutina `nombre` (ver la [sección 12](#12-subrutinas)). |
 
@@ -1297,7 +1310,14 @@ tabla de textos.
 | `$50` | `PRINT TILE (x, y) = t` |
 | `$51` | `SET FIRE ZONE x1, y1, x2, y2` |
 | `$52` | `SET FIRE ZONE TILES x1, y1, x2, y2` |
+| `$03` | `FLIPFLOP $f` |
+| `$60` | `REENTER` |
+| `$61` | `REDRAW` |
+| `$62` | `REPOSTN x, y` |
+| `$63` / `$64` | `ENEMY n ON` / `OFF` |
+| `$65` | `SAFE x, y` |
 | `$6D` | `WARP TO n, x, y` |
+| `$6E` | `WARP TO LEVEL l, n, x, y, s` |
 | `$E0` | `SOUND n` |
 | `$E1` | `SHOW` |
 | `$E2` | `RECHARGE` |
@@ -1305,11 +1325,13 @@ tabla de textos.
 | `$E4` | `EXTERN n, m` |
 | `$E5` | `PAUSE n` |
 | `$E6` | `TEXT BOX "…"` (número de texto) |
+| `$E7` | `MUSIC n` |
 | `$F0` | `WIN GAME` |
 | `$F1` | `GAME OVER` |
 | `$F2` | `BREAK` |
 | `$F3` | `RERUN v` |
 | `$F4` | `CALL` (dirección de la subrutina) |
+| `$F5` | `GAME ENDING` |
 
 ### 18.4 El intérprete
 

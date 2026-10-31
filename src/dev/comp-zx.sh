@@ -63,7 +63,9 @@ if grep -qE '^[[:space:]]*#define[[:space:]]+ACTIVATE_SCRIPTING\b' config.h; the
 	[ -f scripts.txt ] && scripts=$(grep -v '^#' scripts.txt | tr '\n' ',' | sed 's/,*$//')
 	mw=$(grep -E '^#define[[:space:]]+MAP_W\b' config.h | awk '{print $3}')
 	mh=$(grep -E '^#define[[:space:]]+MAP_H\b' config.h | awk '{print $3}')
-	$U/msc4 in=$scripts v=3_100 output=c rooms=$((mw * mh)) > msc4.log || { cat msc4.log; echo "ERROR en el script"; exit 1; }
+	# Con SCRIPT_TEXTS_AS_RESOURCE los textos van en text.bin (un recurso)
+	textres=""; grep -qE '^[[:space:]]*#define[[:space:]]+SCRIPT_TEXTS_AS_RESOURCE\b' config.h && textres=textres
+	$U/msc4 in=$scripts v=3_100 output=c rooms=$((mw * mh)) $textres > msc4.log || { cat msc4.log; echo "ERROR en el script"; exit 1; }
 	grep -iE "warning" msc4.log; grep -iE "error|wrong|unexpected|unknown|expecting|too long" msc4.log && { echo "ERROR en el script"; exit 1; }
 fi
 
@@ -77,11 +79,12 @@ fi
 if [ $mode128 = 1 ]; then
 	echo "### 128K: WYZ PLAYER Y RECURSOS ###"
 	# Reproductor + datos del juego: instrumentos.asm, canciones.asm, los .mus
-	# y, opcionalmente, efectos.asm (si no, los 15 de MK1 por defecto). Se
-	# toman de ../ogt/zx128 si existe; si no, de ../ogt.
+	# y, opcionalmente, efectos.asm (si no, los 15 de MK1 por defecto) y
+	# extra.asm (código extra, p.ej. un sample con PLAY_SAMPLE). Se toman de
+	# ../ogt/zx128 si existe; si no, de ../ogt.
 	OGT=../ogt; [ -d ../ogt/zx128 ] && OGT=../ogt/zx128
 	W=$(mktemp -d)
-	cp speccy_128/wyz/wyzplayer.asm speccy_128/wyz/efectos.asm "$W/"
+	cp speccy_128/wyz/wyzplayer.asm speccy_128/wyz/efectos.asm speccy_128/wyz/extra.asm "$W/"
 	cp $OGT/*.asm $OGT/*.mus "$W/" 2>/dev/null
 	if ! (cd "$W" && "$OLDPWD/$U/pasmo" wyzplayer.asm ram1.bin ram1.sym > /dev/null 2>&1); then
 		echo "ERROR ensamblando el WYZ player"; (cd "$W" && "$OLDPWD/$U/pasmo" wyzplayer.asm ram1.bin ram1.sym); rm -rf "$W"; exit 1
@@ -96,6 +99,8 @@ if [ $mode128 = 1 ]; then
 		#define SILENCIA_PLAYER		$(sym PLAYER_OFF)
 		#define INICIAEFECTO		$(sym INICIA_EFECTO)
 	EOF
+	ps=$(sym PLAY_SAMPLE)
+	[ -n "$ps" ] && echo "#define WYZ_PLAY_SAMPLE		$ps" >> wyz_addrs.h
 	rm -rf "$W"
 	echo "RAM1.bin: $(stat -c%s RAM1.bin) bytes"
 

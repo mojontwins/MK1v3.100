@@ -28,6 +28,7 @@
  *     -incl DIR F1  tiempo inclusivo: desde el frame F1, mide los ciclos entre que se
  *                   entra en la función DIR y se vuelve de ella (incluye lo que
  *                   llame) e imprime llamadas y ciclos medios por llamada
+ *     -sp SP        pone la pila en SP antes de saltar al juego (como un cargador)
  *     -128          emula un Spectrum 128K
  *     -page N FICH  (128K) carga FICH en el banco de RAM N, desde su inicio
  *                   (lo mismo que hace el cargador con reubica). Repetible.
@@ -110,6 +111,7 @@ static void parse_keys(const char *s) {
 int main(int argc, char **argv) {
 	int dumps[64][2], ndumps = 0, is128 = 0, npages = 0, trap = 0, proffrom = -1;
 	const char *proffile = NULL; int cntaddr = -1, cntfrom = 0; uint64_t cnt = 0, cntticks = 0;
+	int initsp = -1;
 	int incaddr = -1, incfrom = 0, inside = 0; uint16_t incsp = 0; uint64_t inccalls = 0, incticks = 0; static uint32_t prof[65536]; uint16_t curpc = 0;
 	uint16_t ring[4096]; uint16_t ringsp[4096]; int rp = 0, armed = 0, tlo = 0, thi = 0x10000, romfrom = 0;
 	int page_n[8]; const char *page_f[8];
@@ -123,6 +125,7 @@ int main(int argc, char **argv) {
 		else if (!strcmp(argv[i], "-h")) hash = 1;
 		else if (!strcmp(argv[i], "-d")) { char *c; dumps[ndumps][0] = (int)strtol(argv[++i], &c, 0); dumps[ndumps][1] = (*c == ',') ? (int)strtol(c + 1, NULL, 0) : 16; ndumps++; }
 		else if (!strcmp(argv[i], "-128")) is128 = 1;
+		else if (!strcmp(argv[i], "-sp")) initsp = (int)strtol(argv[++i], NULL, 0);
 		else if (!strcmp(argv[i], "-incl")) { incaddr = (int)strtol(argv[++i], NULL, 0); incfrom = atoi(argv[++i]); }
 		else if (!strcmp(argv[i], "-count")) { cntaddr = (int)strtol(argv[++i], NULL, 0); cntfrom = atoi(argv[++i]); }
 		else if (!strcmp(argv[i], "-prof")) { proffrom = atoi(argv[++i]); proffile = argv[++i]; }
@@ -155,6 +158,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	for (size_t i = 0; i < n; i++) mem_wr(&sys.mem, (uint16_t)(addr + i), data[i]);
+	if (initsp >= 0) sys.cpu.sp = (uint16_t)initsp;
 	sys.pins = z80_prefetch(&sys.cpu, (uint16_t)addr);
 
 	int si = 0, hit = 0;

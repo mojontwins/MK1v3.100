@@ -57,6 +57,9 @@ Dim Shared As Integer sectUsed (15)
 Dim Shared As Integer roomSectionsUsed
 Dim Shared As Integer maxScriptSize
 Dim Shared As Integer maxTextLen
+Dim Shared As Integer maxTextEnc			' Bytes del texto codificado más largo
+Dim Shared As Integer textRes				' Textos como recurso (textres)
+Dim Shared As String fileText
 
 '' CALL a SUBs: la dirección se resuelve al final del script, así se puede
 '' llamar a una SUB definida más abajo.
@@ -278,6 +281,8 @@ Sub parseScriptLine (linea As String)
 			tokens (i) = "$234"
 		ElseIf Ucase(tokens(i)) = "PARAM" Then
 			tokens (i) = "$233"
+		ElseIf Ucase(tokens(i)) = "LEVEL" Then
+			tokens (i) = "$229"
 		ElseIf Ucase(tokens(i)) = "TIMER" Then
 			tokens (i) = "$241"
 		ElseIf Ucase(tokens(i)) = "MOVED_TILE" Then
@@ -451,6 +456,7 @@ Function getTextOffset (text As String) As String
 
 	' encode this text
 	encodedText = encode5BitEsc (text, textWidth)
+	If Len (encodedText) > maxTextEnc Then maxTextEnc = Len (encodedText)
 
 	' Para el buffer del intérprete C: caracteres + saltos de línea + fin
 	If Len (text) + Len (text) \ textWidth + 2 > maxTextLen Then maxTextLen = Len (text) + Len (text) \ textWidth + 2
@@ -492,7 +498,7 @@ Sub markFlagUse (inner As String)
 	n = Val (inner)
 	If n > 255 Then Exit Sub
 	SV (n) = -1
-	If n < &HE6 And n > maxFlag Then maxFlag = n
+	If n < &HE5 And n > maxFlag Then maxFlag = n
 End Sub
 
 Function pVal (expresion As String) As String
@@ -688,6 +694,11 @@ Function processIf (linea As String) As String
 					Case "still"
 						' $26 X Y
 						code = buildCond (Chr (&H26))
+
+					Case "near"
+						' $27 X Y: a 15 píxeles o menos de (X*16, Y*16)
+						If Not outC Then reportError ("PLAYER NEAR needs v=3_100 output=c @ line " & curLineNo)
+						code = buildCond (Chr (&H27) & pVal (tokens (3)) & pVal (tokens (4)))
 				End Select
 
 		End Select
@@ -834,13 +845,87 @@ Function processCommand (linea As String) As String
 			End If
 
 		Case "warp"
-			If scmd = "to" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3))And isNumberOrVar (tokens (4)) Then
+			' (LEVEL ya viene traducido a la variable especial $229)
+			If scmd = "to" And (lCase (tokens (2)) = "level" Or tokens (2) = "$229") Then
+				' WARP TO LEVEL L, N, X, Y [, S]: al nivel L (pantalla N, tile X, Y);
+				' con S <> 0 sin la presentación del nivel. Termina el script.
+				' $6E L N X Y S
+				If Not outC Then reportError ("WARP TO LEVEL needs v=3_100 output=c @ line " & curLineNo)
+				If isNumberOrVar (tokens (3)) And isNumberOrVar (tokens (4)) And isNumberOrVar (tokens (5)) And isNumberOrVar (tokens (6)) Then
+					code = buildAction (Chr (&H6E) & pVal (tokens (3)) & pVal (tokens (4)) & pVal (tokens (5)) & pVal (tokens (6)) & pVal (tokens (7)))
+					lastCommandWasTerminator = -1
+				Else
+					syntaxError
+				End If
+			ElseIf scmd = "to" And isNumberOrVar (tokens (2)) And isNumberOrVar (tokens (3))And isNumberOrVar (tokens (4)) Then
 				' WARP TO N, X, Y
 				' $6D N X Y
 				code = buildAction (Chr (&H6D) & pVal (tokens (2)) & pVal (tokens (3)) & pVal (tokens (4)))
 			Else
 				syntaxError
 			End If
+
+		Case "flipflop"
+			' FLIPFLOP $A: $A = 1 - $A
+			' $03 A
+			If correctLvalue (tokens (1)) Then
+				code = buildAction (Chr (&H03) & lVal (tokens (1)))
+			Else
+				syntaxError
+			End If
+
+		Case "reenter"
+			' REENTER: se vuelve a entrar en la pantalla (sin resucitar enemigos).
+			' Termina la cláusula.
+			' $60
+			If Not outC Then reportError ("REENTER needs v=3_100 output=c @ line " & curLineNo)
+			code = buildAction (Chr (&H60))
+			lastCommandWasTerminator = -1
+
+		Case "redraw"
+			' REDRAW: repinta la pantalla
+			' $61
+			If Not outC Then reportError ("REDRAW needs v=3_100 output=c @ line " & curLineNo)
+			code = buildAction (Chr (&H61))
+
+		Case "repostn"
+			' REPOSTN X, Y: el jugador al tile (X, Y) y REENTER
+			' $62 X Y
+			If Not outC Then reportError ("REPOSTN needs v=3_100 output=c @ line " & curLineNo)
+			If isNumberOrVar (tokens (1)) And isNumberOrVar (tokens (2)) Then
+				code = buildAction (Chr (&H62) & pVal (tokens (1)) & pVal (tokens (2)))
+				lastCommandWasTerminator = -1
+			Else
+				syntaxError
+			End If
+
+		Case "enemy"
+			' ENEMY N ON / ENEMY N OFF (N: 0, 1, 2 en la pantalla)
+			' $63 N / $64 N
+			If Not outC Then reportError ("ENEMY needs v=3_100 output=c @ line " & curLineNo)
+			If isNumberOrVar (tokens (1)) And lCase (tokens (2)) = "on" Then
+				code = buildAction (Chr (&H63) & pVal (tokens (1)))
+			ElseIf isNumberOrVar (tokens (1)) And lCase (tokens (2)) = "off" Then
+				code = buildAction (Chr (&H64) & pVal (tokens (1)))
+			Else
+				syntaxError
+			End If
+
+		Case "safe"
+			' SAFE X, Y: sitio seguro para reaparecer (DIE_AND_RESPAWN)
+			' $65 X Y
+			If Not outC Then reportError ("SAFE needs v=3_100 output=c @ line " & curLineNo)
+			If isNumberOrVar (tokens (1)) And isNumberOrVar (tokens (2)) Then
+				code = buildAction (Chr (&H65) & pVal (tokens (1)) & pVal (tokens (2)))
+			Else
+				syntaxError
+			End If
+
+		Case "music"
+			' MUSIC N: toca la canción N (pasa a ser la del nivel)
+			' $E7 N
+			If Not outC Then reportError ("MUSIC needs v=3_100 output=c @ line " & curLineNo)
+			code = buildAction (Chr (&HE7) & pVal (tokens (1)))
 
 		Case "sound"
 			' SOUND N
@@ -879,6 +964,12 @@ Function processCommand (linea As String) As String
 		Case "game"
 			If scmd = "over" then
 				code = buildAction (Chr (&HF1))
+				lastCommandWasTerminator = -1
+			ElseIf scmd = "ending" Then
+				' GAME ENDING: se acaba el juego (el final). Termina el script.
+				' $F5
+				If Not outC Then reportError ("GAME ENDING needs v=3_100 output=c @ line " & curLineNo)
+				code = buildAction (Chr (&HF5))
 				lastCommandWasTerminator = -1
 			Else
 				syntaxError
@@ -1419,7 +1510,7 @@ Sub cDefine (fOut As Integer, nombre As String, valor As String, comentario As S
 	Dim As String l
 	l = "#define " & nombre
 	If valor <> "" Then l = l & Space (28 - Len (l)) & valor
-	If comentario <> "" Then l = l & Space (36 - Len (l)) & "// " & comentario
+	If comentario <> "" Then l = l & Space (IIf (Len (l) < 36, 36 - Len (l), 1)) & "// " & comentario
 	Print #fOut, l
 End Sub
 
@@ -1469,10 +1560,10 @@ Sub writeCConfig (fName As String, fileIns () As String, nScripts As Integer)
 	Print #fOut, ""
 
 	Print #fOut, "// Variables especiales que se leen (MSC_RV_xx) o se escriben (MSC_LV_xx)"
-	For i = &HE6 To &HFE
+	For i = &HE5 To &HFE
 		If SV (i) Then cDefine fOut, "MSC_RV_" & hex2 (i), "", ""
 	Next i
-	For i = &HE6 To &HFE
+	For i = &HE5 To &HFE
 		If LV (i) And SV (i) Then cDefine fOut, "MSC_LV_" & hex2 (i), "", ""
 	Next i
 	Print #fOut, ""
@@ -1487,6 +1578,12 @@ Sub writeCConfig (fName As String, fileIns () As String, nScripts As Integer)
 		cDefine fOut, "MSC_TEXTS", "", ""
 		cDefine fOut, "MSC_TEXT_MAX_LEN", Trim (Str (maxTextLen)), "caracteres del texto más largo"
 		cDefine fOut, "MSC_TEXT_WIDTH", Trim (Str (textWidth)), ""
+		If textRes Then
+			' Los textos van en un recurso (sin comprimir) de 128K: el binario
+			' de text= en librarian.txt. Se copian de MSC_TEXT_MAX_ENC en MSC_TEXT_MAX_ENC bytes.
+			cDefine fOut, "MSC_TEXTS_RES", "RES_" & cName (fileText), fileText & " en librarian.txt"
+			cDefine fOut, "MSC_TEXT_MAX_ENC", Trim (Str (maxTextEnc)), "bytes del texto codificado más largo"
+		End If
 	End If
 
 	Close #fOut
@@ -1729,10 +1826,12 @@ Sub usage
 	Print "         jumptable: code based jump table rather than index"
 	Print ""
 	Print "msc4.exe in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]"
-	Print "         [interpreter=msc-config.h] [scripts=msc-scripts.h]"
+	Print "         [interpreter=msc-config.h] [scripts=msc-scripts.h] [text=text.bin] [textres]"
 	Print "         MK1 v3.100: the interpreter is src/dev/msc.h (pure C). msc4 writes"
 	Print "         f.spt.bin per input, msc-config.h (what the interpreter needs) and"
 	Print "         msc-scripts.h (bytecode as C arrays + encoded texts)."
+	Print "         textres: the encoded texts only go to text= (a 128K resource),"
+	Print "         not to msc-scripts.h."
 End Sub
 
 '' Interfaz
@@ -1744,7 +1843,6 @@ End Sub
 Dim As String mandatory (1) = { "in", "v" }
 Dim As Integer fIn, fOut, i
 Dim As String fileIns(127)
-Dim As String fileText
 Dim As Integer isEntering, room
 
 Print "msc v4.7.20261030 ~ ";
@@ -1798,6 +1896,8 @@ allOpcodes = (sclpGetValue ("allopcodes") <> "")
 
 fileText = sclpGetValue ("text")
 If fileText = "" Then fileText = "text.bin"
+textRes = (sclpGetValue ("textres") <> "")
+If textRes And Not outC Then Print "textres needs v=3_100 output=c": End 1
 
 lastTextOffset = 0
 textPoolIndex = 0
@@ -1861,7 +1961,7 @@ If outC Then
 				textBytes (k) = Asc (Mid (textPool (j), i, 1)): k = k + 1
 			Next i
 		Next j
-		writeCArray fScripts, "msc_texts", textBytes (), k
+		If Not textRes Then writeCArray fScripts, "msc_texts", textBytes (), k
 	End If
 	Close #fScripts
 	Print "Wrote " & scriptsFn

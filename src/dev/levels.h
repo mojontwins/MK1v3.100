@@ -45,7 +45,9 @@ typedef struct {
 	unsigned char n_cerrojos;
 	unsigned char flags;					// bit 0: mapa unpacked
 	unsigned char version;
-	unsigned char reserved [3];
+	unsigned char engine;					// Motor del jugador (ENGINE_JUMP, ENGINE_SWIM)
+	unsigned char facing;					// Hacia dónde mira al empezar: 0 derecha, 1 izquierda
+	unsigned char reserved;
 } LEVELHEADER;
 
 typedef struct {

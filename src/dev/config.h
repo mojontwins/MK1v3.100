@@ -27,6 +27,10 @@
 //#define COMPRESSED_LEVELS 			// use levels.h instead of mapa.h and enems.h (!)
 //#define MAX_LEVELS			4		// # of compressed levels
 //#define REFILL_ME 					// If defined, refill player on each level
+//#define LEVEL_TILESETS_NO_FONT		// Tilesets de los niveles sin la fuente (ts2bin nofont): se cargan
+										// encima de los 64 primeros caracteres, que se quedan con la del binario.
+//#define DONT_LIMIT_LIFE				// Las recargas de vida pueden pasar de PLAYER_LIFE.
+//#define TITLE_MUSIC			0		// Canción del título (128K / CPC). Por defecto, la 0.
 
 // ============================================================================
 // II. Engine type
@@ -54,6 +58,13 @@
 //#define ONLY_ONE_OBJECT				// If defined, only one object can be carried at a time.
 //#define OBJECT_COUNT			1		// Defines which FLAG will be used to store the object count.
 //#define DEACTIVATE_EVIL_TILE			// If defined, no killing tiles (behaviour 1) are detected.
+//#define DIE_AND_RESPAWN				// Al perder una vida se vuelve al último sitio seguro (donde se pisó
+										// suelo; SAFE x, y en el script). Gancho HOOK_PLAYER_DIES.
+//#define ENABLE_CONVEYORS				// Tiles con comportamiento 32 (+ 8 o 4): cintas transportadoras. Con el
+										// bit 1 (+1) llevan a la derecha, sin él a la izquierda.
+//#define CONVEYOR_SPEED		256		// Velocidad de las cintas (1/256 px/frame).
+//#define TILE_GET				22		// Tile que se coge al pasar por encima (monedas)...
+//#define TILE_GET_FLAG			1		// ...y el flag del script que cuenta cuántos (necesita scripting).
 #define FULL_BOUNCE 					// If defined, evil tile bounces equal MAX_VX, otherwise v/2
 #define PLAYER_BOUNCES					// If defined, collisions make player bounce
 #define SLOW_DRAIN						// Works with bounces. Drain is 4 times slower
@@ -68,8 +79,35 @@
 //#define ENABLE_CUSTOM_TYPE_6			// If defined, add code to type 6 enemies.
 //#define TYPE_6_FIXED_SPRITE 	2		// Sprite used - 1.
 //#define SIGHT_DISTANCE		104 	// Used in our type 6 enemies.
+//#define TYPE_6_KILL_ON_TOUCH			// Los tipo 6 desaparecen al tocar al jugador.
+
+// Enemigos que disparan (tipo 8: se mueven como los lineales y apuntan al
+// jugador) y nubes (tipo 9: le siguen en horizontal y dejan caer cosas). Sus
+// proyectiles ("cocos") usan el sprite de la bala.
+//#define ENABLE_SHOOTERS				// Tipo 8
+//#define TYPE_8_FIXED_SPRITE	0		// Su sprite - 1
+//#define TYPE_8_SHOOT_FREQ		63		// Disparan cuando (rand () & FREQ) == 1 (2^n - 1)
+//#define TYPE_8_SAFE_DISTANCE	64		// Si el jugador está más cerca, no disparan
+//#define COCO_SPEED_8			6		// Píxeles por frame
+//#define ENABLE_CLOUDS					// Tipo 9 (su velocidad es |mx|)
+//#define TYPE_9_FIXED_SPRITE	0
+//#define TYPE_9_SHOOT_FREQ		31
+//#define TYPE_9_SAFE_DISTANCE	48
+//#define COCO_SPEED_9			8
+//#define MAX_COCOS				3		// Cocos a la vez en pantalla
+//#define TYPE_8_FIRE_ONE				// Un coco por enemigo (necesita MAX_COCOS 3)
 //#define USE_TWO_BUTTONS 				// Alternate keyboard scheme for two-buttons games
 //#define USE_HOTSPOTS_TYPE_3 			// Alternate logic for recharges.
+
+// Teclado propio (ZX): fire, right, left, down, up, con los códigos de
+// sp_LookupKey: (bit << 8) | semifila. P.ej. para M D A S N:
+//#define KEYS_CUSTOM		0x047f, 0x04fd, 0x01fd, 0x02fd, 0x087f
+//#define KEY_ALSO_UP		0x02fb		// Otra tecla que también hace de ARRIBA (W)
+
+// Puñetazo
+// --------
+//#define PLAYER_CAN_PUNCH				// FIRE da un puñetazo (sprites 20 y 21) y ARRIBA salta. Rompe
+										// muros (BREAKABLE_WALLS). No va con PLAYER_CAN_FIRE.
 
 // Pushable tile
 // -------------
@@ -102,6 +140,15 @@
 
 //#define BREAKABLE_WALLS 				// Breakable walls
 //#define BREAKABLE_WALLS_LIFE	1		// Amount of hits to break wall
+										// (sin BREAKABLE_WALLS_LIFE, o 0, se rompen al primer golpe)
+//#define BREAKABLE_ANIM				// El muro se ve como BREAKABLE_TILE unos frames antes de romperse
+//#define BREAKABLE_TILE		31		// 
+//#define MAX_BREAKABLE			3		// Muros rompiéndose a la vez
+//#define MAX_BREAKABLE_FRAMES	4		// Frames que dura
+//#define BREAKABLE_TILE_GET	12		// Al romperse este tile, a veces sale un TILE_GET (una moneda)...
+//#define BREAKABLE_TILE_FREQ	3		// ...si (rand () & FREQ) <= FREQ_T
+//#define BREAKABLE_TILE_FREQ_T	2
+//#define PERSISTENT_BREAKABLE			// Lo roto sigue roto al volver a la pantalla (COMPRESSED_LEVELS)
 
 //#define ENABLE_RANDOM_RESPAWN 		// If defined, automatic flying enemies spawn on killed enemies
 //#define FANTY_MAX_V 			1024 	// Flying enemies max speed (1/256 px/frame; also for custom type 6)
@@ -120,6 +167,9 @@
 //#define MAX_FLAGS				32		// Más flags de los que usa el script (por defecto, MSC_FLAGS)
 //#define ITEM_X				28		// Con GET ITEM SET: el tile del objeto que se lleva
 //#define ITEM_Y				1		// se pinta en el marcador en (ITEM_X, ITEM_Y)
+//#define KEEP_FLAGS_BETWEEN_LEVELS		// Los flags duran toda la partida (si no, se borran en cada nivel)
+//#define SCRIPT_TEXTS_AS_RESOURCE		// Los textos de TEXT BOX van en text.bin, un recurso de 128K sin
+										// comprimir (ponlo en librarian.txt), en lugar de en la RAM.
 
 // Timer
 // -----
@@ -163,6 +213,8 @@
 //#define PLAYER_STEP_SOUND				// Sound while walking. No effect in the BOOTEE engine.
 //#define PLAYER_BOUNCE_WITH_WALLS		// Bounce when hitting a wall. Only really useful in MOGGY_STYLE mode
 //#define PLAYER_CUMULATIVE_JUMP		// Keep pressing JUMP to JUMP higher in several bounces. Works with PLAYER_HAS_JUMP
+//#define PLAYER_HAS_SWIM				// Nado: sin gravedad, ARRIBA / ABAJO. Con PLAYER_HAS_JUMP, cada nivel
+										// dice cuál usa (buildlevel engine=0|1).
 
 // ============================================================================
 // III. Screen configuration
@@ -188,6 +240,9 @@
 #define TIMER_X 				99		//
 #define TIMER_Y 				99		// Timer counter coordinates
 //#define PLAYER_SHOW_TIMER 			// If defined, show timer counter
+//#define PLAYER_SHOW_FLAG		1		// Muestra un flag del script en el marcador (monedas...)...
+//#define FLAG_X				29		//
+//#define FLAG_Y				0		// ...en estas coordenadas
 
 // Text
 //#define LINE_OF_TEXT			1		// If defined, scripts can show text @ Y = # (TEXT "...")
@@ -233,6 +288,8 @@
 #define PLAYER_MAX_VY_JETPAC	1024 	// Max vertical jetpac speed (1024/256 = 4 píxeles/frame)
 
 #define PLAYER_BOOTEE_CROUCH 	512		// Add this to vy when pressing DOWN in BOOTEE
+#define PLAYER_MAX_VSWIM		512		// Nado: velocidad vertical máxima
+#define PLAYER_ASWIM			128		// Nado: aceleración
 
 // IV.2. Horizontal (side view) or general (top view) movement.
 

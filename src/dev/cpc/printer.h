@@ -47,7 +47,7 @@ unsigned char key_line (unsigned char line) __naked {
 // sincronía y vuelca lo tocado del superbuffer a la pantalla.
 void sp_UpdateNow (void) {
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		#ifdef PLAYER_CAN_FIRE
+		#if SW_SMALL_SPRITES > 0
 			if (gpit >= SP_BULLETS_BASE) {
 				cpc_PutSPTileMap2Bx8 (&sp_sw [gpit]);
 			} else
@@ -58,7 +58,7 @@ void sp_UpdateNow (void) {
 	cpc_UpdScr ();
 
 	for (gpit = 0; gpit < SW_SPRITES_ALL; gpit ++) {
-		#ifdef PLAYER_CAN_FIRE
+		#if SW_SMALL_SPRITES > 0
 			if (gpit >= SP_BULLETS_BASE) {
 				cpc_PutTrSp2Bx8TileMap (&sp_sw [gpit]);
 			} else
@@ -323,6 +323,28 @@ void render_sprites (void) {
 			} else {
 				sp_sw [SP_BULLETS_BASE + gpit].sp0 = (unsigned int) (sprite_18_a);
 			}
+		}
+	#endif
+
+	// Render cocos
+
+	#ifdef ENABLE_COCOS
+		for (gpit = 0; gpit < MAX_COCOS; gpit ++) {
+			if (coco_s [gpit]) {
+				cpc_MoveSprAbs (SP_COCOS_BASE + gpit, sprite_19_a, coco_x [gpit], coco_y [gpit]);
+			} else {
+				sp_sw [SP_COCOS_BASE + gpit].sp0 = (unsigned int) (sprite_18_a);
+			}
+		}
+	#endif
+
+	// Render hitter
+
+	#ifdef PLAYER_CAN_PUNCH
+		if (hitter_on) {
+			cpc_MoveSprAbs (SP_HITTER, hitter_next_frame, hitter_x, hitter_y);
+		} else {
+			sp_sw [SP_HITTER].sp0 = (unsigned int) (sprite_18_a);
 		}
 	#endif
 }

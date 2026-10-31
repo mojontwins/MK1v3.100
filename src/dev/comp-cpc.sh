@@ -28,7 +28,7 @@ if [ $justcompile = 0 ]; then
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites.png out=sprites.bin max=16 silent > /dev/null
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_extra.png out=sprites_extra.bin max=2 silent > /dev/null
 	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_bullet.png out=sprites_bullet.bin metasize=1,1 max=1 silent > /dev/null
-	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_sword.png out=sprites_sword.bin metasize=1,1 max=4 silent > /dev/null
+	$U/mkts_om $P mode=sprites in=../gfx/cpc/sprites_punch.png out=sprites_punch.bin metasize=1,1 max=2 silent > /dev/null
 	$U/mkts_om platform=cpc mode=pals in=../gfx/cpc/pal.png prefix=my_inks out=cpc/pal.h silent > /dev/null
 
 	for s in marco ending title; do

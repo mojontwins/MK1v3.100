@@ -21,6 +21,10 @@
 //                         Tras la pantalla de título. Con COMPRESSED_LEVELS
 //                         devuelve el nivel por el que empezar (menús,
 //                         contraseñas...); sin niveles se ignora lo devuelto.
+//                         La vida (player.life) y, con
+//                         KEEP_FLAGS_BETWEEN_LEVELS, los flags ya tienen su
+//                         valor inicial: una contraseña los puede cambiar. La
+//                         música del título sigue sonando: el gancho la para.
 //
 //   HOOK_LEVEL_INTRO      void hook_level_intro (void)
 //                         Sustituye a la pantalla "LEVEL XX" antes de cada
@@ -35,6 +39,17 @@
 //   HOOK_ENTERING_SCREEN  void hook_entering_screen (void)
 //                         Cada vez que se entra en una pantalla, tras
 //                         dibujarla (n_pant es la nueva pantalla).
+//
+//   HOOK_EACH_FRAME       void hook_each_frame (void)
+//                         Cada frame, después de mover todo y antes de
+//                         volcar la pantalla. Puede acabar el nivel:
+//                         playing = 0 y success = LEVEL_REPEAT (repetirlo),
+//                         LEVEL_CLEARED o LEVEL_FAILED (definitions.h).
+//
+//   HOOK_PLAYER_DIES      void hook_player_dies (void)
+//                         Con DIE_AND_RESPAWN, al perder una vida, antes de
+//                         volver al sitio seguro: sustituye al sonido y la
+//                         pausa de siempre (un sample, una animación...).
 //
 //   HOOK_WIN_CONDITION    unsigned char hook_win_condition (void)
 //                         Cada frame: devuelve distinto de 0 si se ha superado

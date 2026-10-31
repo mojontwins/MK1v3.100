@@ -55,7 +55,9 @@ banco de ROM y se descomprimirá igual en la RAM de trabajo.
 | 10 | número de cerrojos | — |
 | 11 | flags (bit 0: mapa unpacked) | — |
 | 12 | versión del formato (1) | — |
-| 13–15 | reservado (0) | — |
+| 13 | motor del jugador: 0 salto, 1 nado | `LEVEL_ENGINE` (con `SWITCHABLE_ENGINES`) |
+| 14 | hacia dónde mira al empezar: 0 derecha, 1 izquierda | `LEVEL_FACING` |
+| 15 | reservado (0) | — |
 
 Sin `COMPRESSED_LEVELS` las mismas macros toman sus valores de `config.h`, así
 que el motor no distingue entre los dos casos.
@@ -99,7 +101,8 @@ Cada script indica sus pantallas con `ROOMS = n` (el tamaño de su mapa).
 ```
 buildlevel map=mapa1.map ene=enems1.ene behs=behs1.txt out=level1.bin maxpant=25 ^
            scr_ini=0 ini_x=2 ini_y=7 max_objs=99 life=3 [scr_fin=N fin_x=X fin_y=Y] ^
-           [mapw=W maph=H] [unpacked] [lock=15] [2bytes] [fixmappy] [noswap]
+           [mapw=W maph=H] [unpacked] [engine=0|1] [facing=0|1] ^
+           [lock=15] [2bytes] [fixmappy] [noswap]
 zx0 level1.bin level1c.bin
 
 rem tileset ZX (2304 bytes)

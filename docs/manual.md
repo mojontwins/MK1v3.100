@@ -303,7 +303,8 @@ Cada tile tiene un comportamiento. Sin niveles se define en
 | 4 | **Plataforma**: sólo para al jugador si cae encima (vista lateral). |
 | 8 | **Obstáculo**: para al jugador por todos lados. |
 | 10 | **Interactuable**: obstáculo especial; los cerrojos (tile 15) y el bloque empujable (tile 14). |
-| 16 | **Rompible** con los disparos (`BREAKABLE_WALLS`). Súmale 8 (24) para que además sea obstáculo. |
+| 16 | **Rompible** con los disparos o los puñetazos (`BREAKABLE_WALLS`). Súmale 8 (24) para que además sea obstáculo. |
+| 32 | **Cinta transportadora** (`ENABLE_CONVEYORS`): súmale 8 (o 4) para poder estar encima; con 1 más lleva a la derecha, sin él a la izquierda (40 izquierda, 41 derecha). |
 | 128 | **Especial**: lanza la sección `SPECIAL TILE TOUCHED` del script cuando el centro del jugador está sobre él. Se puede sumar a los demás (132 = especial y plataforma). |
 
 Los valores se suman: el motor comprueba los bits. Un 9 (obstáculo que mata)
@@ -494,8 +495,10 @@ se usa para los spritesets de los niveles (capítulo 10).
 La explosión (el sprite 17, cuando muere un enemigo), el sprite vacío (18) y
 la bala (19, de 8x8) están en `speccy/extrasprites.h`, escritos como una
 tabla `const` de C (gráfico y máscara, byte a byte). Un güego que quiera los suyos sustituye ese fichero
-(Goku Mal lo hace). En CPC son pngs: `gfx/cpc/sprites_extra.png` y
-`sprites_bullet.png`.
+(Goku Mal lo hace). Con `PLAYER_CAN_PUNCH` están también los del puño: el
+20 (hacia la derecha) y el 21 (hacia la izquierda), de 8x8. En CPC son pngs:
+`gfx/cpc/sprites_extra.png`, `sprites_bullet.png` y `sprites_punch.png` (los
+dos puños, uno junto a otro).
 
 ![Explosión](img/sprite-explosion.png)
 
@@ -766,6 +769,15 @@ acabarse el tiempo.
 | `SIGHT_DISTANCE` | Distancia, en píxeles, a la que ven al jugador. |
 | `USE_TWO_BUTTONS` | Teclado de dos botones: W A S D, N salta, M dispara. |
 | `USE_HOTSPOTS_TYPE_3` | Las recargas de vida sólo salen donde se ponen. |
+| `DONT_LIMIT_LIFE` | Las recargas de vida pueden pasar de `PLAYER_LIFE`. |
+| `DIE_AND_RESPAWN` | Al perder una vida se vuelve al último sitio seguro: donde se pisó suelo por última vez (o lo que diga `SAFE x, y` en el script). Antes, `HOOK_PLAYER_DIES` (o un sonido y una pausa). Sólo vista lateral. |
+| `ENABLE_CONVEYORS` | Cintas transportadoras (comportamiento 32), a `CONVEYOR_SPEED` (256 = 1 píxel por frame). |
+| `TILE_GET`, `TILE_GET_FLAG` | El tile `TILE_GET` se coge al pasar por encima (monedas) y suma 1 al flag `TILE_GET_FLAG` (necesita scripting). |
+| `TYPE_6_KILL_ON_TOUCH` | Los de tipo 6 desaparecen al tocar al jugador. |
+| `ENABLE_SHOOTERS` | Enemigos de tipo 8: se mueven como los lineales y disparan al jugador. `TYPE_8_FIXED_SPRITE`, `TYPE_8_SHOOT_FREQ` (disparan si `(rand () & FREQ) == 1`), `TYPE_8_SAFE_DISTANCE` (más cerca no disparan), `COCO_SPEED_8`. |
+| `ENABLE_CLOUDS` | Enemigos de tipo 9: siguen al jugador en horizontal a la velocidad `|mx|` y dejan caer cosas. `TYPE_9_FIXED_SPRITE`, `TYPE_9_SHOOT_FREQ`, `TYPE_9_SAFE_DISTANCE`, `COCO_SPEED_9`. |
+| `MAX_COCOS`, `TYPE_8_FIRE_ONE` | Proyectiles de los tipos 8 y 9 en pantalla (usan el sprite de la bala) y, con `TYPE_8_FIRE_ONE`, uno por enemigo. |
+| `KEYS_CUSTOM` | (ZX) Las teclas del juego: fire, right, left, down, up, con los códigos de `sp_LookupKey`. `KEY_ALSO_UP`: otra tecla que también hace de ARRIBA. |
 
 ### Bloques empujables
 
@@ -791,11 +803,15 @@ Con scripting, empujar un bloque lanza la sección `TILE PUSHED`.
 | `FIRE_MIN_KILLABLE` | Sólo se pueden matar a tiros los enemigos de tipo >= N. |
 | `CAN_FIRE_UP` | Vista lateral: disparar hacia arriba (con ARRIBA) y en diagonal. Mejor con `USE_TWO_BUTTONS`. |
 | `MAX_AMMO` | Munición limitada (y su marcador). `AMMO_REFILL`: lo que da cada recarga; `INITIAL_AMMO`: con cuánta se empieza. |
-| `BREAKABLE_WALLS` | Los tiles de comportamiento 16 se rompen a tiros; `BREAKABLE_WALLS_LIFE`: cuántos aguantan. |
+| `BREAKABLE_WALLS` | Los tiles de comportamiento 16 se rompen a tiros (o a puñetazos); `BREAKABLE_WALLS_LIFE`: cuántos golpes de más aguantan (sin él, se rompen al primero). |
+| `BREAKABLE_ANIM` | El muro se ve como `BREAKABLE_TILE` durante `MAX_BREAKABLE_FRAMES` frames antes de desaparecer (`MAX_BREAKABLE` a la vez). |
+| `BREAKABLE_TILE_GET` | Al romperse ese tile, a veces deja un `TILE_GET`: si `(rand () & BREAKABLE_TILE_FREQ) <= BREAKABLE_TILE_FREQ_T`. |
+| `PERSISTENT_BREAKABLE` | Lo roto sigue roto al volver a la pantalla (con niveles). |
+| `PLAYER_CAN_PUNCH` | En lugar de disparar, FIRE da un puñetazo (sprites 20 y 21, ver el capítulo 3) que quita una vida a los enemigos y rompe muros. No va con `PLAYER_CAN_FIRE`. |
 | `ENABLE_RANDOM_RESPAWN` | Fanties en lugar de los enemigos muertos. `FANTY_MAX_V`, `FANTY_A` (también para el tipo 6) y `FANTIES_LIFE_GAUGE`. |
 
-En vista lateral, sin disparos se salta con FIRE; con disparos, con ARRIBA (o
-con N si `USE_TWO_BUTTONS`).
+En vista lateral, sin disparos se salta con FIRE; con disparos o puñetazos,
+con ARRIBA (o con N si `USE_TWO_BUTTONS`).
 
 ### Scripting
 
@@ -854,6 +870,7 @@ el script.
 | `PLAYER_HAS_JETPAC` | Vuela con un jetpac (`PLAYER_INCR_JETPAC`, `PLAYER_MAX_VY_JETPAC`). |
 | `PLAYER_BOOTEE` | Salta siempre, como Bootee (no uses también `PLAYER_HAS_JUMP` ni `PLAYER_HAS_JETPAC`). ABAJO hace más corto el salto (`PLAYER_BOOTEE_CROUCH`). |
 | `PLAYER_CUMULATIVE_JUMP` | Con `PLAYER_HAS_JUMP`: manteniendo el salto se salta más alto en cada rebote. |
+| `PLAYER_HAS_SWIM` | Nada: sin gravedad, ARRIBA sube, ABAJO baja y sin tocar nada se flota hacia arriba (`PLAYER_MAX_VSWIM`, `PLAYER_ASWIM`). Con `PLAYER_HAS_JUMP` también, cada nivel dice si se salta o se nada (`buildlevel engine=0` o `1`). |
 | `PLAYER_KILLS_ENEMIES` | Pisar a un enemigo lo mata. |
 | `PLAYER_STOMPS_ON_ENEMIES` | Pisar a un enemigo hace rebotar sin matarlo. |
 | `PLAYER_CAN_KILL_FLAG` | Con scripting: sólo se mata pisando si este flag vale 1. |
@@ -1090,10 +1107,12 @@ define su `HOOK_*`. Un gancho que no se define no ocupa nada.
 | Gancho | Función | Cuándo |
 |---|---|---|
 | `HOOK_GAME_INIT` | `void hook_game_init (void)` | Una vez, al arrancar. Logos, idioma… |
-| `HOOK_AFTER_TITLE` | `unsigned char hook_after_title (void)` | Tras la pantalla de título. Con niveles devuelve el nivel inicial (menús, contraseñas). |
+| `HOOK_AFTER_TITLE` | `unsigned char hook_after_title (void)` | Tras la pantalla de título. Con niveles devuelve el nivel inicial (menús, contraseñas); puede cambiar también la vida y los flags. La música del título sigue sonando: la para el gancho. |
 | `HOOK_LEVEL_INTRO` | `void hook_level_intro (void)` | Con niveles, sustituye a la pantalla "LEVEL XX" antes de cada nivel. Va antes de cargar el nivel: puede usar la pantalla y el tileset. |
 | `HOOK_LEVEL_START` | `void hook_level_start (void)` | Con el nivel cargado, justo antes de jugar. |
 | `HOOK_ENTERING_SCREEN` | `void hook_entering_screen (void)` | Al entrar en cada pantalla, ya pintada. |
+| `HOOK_EACH_FRAME` | `void hook_each_frame (void)` | Cada frame, antes de volcar la pantalla. Puede acabar el nivel: `playing = 0` y `success = LEVEL_REPEAT` (se repite), `LEVEL_CLEARED` o `LEVEL_FAILED`. |
+| `HOOK_PLAYER_DIES` | `void hook_player_dies (void)` | Con `DIE_AND_RESPAWN`, al perder una vida y antes de volver al sitio seguro (un sample, una animación). |
 | `HOOK_WIN_CONDITION` | `unsigned char hook_win_condition (void)` | Cada frame: distinto de 0 si se ha superado el nivel. Sustituye a la condición normal (`WIN GAME` del script sigue valiendo). |
 | `HOOK_LEVEL_END` | `void hook_level_end (void)` | Al superar un nivel (o el juego, sin niveles). |
 | `HOOK_GAME_OVER` | `void hook_game_over (void)` | Sustituye a `game_over ()`. |
@@ -1291,11 +1310,22 @@ cabecera del nivel; sin niveles, de `config.h`.
 3. Al superarlo, `HOOK_LEVEL_END` y el siguiente nivel; tras el último,
    `HOOK_GAME_ENDING` (o `game_ending ()`). Al perder, `HOOK_GAME_OVER` (o
    `game_over ()`).
+4. El script puede saltar a otro nivel (`WARP TO LEVEL`, que con su último
+   parámetro se salta la presentación) o terminar el juego (`GAME ENDING`), y
+   un gancho puede pedir que se repita el nivel (`LEVEL_REPEAT`).
+
+Otras opciones para juegos con niveles: `LEVEL_TILESETS_NO_FONT` (los
+tilesets de los niveles, hechos con `ts2bin nofont`, se cargan sin pisar la
+fuente), `KEEP_FLAGS_BETWEEN_LEVELS` (los flags duran toda la partida),
+`SCRIPT_TEXTS_AS_RESOURCE` (los textos de los scripts van en un recurso,
+`text.bin`, en vez de en la RAM) y `TITLE_MUSIC`.
 
 ### Ejemplos
 
 * `examples/Goku Mal 128/`: un güego completo de cinco niveles, con
   cinemáticas, contraseñas y su propia música y efectos (capítulo 12).
+* `examples/Ninjajar/`: un güego enorme de 24 niveles con scripts, textos
+  (en un recurso), mapa del mundo, contraseñas, lava y cinemáticas.
 * `tests/levels/`: Bootee partido en dos niveles de distinto tamaño, con y
   sin scripts.
 

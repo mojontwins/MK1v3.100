@@ -73,6 +73,23 @@ void system_init (void) {
 			sp_AddColSpr (sp_bullets [gpit], sprite_19_b);
 		}
 	#endif
+
+	#ifdef ENABLE_COCOS
+		for (gpit = 0; gpit < MAX_COCOS; gpit ++) {
+			#ifdef MASKED_BULLETS
+				sp_cocos [gpit] = sp_CreateSpr (sp_MASK_SPRITE, 2, sprite_19_a, 1);
+			#else
+				sp_cocos [gpit] = sp_CreateSpr (sp_OR_SPRITE, 2, sprite_19_a, 1);
+			#endif
+			sp_AddColSpr (sp_cocos [gpit], sprite_19_b);
+		}
+	#endif
+
+	#ifdef PLAYER_CAN_PUNCH
+		sp_hitter = sp_CreateSpr (sp_MASK_SPRITE, 2, sprite_20_a, 2);
+		sp_AddColSpr (sp_hitter, sprite_20_b);
+		hitter_current_frame = sprite_20_a;
+	#endif
 }
 
 #ifdef UNPACKED_MAP
@@ -192,6 +209,10 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, const unsigne
 void pad_read (void) {
 	pad_this_frame = pad1;
 	pad1 = pad0 = joyfunc ((struct sp_UDK *) &keys); 
+	#ifdef KEY_ALSO_UP
+		// Otra tecla que también hace de ARRIBA (config.h)
+		if (sp_KeyPressed (KEY_ALSO_UP)) pad1 = pad0 = pad0 & ~sp_UP;
+	#endif
 
 	// Keys held this frame
 	pad_this_frame = (~pad_this_frame) | pad1;
@@ -210,7 +231,13 @@ void saca_a_todo_el_mundo_de_aqui (void) {
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
 			sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, 254, 254, 0, 0);	// fuera de la pantalla
 	#endif
-
+	#ifdef ENABLE_COCOS
+		for (gpit = 0; gpit < MAX_COCOS; gpit ++)
+			sp_MoveSprAbs (sp_cocos [gpit], SPRITES_CLIP, 0, 254, 254, 0, 0);
+	#endif
+	#ifdef PLAYER_CAN_PUNCH
+		sp_MoveSprAbs (sp_hitter, SPRITES_CLIP, 0, 254, 254, 0, 0);
+	#endif
 }
 
 // Mueve el sprite del enemigo gpit a (_en_x, _en_y). Si no ha cambiado de
@@ -269,6 +296,32 @@ void render_sprites (void) {
 		}
 	#endif		
 
+	// Render cocos
+
+	#ifdef ENABLE_COCOS
+		for (gpit = 0; gpit < MAX_COCOS; gpit ++) {
+			if (coco_s [gpit]) {
+				sp_MoveSprAbs (sp_cocos [gpit], SPRITES_CLIP, 0, VIEWPORT_Y + (coco_y [gpit] >> 3), VIEWPORT_X + (coco_x [gpit] >> 3), coco_x [gpit] & 7, coco_y [gpit] & 7);
+			} else {
+				sp_MoveSprAbs (sp_cocos [gpit], SPRITES_CLIP, 0, 254, 254, 0, 0);
+			}
+		}
+	#endif
+
+	// Render hitter (do_hitter ya ha avanzado su frame: si se acaba de
+	// apagar, se quita)
+
+	#ifdef PLAYER_CAN_PUNCH
+		if (hitter_on || hitter_frame == 5) {
+			if (hitter_on) {
+				sp_MoveSprAbs (sp_hitter, SPRITES_CLIP, hitter_next_frame - hitter_current_frame, VIEWPORT_Y + (hitter_y >> 3), VIEWPORT_X + (hitter_x >> 3), hitter_x & 7, hitter_y & 7);
+				hitter_current_frame = hitter_next_frame;
+			} else {
+				sp_MoveSprAbs (sp_hitter, SPRITES_CLIP, 0, 254, 254, 0, 0);
+				hitter_frame = 0;
+			}
+		}
+	#endif
 }
 
 #ifdef PLAYER_STEP_SOUND

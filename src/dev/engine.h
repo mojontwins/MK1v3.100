@@ -47,6 +47,13 @@ unsigned char collide (unsigned char x1, unsigned char y1, unsigned char x2, uns
 	#endif
 }
 
+#if defined PLAYER_CAN_PUNCH || defined ENABLE_COCOS
+	// ¿Está el punto (x, y) dentro del sprite de 16x16 que empieza en (x1, y1)?
+	unsigned char collide_pixel (unsigned char x, unsigned char y, unsigned char x1, unsigned char y1) {
+		return (x >= x1 + 1 && x <= x1 + 14 && y >= y1 + 1 && y <= y1 + 14);
+	}
+#endif
+
 // Generador pseudoaleatorio de 16 bits (semilla en seed); devuelve el byte bajo.
 unsigned char rand (void) __naked {
 	__asm
@@ -108,6 +115,13 @@ signed int addsign (signed int n, signed int value) {
 #ifdef BREAKABLE_WALLS
 	// break_wall se define más abajo, pero mueve_bullets ya la usa.
 	void break_wall (unsigned char x, unsigned char y);
+	#ifdef BREAKABLE_ANIM
+		void init_breakable (void);
+	#endif
+#endif
+
+#ifdef ENABLE_COCOS
+	void init_cocos (void);
 #endif
 
 #ifdef NEEDS_REDRAW_SCR
@@ -306,8 +320,10 @@ void do_hotspots (void) {
 			// Was it an object, key or life boost?
 			if (hotspots [n_pant].act == 0) {
 				player.life += PLAYER_REFILL;
-				if (player.life > PLAYER_LIFE)
-					player.life = PLAYER_LIFE;
+				#ifndef DONT_LIMIT_LIFE
+					if (player.life > PLAYER_LIFE)
+						player.life = PLAYER_LIFE;
+				#endif
 				hotspots [n_pant].act = 2;
 				PLAY_SFX (9);
 
@@ -364,9 +380,11 @@ void do_hotspots (void) {
 				#ifdef USE_HOTSPOTS_TYPE_3
 					case 3:
 						player.life += PLAYER_REFILL;
-						if (player.life > PLAYER_LIFE) {
-							player.life = PLAYER_LIFE;
-						}
+						#ifndef DONT_LIMIT_LIFE
+							if (player.life > PLAYER_LIFE) {
+								player.life = PLAYER_LIFE;
+							}
+						#endif
 						PLAY_SFX (9);
 						break;
 				#endif
@@ -514,7 +532,7 @@ void draw_scr_background (void) {
 		map_buff [gpit] = rdd;
 		draw_coloured_tile (VIEWPORT_X + (rdx << 1), VIEWPORT_Y + (rdy << 1), rdd);
 
-		#ifdef BREAKABLE_WALLS
+		#ifdef BREAKABLE_WALLS_HAVE_LIFE
 			brk_buff [gpit] = 0;
 		#endif		
 
@@ -586,6 +604,14 @@ void draw_scr (void) {
 		f_zone_ac = 0; 			// La zona de fuego es de cada pantalla
 	#endif	
 
+	#ifdef BREAKABLE_ANIM
+		init_breakable ();		// Los muros a medio romper eran de la otra pantalla
+	#endif
+
+	#ifdef ENABLE_COCOS
+		init_cocos ();
+	#endif
+
 	// Pintamos el fondo
 
 	draw_scr_background ();
@@ -606,22 +632,27 @@ void draw_scr (void) {
 			en_an_fanty_activo [gpit] = 0;
 		#endif
 
-		// Back to life!
+		// Back to life! (salvo si se vuelve a entrar con REENTER)
 
 		#ifdef RESPAWN_ON_ENTER
-			malotes [enoffsmasi].t &= ~16;
+			if (!no_respawn) {
+				malotes [enoffsmasi].t &= ~16;
 
-			#ifdef MALOTE_HAS_LIFE
-				malotes [enoffsmasi].life = LEVEL_ENEMS_LIFE;
-			#endif
+				#ifdef MALOTE_HAS_LIFE
+					malotes [enoffsmasi].life = LEVEL_ENEMS_LIFE;
+				#endif
+			}
 		#endif
 
-		switch (malotes [enoffsmasi].t) {
+		// El sprite según el tipo (también para los muertos, que puede
+		// resucitar ENEMY n ON). Los muertos, de momento, sin sprite.
+		if (malotes [enoffsmasi].t & 16) en_an_next_frame [gpit] = sprite_18_a;
+		switch (malotes [enoffsmasi].t & ~16) {
 			case 1:
 			case 2:
 			case 3:
 			case 4:
-				en_an_base_frame [gpit] = (malotes [enoffsmasi].t - 1) << 1;
+				en_an_base_frame [gpit] = ((malotes [enoffsmasi].t & 15) - 1) << 1;
 				break;
 
 			#ifdef ENABLE_RANDOM_RESPAWN
@@ -648,10 +679,28 @@ void draw_scr (void) {
 					break;
 			#endif
 
+			#ifdef ENABLE_SHOOTERS
+				case 8:
+					en_an_base_frame [gpit] = TYPE_8_FIXED_SPRITE << 1;
+					break;
+			#endif
+
+			#ifdef ENABLE_CLOUDS
+				case 9:
+					// Persigue al jugador en horizontal a la velocidad |mx|
+					en_an_base_frame [gpit] = TYPE_9_FIXED_SPRITE << 1;
+					if (malotes [enoffsmasi].mx < 0) malotes [enoffsmasi].mx = -malotes [enoffsmasi].mx;
+					break;
+			#endif
+
 			default:
 				en_an_next_frame [gpit] = sprite_18_a;
 		}
 	}
+
+	#ifdef RESPAWN_ON_ENTER
+		no_respawn = 0;
+	#endif
 	
 	// Scripting
 
@@ -686,22 +735,79 @@ void draw_scr (void) {
 }
 
 #ifdef BREAKABLE_WALLS
+	// El muro de (x, y) desaparece. Con BREAKABLE_TILE_GET, si era ese tile,
+	// a veces deja en su lugar un TILE_GET (una moneda). Con
+	// PERSISTENT_BREAKABLE se borra también del mapa, así que sigue roto al
+	// volver a la pantalla.
+	void wall_broken (unsigned char x, unsigned char y) {
+		gpaux = bufidx (x, y);
+		rdd = 0;
+		#ifdef BREAKABLE_TILE_GET
+			if (map_buff [gpaux] == BREAKABLE_TILE_GET &&
+				(rand () & BREAKABLE_TILE_FREQ) <= BREAKABLE_TILE_FREQ_T) rdd = TILE_GET;
+		#endif
+		#ifdef PERSISTENT_BREAKABLE
+			#ifdef UNPACKED_MAP
+				mapa [n_pant * 150 + gpaux] = 0;
+			#else
+				allpurposepuntero = mapa + n_pant * 75 + (gpaux >> 1);
+				*allpurposepuntero &= (gpaux & 1) ? 0xf0 : 0x0f;
+			#endif
+		#endif
+		set_map_tile (x, y, rdd, 0);
+		#ifdef MSC_SECT_TILE_DESTROYED
+			msc_run_at (MSC_TILE_DESTROYED, x, y);
+		#endif
+	}
+
+	#ifdef BREAKABLE_ANIM
+		// Cada frame: los muros que se están rompiendo cuentan hacia atrás y,
+		// al llegar a 0, desaparecen.
+		void process_breakable (void) {
+			do_process_breakable = 0;
+			for (gpjt = 0; gpjt < MAX_BREAKABLE; gpjt ++) {
+				if (breaking_f [gpjt]) {
+					breaking_f [gpjt] --;
+					if (breaking_f [gpjt] == 0) {
+						PLAY_SFX (0);
+						wall_broken (breaking_x [gpjt], breaking_y [gpjt]);
+					} else do_process_breakable = 1;
+				}
+			}
+		}
+
+		void init_breakable (void) {
+			for (gpjt = 0; gpjt < MAX_BREAKABLE; gpjt ++) breaking_f [gpjt] = 0;
+			do_process_breakable = 0;
+		}
+	#endif
+
+	// Golpe (bala o puño) al muro rompible de (x, y).
 	void break_wall (unsigned char x, unsigned char y) {
 		gpaux = bufidx (x, y);
-		if (brk_buff [gpaux] < BREAKABLE_WALLS_LIFE) {
-			brk_buff [gpaux] ++;
-			gpaux = 1;
-		} else {
-			map_attr [gpaux] = 0;
-			map_buff [gpaux] = 0;
-			set_map_tile (x, y, 0, 0);
-			gpaux = 0;
-			#ifdef MSC_SECT_TILE_DESTROYED
-				msc_run_at (MSC_TILE_DESTROYED, x, y);
-			#endif
-		}
-		PLAY_SFX (gpaux);
-		
+		#ifdef BREAKABLE_WALLS_HAVE_LIFE
+			// Aguanta BREAKABLE_WALLS_LIFE golpes de más
+			if (brk_buff [gpaux] < BREAKABLE_WALLS_LIFE) {
+				brk_buff [gpaux] ++;
+				PLAY_SFX (1);
+				return;
+			}
+		#endif
+		#ifdef BREAKABLE_ANIM
+			// Deja de ser rompible (pero sigue siendo un obstáculo) y se ve
+			// como BREAKABLE_TILE hasta que se rompe del todo.
+			map_attr [gpaux] &= ~16;
+			breaking_f [breaking_idx] = MAX_BREAKABLE_FRAMES;
+			breaking_x [breaking_idx] = x;
+			breaking_y [breaking_idx] = y;
+			draw_coloured_tile (VIEWPORT_X + (x << 1), VIEWPORT_Y + (y << 1), BREAKABLE_TILE);
+			breaking_idx ++; if (breaking_idx == MAX_BREAKABLE) breaking_idx = 0;
+			do_process_breakable = 1;
+			PLAY_SFX (1);
+		#else
+			wall_broken (x, y);
+			PLAY_SFX (0);
+		#endif
 	}
 #endif
 
@@ -733,8 +839,28 @@ void init_player (void) {
 		player.facing = GENITAL_FACING_DOWN;
 		player.facing_v = player.facing_h = 0xff;
 	#else
-		player.facing = 	0;
+		// Hacia dónde mira: lo dice el nivel (salvo si se llega por un WARP
+		// TO LEVEL, que mantiene el de antes)
+		#ifdef COMPRESSED_LEVELS
+			if (!level_warped)
+		#endif
+		player.facing = LEVEL_FACING ? LATERAL_FACING_LEFT : LATERAL_FACING_RIGHT;
 	#endif	
+
+	#ifdef SWITCHABLE_ENGINES
+		player.engine = LEVEL_ENGINE;
+	#endif
+
+	#ifdef PLAYER_CAN_PUNCH
+		hitter_on = 0;
+	#endif
+
+	#ifdef DIE_AND_RESPAWN
+		p_killme = 0;
+		p_safe_pant = LEVEL_SCR_INI;
+		p_safe_x = LEVEL_INI_X;
+		p_safe_y = LEVEL_INI_Y;
+	#endif
 
 	player.estado = 	EST_NORMAL;
 	player.ct_estado = 	0;
@@ -778,7 +904,21 @@ void init_player (void) {
 void kill_player (unsigned char sound) {
 	if (player.life == 0) return;
 	player.life --;
-	PLAY_SFX (sound);
+	#ifdef DIE_AND_RESPAWN
+		// El bucle principal lo devuelve al último sitio seguro (respawn ())
+		#ifdef HAS_AY_MUSIC
+			wyz_stop_sound ();
+		#endif
+		p_killme = 1;
+		half_life = 0;
+		(void) sound;
+	#else
+		PLAY_SFX (sound);
+	#endif
+	#if defined DIE_AND_RESPAWN && defined PLAYER_FLICKERS
+		player.estado = EST_PARP;
+		player.ct_estado = 50;
+	#endif
 	#ifdef CP_RESET_WHEN_DYING
 		// Vuelve al último checkpoint, si se ha tocado alguno.
 		if (sg_saved) {
@@ -913,14 +1053,37 @@ void move (void) {
 	#else
 		// Vista lateral
 
-		// Gravedad
+		// Gravedad (nadando no hay)
 
-		player.vy += PLAYER_G;
-		if (player.vy > PLAYER_MAX_VY_CAYENDO) player.vy = PLAYER_MAX_VY_CAYENDO;
+		if (!SWIMMING) {
+			player.vy += PLAYER_G;
+			if (player.vy > PLAYER_MAX_VY_CAYENDO) player.vy = PLAYER_MAX_VY_CAYENDO;
+		}
+
+		// Nado: ARRIBA sube, ABAJO baja y sin tocar nada se flota hacia arriba
+		// (como en Ninjajar: si no se va bajando deprisa, se sube a
+		// PLAYER_MAX_VSWIM / 2).
+
+		#ifdef PLAYER_HAS_SWIM
+			if (SWIMMING) {
+				player.gotten = 1;		// Animación de andar
+				if ((pad0 & sp_UP) && (pad0 & sp_DOWN)) {
+					player.vy -= PLAYER_ASWIM >> 1;
+					if (player.vy < (PLAYER_MAX_VSWIM >> 1)) player.vy = -(PLAYER_MAX_VSWIM >> 1);
+				}
+				if ((pad0 & sp_DOWN) == 0) {
+					if (player.vy < PLAYER_MAX_VSWIM) player.vy += PLAYER_ASWIM;
+				}
+				if ((pad0 & sp_UP) == 0) {
+					if (player.vy > -PLAYER_MAX_VSWIM) player.vy -= PLAYER_ASWIM;
+				}
+			}
+		#endif
 
 		// Salto
 
 		#ifdef PLAYER_HAS_JUMP
+		if (!SWIMMING) {
 		
 			// Inicio del salto
 
@@ -980,6 +1143,7 @@ void move (void) {
 				#endif
 			) player.saltando = 0;
 
+		}
 		#endif
 
 		// Bootee engine
@@ -1135,7 +1299,7 @@ void move (void) {
 			}
 		}
 
-		if ((at1 & 1) || (at2 & 1)) {
+		if (EVIL_TILE (at1) || EVIL_TILE (at2)) {
 			hit_v = 1;
 		}
 
@@ -1147,6 +1311,39 @@ void move (void) {
 			possee = (at1 & 12) || (at2 & 12);
 		#endif
 	}
+
+	#ifdef DIE_AND_RESPAWN
+		// Sitio seguro: donde se pisa suelo (nadando, no se usa)
+		if (possee && !SWIMMING) {
+			p_safe_pant = n_pant;
+			p_safe_x = gpx >> 4;
+			p_safe_y = gpy >> 4;
+		}
+	#endif
+
+	#ifdef ENABLE_CONVEYORS
+		// Cintas transportadoras: tiles con comportamiento 32 (+ 8 o 4 para
+		// que se pueda estar encima). Con el bit 1 llevan a la derecha y sin
+		// él a la izquierda. Arrastran como una plataforma móvil.
+		if (possee) {
+			#if defined BOUNDING_BOX_8_BOTTOM || defined BOUNDING_BOX_8_CENTERED
+				cx1 = (gpx + 4) >> 4; cx2 = (gpx + 11) >> 4;
+			#else
+				cx1 = gpx >> 4; cx2 = (gpx + 15) >> 4;
+			#endif
+			#ifdef BOUNDING_BOX_8_CENTERED
+				cy1 = cy2 = (gpy + 12) >> 4;
+			#else
+				cy1 = cy2 = (gpy + 16) >> 4;
+			#endif
+			cm_two_points ();
+			if (at1 & 32) at2 = at1;
+			if (at2 & 32) {
+				player.gotten = 1; ptgmy = 0;
+				ptgmx = (at2 & 1) ? CONVEYOR_SPEED : -CONVEYOR_SPEED;
+			}
+		}
+	#endif
 
 	// ---------------------------------------------------------------------------
 	// EJE HORIZONTAL
@@ -1298,7 +1495,7 @@ void move (void) {
 
 		}
 
-		if ((at1 & 1) || (at2 & 1)) {
+		if (EVIL_TILE (at1) || EVIL_TILE (at2)) {
 			hit_h = 1;
 		}
 
@@ -1347,6 +1544,27 @@ void move (void) {
 		if ((pad0 & sp_FIRE)) player.disparando = 0;
 	#endif
 
+	// Puñetazo: FIRE lanza el puño (5 frames, ver do_hitter)
+
+	#ifdef PLAYER_CAN_PUNCH
+		if (
+			#ifdef USE_TWO_BUTTONS
+				(pad0 & sp_FIRE) == 0 || sp_KeyPressed (key_fire)
+			#else
+				(pad0 & sp_FIRE) == 0
+			#endif
+		) {
+			if (!player.disparando) {
+				player.disparando = 1;
+				if (!hitter_on) {
+					hitter_on = 1;
+					hitter_frame = 0;
+					PLAY_SFX (10);
+				}
+			}
+		} else player.disparando = 0;
+	#endif
+
 	// Tiles que te matan. 
 
 	#ifndef DEACTIVATE_EVIL_TILE
@@ -1385,6 +1603,20 @@ void move (void) {
 				kill_player(10);
 
 			}
+		}
+	#endif
+
+	// Tiles que se cogen al pasar por encima (monedas): suman 1 al flag
+	// TILE_GET_FLAG.
+
+	#ifdef TILE_GET
+		rdx = (gpx + 8) >> 4; rdy = (gpy + 8) >> 4;
+		if (qtile (rdx, rdy) == TILE_GET) {
+			// (En este orden: con set_map_tile justo después de la
+			// comparación SDCC 4.4 genera un "ld hl, a" que no existe.)
+			flags [TILE_GET_FLAG] ++;
+			PLAY_SFX (11);
+			set_map_tile (rdx, rdy, 0, 0);
 		}
 	#endif
 
@@ -1446,6 +1678,33 @@ void move (void) {
 	#endif
 }
 
+#ifdef PLAYER_CAN_PUNCH
+	// El puño, cada frame mientras hitter_on: se coloca delante del jugador
+	// (sale y vuelve, hitter_offs) y en los frames 1 a 3 rompe muros. Los
+	// enemigos miran si les da en mueve_bicharracos. Lo pinta render_sprites.
+	const unsigned char hitter_offs [] = {12, 14, 16, 16, 12};
+
+	void do_hitter (void) {
+		hitter_y = gpy + 6;
+		if (player.facing == LATERAL_FACING_RIGHT) {
+			hitter_x = gpx + hitter_offs [hitter_frame];
+			hitter_next_frame = sprite_20_a;
+			rdx = (hitter_x + 7) >> 4;
+		} else {
+			hitter_x = gpx + 8 - hitter_offs [hitter_frame];
+			hitter_next_frame = sprite_21_a;
+			rdx = hitter_x >> 4;
+		}
+		#ifdef BREAKABLE_WALLS
+			rdy = (hitter_y + 3) >> 4;
+			if (hitter_frame >= 1 && hitter_frame <= 3 && (attr (rdx, rdy) & 16))
+				break_wall (rdx, rdy);
+		#endif
+		hitter_frame ++;
+		if (hitter_frame == 5) hitter_on = 0;
+	}
+#endif
+
 // ---------------------------------------------------------------------------
 // Funciones sobre niveles comprimidos:
 // ---------------------------------------------------------------------------
@@ -1467,7 +1726,7 @@ void move (void) {
 		get_resource (levels [level].bundle, (unsigned int) &level_data);
 
 		if (levels [level].tileset != NO_RESOURCE)
-			get_resource (levels [level].tileset, (unsigned int) (tileset));
+			get_resource (levels [level].tileset, LEVEL_TILESET_ADDR);
 
 		if (levels [level].spriteset != NO_RESOURCE)
 			get_resource (levels [level].spriteset, (unsigned int) (sprite_1_a - 16));
@@ -1530,7 +1789,7 @@ void move (void) {
 	}
 #endif
 
-#ifdef ENABLE_CUSTOM_TYPE_6
+#ifdef NEEDS_DISTANCE
 	unsigned char distance (unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2) {
 		rdx = abs (x2 - x1);
 		rdy = abs (y2 - y1);
@@ -1595,6 +1854,79 @@ void enemy_dies (void) {
 
 	_en_t |= 16;
 }
+#endif
+
+#ifdef ENABLE_COCOS
+	// Cocos: los proyectiles de los enemigos de tipo 8 (apuntan al jugador)
+	// y 9 (caen en vertical). Se pintan con el sprite de la bala.
+	void init_cocos (void) {
+		for (coco_it = 0; coco_it < MAX_COCOS; coco_it ++) coco_s [coco_it] = 0;
+	}
+
+	// El enemigo actual (gpit, _en_t, gpen_cx, gpen_cy) dispara si tiene un coco
+	// libre y el jugador no está demasiado cerca.
+	void shoot_coco (void) {
+		coco_x0 = gpen_cx + 4;
+		#ifdef COCOS_FIRE_ONE
+			coco_it = gpit;				// Un coco por enemigo
+		#else
+			for (coco_it = 0; coco_it < MAX_COCOS; coco_it ++)
+		#endif
+		{
+			if (coco_s [coco_it] == 0) {
+				coco_d = distance (coco_x0, gpen_cy, gpx, gpy);
+				if (coco_d >= (_en_t == 8 ? TYPE_8_SAFE_DISTANCE : TYPE_9_SAFE_DISTANCE) && coco_d) {
+					PLAY_SFX (6);
+					coco_s [coco_it] = 1;
+					coco_x [coco_it] = coco_x0;
+					coco_y [coco_it] = gpen_cy;
+					#ifdef ENABLE_SHOOTERS
+						if (_en_t == 8) {
+							coco_vx [coco_it] = (signed char) ((COCO_SPEED_8 * (int) (gpx - coco_x0)) / coco_d);
+							coco_vy [coco_it] = (signed char) ((COCO_SPEED_8 * (int) (gpy - gpen_cy)) / coco_d);
+						}
+						#ifdef ENABLE_CLOUDS
+							else
+						#endif
+					#endif
+					#ifdef ENABLE_CLOUDS
+					{
+						coco_vx [coco_it] = 0;
+						coco_vy [coco_it] = COCO_SPEED_9;
+					}
+					#endif
+					#ifndef COCOS_FIRE_ONE
+						break;
+					#endif
+				}
+			}
+		}
+	}
+
+	void move_cocos (void) {
+		for (coco_it = 0; coco_it < MAX_COCOS; coco_it ++) {
+			if (coco_s [coco_it]) {
+				coco_x [coco_it] += coco_vx [coco_it];
+				coco_y [coco_it] += coco_vy [coco_it];
+				// Fuera de la pantalla (por debajo de 0 da la vuelta)
+				if (coco_x [coco_it] >= 240 || coco_y [coco_it] >= 160) {
+					coco_s [coco_it] = 0;
+				} else if (player.estado == EST_NORMAL &&
+					collide_pixel (coco_x [coco_it] + 3, coco_y [coco_it] + 3, gpx, gpy)) {
+					coco_s [coco_it] = 0;
+					kill_player (4);
+					#ifdef PLAYER_FLICKERS
+						player.estado = EST_PARP;
+						player.ct_estado = 50;
+					#endif
+				}
+			}
+		}
+	}
+#endif
+
+#ifdef PLAYER_CAN_PUNCH
+	unsigned char en_punched;		// El puño le ha dado al enemigo este frame
 #endif
 
 void mueve_bicharracos (void) {
@@ -1665,6 +1997,9 @@ void mueve_bicharracos (void) {
 			case 2:
 			case 3:
 			case 4:
+			#ifdef ENABLE_SHOOTERS
+				case 8:			// Como los lineales, pero disparan
+			#endif
 				active = 1;
 				_en_x += _en_mx;
 				_en_y += _en_my;
@@ -1695,7 +2030,22 @@ void mueve_bicharracos (void) {
 				gpen_cx = _en_x;
 				gpen_cy = _en_y;
 
+				#ifdef ENABLE_SHOOTERS
+					if (rdt == 8 && (rand () & TYPE_8_SHOOT_FREQ) == 1) shoot_coco ();
+				#endif
+
 				break;
+
+			#ifdef ENABLE_CLOUDS
+				// Nubes: siguen al jugador en horizontal y dejan caer cocos
+				case 9:
+					active = 1;
+					if (gpx != _en_x) _en_x += addsign (gpx - _en_x, _en_mx);
+					gpen_cx = _en_x;
+					gpen_cy = _en_y;
+					if ((rand () & TYPE_9_SHOOT_FREQ) == 1) shoot_coco ();
+					break;
+			#endif
 
 			// RR fanties
 
@@ -1861,6 +2211,37 @@ void mueve_bicharracos (void) {
 			if((maincounter & 3) == 0) en_an_frame [gpit] ^= 1;
 			en_an_next_frame [gpit] = enem_frames [en_an_base_frame [gpit] + en_an_frame [gpit]];
 
+			// El puño: le quita una vida (y se da la vuelta) o lo mata. Las
+			// plataformas no se pueden golpear.
+			#ifdef PLAYER_CAN_PUNCH
+				en_punched = 0;
+				if (hitter_on && hitter_frame <= 3 && rdt != 4 &&
+					collide_pixel (hitter_x + (player.facing == LATERAL_FACING_RIGHT ? 6 : 1), hitter_y + 3, gpen_cx, gpen_cy)
+				) {
+					en_punched = 1;
+					en_an_next_frame [gpit] = sprite_17_a;
+					#ifdef ENABLE_CUSTOM_TYPE_6
+						// El tipo 6 sale despedido
+						if (rdt == 6) {
+							en_an_vx [gpit] = addsign (gpen_cx - gpx, FANTY_MAX_V);
+							en_an_x [gpit] += en_an_vx [gpit];
+							FIXED_CLAMP (en_an_x [gpit], FIXED_MAX_X);
+						}
+					#endif
+					#ifdef MALOTE_HAS_LIFE
+						if (_en_life) _en_life --;
+						if (_en_life) {
+							_en_mx = -_en_mx;
+							_en_my = -_en_my;
+						} else
+					#endif
+					{
+						enemy_dies ();
+						PLAY_SFX (5);
+					}
+				}
+			#endif
+
 			// Collide with player
 
 			// Plataformas móviles
@@ -1894,7 +2275,11 @@ void mueve_bicharracos (void) {
 			#endif
 			{
 				// In genital, _en_t = any; in lateral, _en_t != 4
-				if (!tocado && collide (gpx, gpy, gpen_cx, gpen_cy) && player.estado == EST_NORMAL) {
+				if (!tocado && collide (gpx, gpy, gpen_cx, gpen_cy) && player.estado == EST_NORMAL
+					#ifdef PLAYER_CAN_PUNCH
+						&& !en_punched
+					#endif
+				) {
 
 					#ifdef MSC_SECT_ENEMY_TOUCHED
 						// EN_T, EN_N, EN_X, EN_Y: el enemigo que se toca
@@ -1941,6 +2326,14 @@ void mueve_bicharracos (void) {
 						{
 							kill_player(4);
 						}
+
+						#ifdef TYPE_6_KILL_ON_TOUCH
+							// El tipo 6 desaparece al tocar al jugador
+							if (rdt == 6) {
+								en_an_next_frame [gpit] = sprite_18_a;
+								_en_t |= 16;
+							}
+						#endif
 
 						#ifdef PLAYER_BOUNCES
 							#ifdef PLAYER_MOGGY_STYLE

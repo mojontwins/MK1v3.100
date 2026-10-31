@@ -22,7 +22,19 @@
 #define BASE_ARRAYS 		23600		// arrays de enemigos/balas: 69 + 6 * MAX_BULLETS
 #define BASE_BRK_BUFF		23728		// muros rompibles: 150 bytes (hasta 23877)
 
-#ifdef USE_TWO_BUTTONS
+#ifdef KEYS_CUSTOM
+	// Teclas del juego (config.h): fire, right, left, down, up. Los códigos
+	// son los de sp_LookupKey: (bit << 8) | semifila, p.ej. 0x01fb = Q.
+	const struct sp_UDK keys = { KEYS_CUSTOM };
+	#ifdef USE_TWO_BUTTONS
+		#ifndef key_fire
+			#define key_fire 0x047f
+		#endif
+		#ifndef key_jump
+			#define key_jump 0x087f
+		#endif
+	#endif
+#elif defined USE_TWO_BUTTONS
 	// Define here if you selected the TWO BUTTONS configuration
 
 	const struct sp_UDK keys = {
@@ -72,6 +84,12 @@ struct sp_SS *sp_player;
 struct sp_SS *sp_moviles [3];
 #ifdef PLAYER_CAN_FIRE
 	struct sp_SS *sp_bullets [MAX_BULLETS];
+#endif
+#ifdef PLAYER_CAN_PUNCH
+	struct sp_SS *sp_hitter;
+#endif
+#ifdef ENABLE_COCOS
+	struct sp_SS *sp_cocos [MAX_COCOS];
 #endif
 // Zona de la pantalla en la que se ven los sprites: fila, columna, alto, ancho.
 const struct sp_Rect spritesClip = { VIEWPORT_Y, VIEWPORT_X, 20, 30 };

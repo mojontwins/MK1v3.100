@@ -3,6 +3,8 @@
 ;   instrumentos.asm   TABLA_PAUTAS, TABLA_SONIDOS y pautas (de WYZTracker)
 ;   canciones.asm      SONG_n (INCBIN de los .mus) y TABLA_SONG
 ;   efectos.asm        EFECTOn y TABLA_EFECTOS (si no, speccy_128/wyz/efectos.asm)
+;   extra.asm          código o datos extra (si no, speccy_128/wyz/extra.asm, vacío);
+;                      si define PLAY_SAMPLE, el motor tiene wyz_play_sample (n)
 ; comp-zx.sh lo ensambla con pasmo en RAM1 ($C000) y genera wyz_addrs.h con
 ; las direcciones de INICIO, INIT_BUFFERS, CARGA_CANCION, PLAYER_OFF e
 ; INICIA_EFECTO a partir de la tabla de símbolos.
@@ -921,6 +923,10 @@ BUFFER_DEC:     DB      $00
 ;; INCLUIR LOS EFECTOS DE SONIDO:
 
                 INCLUDE "efectos.asm"
+
+;; LO QUE EL JUEGO AÑADA AL REPRODUCTOR (extra.asm: samples...)
+
+                INCLUDE "extra.asm"
 
 ;; NADA A PARTIR DE AQUI!!!
 BUFFERS_CANALES:

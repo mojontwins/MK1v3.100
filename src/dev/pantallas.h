@@ -41,14 +41,11 @@ void title (void) {
 	#endif
 
 	#ifdef HAS_AY_MUSIC
-		wyz_play_music (0);
+		wyz_play_music (TITLE_MUSIC);
 	#endif
 
+	// La música se para en mainloop (o en el gancho HOOK_AFTER_TITLE)
 	select_joyfunc ();
-
-	#ifdef HAS_AY_MUSIC
-		wyz_stop_sound ();
-	#endif
 }
 
 void game_ending (void) {

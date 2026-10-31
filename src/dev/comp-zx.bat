@@ -72,7 +72,11 @@ call :scriptlist
 call :getdef MAP_W mw
 call :getdef MAP_H mh
 set /a rooms=mw*mh
-"%U%\msc4" in=!scripts! v=3_100 output=c rooms=!rooms! > msc4.log
+rem Con SCRIPT_TEXTS_AS_RESOURCE los textos van en text.bin (un recurso)
+set "textres="
+call :hasdef SCRIPT_TEXTS_AS_RESOURCE
+if not errorlevel 1 set "textres=textres"
+"%U%\msc4" in=!scripts! v=3_100 output=c rooms=!rooms! !textres! > msc4.log
 if errorlevel 1 (type msc4.log& echo ERROR en el script& exit /b 1)
 findstr /I /C:"warning" msc4.log
 findstr /I /C:"error" /C:"wrong" /C:"unexpected" /C:"unknown" /C:"expecting" /C:"too long" msc4.log && (echo ERROR en el script& exit /b 1)
@@ -89,14 +93,16 @@ if exist levels.bat (
 if %mode128%==0 goto :compile
 echo ### 128K: WYZ PLAYER Y RECURSOS ###
 rem Reproductor + datos del juego: instrumentos.asm, canciones.asm, los .mus
-rem y, opcionalmente, efectos.asm (si no, los 15 de MK1 por defecto). Se
-rem toman de ..\ogt\zx128 si existe; si no, de ..\ogt.
+rem y, opcionalmente, efectos.asm (si no, los 15 de MK1 por defecto) y
+rem extra.asm (codigo extra, p.ej. un sample con PLAY_SAMPLE). Se toman de
+rem ..\ogt\zx128 si existe; si no, de ..\ogt.
 set "OGT=..\ogt"
 if exist ..\ogt\zx128\ set "OGT=..\ogt\zx128"
 set "W=%TEMP%\mk1wyz%RANDOM%%RANDOM%"
 mkdir "%W%"
 copy /y speccy_128\wyz\wyzplayer.asm "%W%\" > nul
 copy /y speccy_128\wyz\efectos.asm "%W%\" > nul
+copy /y speccy_128\wyz\extra.asm "%W%\" > nul
 copy /y "%OGT%\*.asm" "%W%\" > nul 2>&1
 copy /y "%OGT%\*.mus" "%W%\" > nul 2>&1
 pushd "%W%"
@@ -118,6 +124,14 @@ for %%s in (INICIO INIT_BUFFERS CARGA_CANCION PLAYER_OFF INICIA_EFECTO) do call 
 	echo #define CARGA_CANCION		!sym_CARGA_CANCION!
 	echo #define SILENCIA_PLAYER		!sym_PLAYER_OFF!
 	echo #define INICIAEFECTO		!sym_INICIA_EFECTO!
+)
+rem PLAY_SAMPLE es opcional (extra.asm del juego)
+set "a="
+for /f "usebackq tokens=1,3" %%a in ("%W%\ram1.sym") do if "%%a"=="PLAY_SAMPLE" set "a=%%b"
+if defined a (
+	set "a=!a:H=!"
+	if not "!a:~4,1!"=="" set "a=!a:~1!"
+	>> wyz_addrs.h echo #define WYZ_PLAY_SAMPLE		0x!a!
 )
 rmdir /s /q "%W%"
 for %%f in (RAM1.bin) do echo RAM1.bin: %%~zf bytes
