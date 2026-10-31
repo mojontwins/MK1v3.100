@@ -11,9 +11,13 @@ Dim Shared As Any Ptr img 			' will contain the image loaded from the PNG
 
 Sub Usage () 
 	Print "** USO **"
-	Print "   sprcnv archivo.png archivo.h [nomask]"
+	Print "   sprcnv archivo.png salida.h [nomask]"
+	Print "   sprcnv archivo.png salida.bin [nomask]"
 	Print
-	Print "Convierte un Spriteset de 16 sprites"
+	Print "Convierte un spriteset de 16 sprites de ZX Spectrum. Con salida .h"
+	Print "escribe un array de C (const) y un #define sprite_N_a/b/c por columna;"
+	Print "con salida .bin, los mismos bytes en binario (spritesets de los niveles,"
+	Print "que se cargan en sprite_1_a - 16)."
 End Sub
 
 Function ReadBinValue (x As Integer, y As Integer) As Integer
@@ -27,6 +31,20 @@ Function ReadBinValue (x As Integer, y As Integer) As Integer
 	next xx
 	Return ac
 End Function
+
+' Los bytes se acumulan en buf y las etiquetas (sprite_N_a...) apuntan a un
+' desplazamiento dentro de buf.
+Dim Shared As Integer buf (8191), nbuf
+Dim Shared As String labName (63)
+Dim Shared As Integer labOffs (63), nlab
+
+Sub B (v As Integer)
+	buf (nbuf) = v: nbuf = nbuf + 1
+End Sub
+
+Sub L (nombre As String)
+	labName (nlab) = nombre: labOffs (nlab) = nbuf: nlab = nlab + 1
+End Sub
 
 '
 '
@@ -59,101 +77,48 @@ end if
 ' Ahora lo recorro y voy generando el código con sus etiquetas y
 ' sus mascaritas y toda la pesca
 
-f = FreeFile
-
-Open Command (2) for Output as f
-
-
-Print #f, "// MTE MK1 (la Churrera) v5.0"
-Print #f, "// Copyleft 2010-2014, 2020 by the Mojon Twins"
-Print #f, ""
-print #f, "// Sprites.h"
-if nomask then print #f, "// No masks"
-
-print #f, " "
-
-for sprite = 1 to 16
-	print #f, "extern unsigned char sprite_" + Trim(Str(sprite)) + "_a []; "
-	print #f, "extern unsigned char sprite_" + Trim(Str(sprite)) + "_b []; "
-	print #f, "extern unsigned char sprite_" + Trim(Str(sprite)) + "_c []; "
-next sprite
-
-print #f, " "
-
-print #f, "#asm"
-
 x = 0
 y = 0
 
 
 
 If nomask Then
-	for i = 0 to 7: print #f, "        defb 0, 0":next i: print #f, " "
+	for i = 0 to 7: B 0: B 0: next i
 	For sprite = 1 To 16 Step 2
 
 		' Interleaved stuff
 		
 		' Sprite L: c1, c2
 		For yy = 0 To 15
-			If yy = 0 Then Print #f, "    ._sprite_" & sprite & "_a"
-			o = "        defb "
-			ac = ReadBinValue (x, y+yy)		
-			o = o + Trim (Str(ac))
-			If yy > 0 Then 
-				o = o + ", " 
-			Else 
-				Print #f, o
-				o = "        defb "
-			End If
-			If yy = 0 Then Print #f, "    ._sprite_" & (sprite+1) & "_a"
-			ac = ReadBinValue (x + 16, y+yy)		
-			o = o + Trim (Str(ac))
-			print #f, o
+			If yy = 0 Then L "sprite_" & sprite & "_a"
+			B ReadBinValue (x, y+yy)
+			If yy = 0 Then L "sprite_" & (sprite+1) & "_a"
+			B ReadBinValue (x + 16, y+yy)
 		Next yy
 		For yy = 0 To 7
-			Print #f, "        defb 0, 0"
+			B 0: B 0
 		Next yy
 
 		' Sprite L: c3, L+1: c1
 		For yy = 0 To 15
-			If yy = 0 Then Print #f, "    ._sprite_" & sprite & "_b"
-			o = "        defb "
-			ac = ReadBinValue (x + 8, y+yy)
-			o = o + Trim (Str(ac))
-			If yy > 0 Then 
-				o = o + ", " 
-			Else 
-				Print #f, o
-				o = "        defb "
-			End If
-			If yy = 0 Then Print #f, "    ._sprite_" & (sprite+1) & "_b"
-			ac = ReadBinValue (x + 24, y+yy)		
-			o = o + Trim (Str(ac))
-			print #f, o
+			If yy = 0 Then L "sprite_" & sprite & "_b"
+			B ReadBinValue (x + 8, y+yy)
+			If yy = 0 Then L "sprite_" & (sprite+1) & "_b"
+			B ReadBinValue (x + 24, y+yy)
 		Next yy
 		For yy = 0 To 7
-			Print #f, "        defb 0, 0"
+			B 0: B 0
 		Next yy
 
 		' Sprite L+1: c2, c3
 		For yy = 0 To 15
-			If yy = 0 Then Print #f, "    ._sprite_" & sprite & "_c"
-			o = "        defb "
-			ac = 0		
-			o = o + Trim (Str(ac))
-			If yy > 0 Then 
-				o = o + ", " 
-			Else 
-				Print #f, o
-				o = "        defb "
-			End If
-			If yy = 0 Then Print #f, "    ._sprite_" & (sprite+1) & "_c"
-			ac = 0
-			o = o + Trim (Str(ac))
-			print #f, o
+			If yy = 0 Then L "sprite_" & sprite & "_c"
+			B 0
+			If yy = 0 Then L "sprite_" & (sprite+1) & "_c"
+			B 0
 		Next yy
 		For yy = 0 To 7
-			Print #f, "        defb 0, 0"
+			B 0: B 0
 		Next yy
 
 		x = x + 32
@@ -163,52 +128,29 @@ If nomask Then
 		end if
 	Next
 Else
-	for i = 0 to 7: print #f, "        defb 0, 255":next i: print #f, " "
+	for i = 0 to 7: B 0: B 255: next i
 	For sprite = 1 to 16
 
 		' Primera columna 
 		
-		print #f, "    ._sprite_" + Trim (Str(Sprite)) + "_a"
-		
-		' Ahora tengo que calcular los dos valores de la primera columna
+		L "sprite_" & sprite & "_a"
 		for yy = 0 to 15
-			o = "        defb "
-			ac = ReadBinValue (x, y+yy)		
-			o = o + Trim (Str(ac)) + ", "
-			ac = ReadBinValue (x + 16, y+yy)
-			o = o + Trim (Str(ac))
-			print #f, o
+			B ReadBinValue (x, y+yy): B ReadBinValue (x + 16, y+yy)
 		next yy
-		for yy = 0 to 7
-			print #f, "        defb 0, 255"
-		next yy
-		print #f, " "
+		for yy = 0 to 7: B 0: B 255: next yy
 		
 		' Segunda columna 
 		
-		print #f, "    ._sprite_" + Trim (Str(Sprite)) + "_b"
-		
-		' Ahora tengo que calcular los dos valores de la primera columna
+		L "sprite_" & sprite & "_b"
 		for yy = 0 to 15
-			o = "        defb "
-			ac = ReadBinValue (x + 8, y+yy)		
-			o = o + Trim (Str(ac)) + ", "
-			ac = ReadBinValue (x + 24, y+yy)
-			o = o + Trim (Str(ac))
-			print #f, o
+			B ReadBinValue (x + 8, y+yy): B ReadBinValue (x + 24, y+yy)
 		next yy
-		for yy = 0 to 7
-			print #f, "        defb 0, 255"
-		next yy
-		print #f, " "
+		for yy = 0 to 7: B 0: B 255: next yy
 		
 		' Tercera columna
 		
-		print #f, "    ._sprite_" + Trim (Str(Sprite)) + "_c"
-		for yy = 0 to 23
-			print #f, "        defb 0, 255"
-		next yy
-		print #f, " "
+		L "sprite_" & sprite & "_c"
+		for yy = 0 to 23: B 0: B 255: next yy
 		
 		x = x + 32
 		if x = 256 then
@@ -218,9 +160,33 @@ Else
 	Next sprite
 End If
 
-print #f, "#endasm"
-print #f, " "
-
+' Salida
+f = FreeFile
+If LCase (Right (Command (2), 4)) = ".bin" Then
+	Open Command (2) For Binary As f
+	For i = 0 To nbuf - 1: Put #f, , CUByte (buf (i)): Next i
+Else
+	Open Command (2) For Output As f
+	Print #f, "// La Churrera Engine 3.100"
+	Print #f, "// sprites.h: generado por sprcnv a partir de " & Command (1)
+	If nomask Then Print #f, "// Sin mascaras"
+	Print #f, ""
+	Print #f, "// Cada sprite son tres columnas (a, b, c) de 24 lineas, con 8 lineas de"
+	Print #f, "// relleno delante del primero; todas ocupan lo mismo, asi que la"
+	Print #f, "// diferencia entre dos frames vale para las tres columnas."
+	Print #f, "const unsigned char sprite_data [] = {"
+	For i = 0 To nbuf - 1
+		If (i Mod 16) = 0 Then o = Chr (9)
+		o = o & buf (i)
+		If i < nbuf - 1 Then o = o & ", "
+		If (i Mod 16) = 15 Or i = nbuf - 1 Then Print #f, RTrim (o)
+	Next i
+	Print #f, "};"
+	Print #f, ""
+	For i = 0 To nlab - 1
+		Print #f, "#define " & labName (i) & Chr (9) & "(sprite_data + " & labOffs (i) & ")"
+	Next i
+End If
 Close f
 
 puts "¡Todo correcto!"

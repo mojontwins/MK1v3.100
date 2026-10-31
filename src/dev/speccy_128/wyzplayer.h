@@ -17,68 +17,79 @@
 
 // Start.
 
-// isr
-#asm
-	defw 0	// 2 bytes libres
-#endasm
-
-void ISR(void) {
-	isr_frames ++;		// Sincronía de frames
-	#asm
-		ld b, 1
+// La ISR: cuenta frames (sincronía) y llama al WYZ player con la RAM 1
+// puesta. Como en 48K (speccy/isr.h), los 2 primeros bytes son el enlace de
+// la lista de hooks de splib2 e ISR_HOOK es la dirección del código.
+void isr_hook (void) __naked {
+	__asm
+		.dw 0
+		ld hl, #_isr_frames
+		inc (hl)
+		ld b, #1
 		call SetRAMBank
 		call WYZPLAYERISR
-		ld b, 0
-		call SetRAMBank			
-	#endasm
+		ld b, #0
+		call SetRAMBank
+		or a					; acarreo a 0: sigue con los demás hooks
+		ret
+	__endasm;
 }
 
-void wyz_init (void) {
-	#asm
-		ld b,1
+#define ISR_HOOK	((void *) ((unsigned char *) isr_hook + 2))
+
+void wyz_init (void) __naked {
+	__asm
+		ld b, #1
 		call SetRAMBank
-		call WYZPLAYERINIT	
-		ld b,0
-		call SetRAMBank
-	#endasm
+		call WYZPLAYERINIT
+		ld b, #0
+		jp SetRAMBank
+	__endasm;
 }
 
-void __FASTCALL__ wyz_play_sound (unsigned char fx_number) {
-	#asm
+// El número de efecto llega en A (convención de SDCC para un argumento de 8 bits).
+void wyz_play_sound (unsigned char fx_number) __naked {
+	(void) fx_number;
+	__asm
 		di
-		ld b,1
+		push af
+		ld b, #1
 		call SetRAMBank
-		ld a, l
-		ld b, a
+		pop bc					; B = número de efecto
 		call INICIAEFECTO
-		ld b,0
+		ld b, #0
 		call SetRAMBank
 		ei
-	#endasm
+		ret
+	__endasm;
 }
 
-void __FASTCALL__ wyz_play_music (unsigned char song_number) {
-	#asm
+// La canción llega en A.
+void wyz_play_music (unsigned char song_number) __naked {
+	(void) song_number;
+	__asm
 		di
-		ld b, 1
+		push af
+		ld b, #1
 		call SetRAMBank
-		ld a, l
+		pop af
 		call CARGA_CANCION
-		ld b, 0
+		ld b, #0
 		call SetRAMBank
 		ei
-	#endasm
+		ret
+	__endasm;
 }
 
-void wyz_stop_sound (void)
-{
-	#asm
+void wyz_stop_sound (void) __naked {
+	__asm
 		di
-		ld b,1
+		ld b, #1
 		call SetRAMBank
 		call SILENCIA_PLAYER
-		ld b,0
+		ld b, #0
 		call SetRAMBank
 		ei
-	#endasm
+		ret
+	__endasm;
 }

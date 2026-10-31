@@ -91,12 +91,12 @@ close f
 
 open Command (2) for output as #f
 
-print #f, "// Mapa.h "
-print #f, "// Generado por MapCnv de la MTE MK1"
+print #f, "// La Churrera Engine 3.100"
+print #f, "// mapa.h: generado por mapcnv"
 print #f, "// Copyleft 2010 The Mojon Twins"
 print #f, " "
 
-print #f, "unsigned char mapa [] = {"
+print #f, "const unsigned char mapa [] = {"
 
 i = 0
 
@@ -152,15 +152,17 @@ print #f, "    unsigned char np, x, y, st;"
 print #f, "} CERROJOS;"
 print #f, " "
 if i > 0 Then
-	print #f, "CERROJOS cerrojos [MAX_CERROJOS] = {"
+	print #f, "// Datos iniciales (const, todos cerrados); el motor los copia en cerrojos."
+	print #f, "const CERROJOS cerrojos_ini [MAX_CERROJOS] = {"
 	
 	for j = 0 to i - 1
-		o = "    {" + trim(str(bolts(j).np)) + ", " + trim(str(bolts(j).x)) + ", " + trim(str(bolts(j).y)) + ", 0}"
+		o = "    {" + trim(str(bolts(j).np)) + ", " + trim(str(bolts(j).x)) + ", " + trim(str(bolts(j).y)) + ", 1}"
 		if j < i - 1 then o = o + ","
 		print #f, o
 	next j
 	
 	print #f, "};"
+	print #f, "CERROJOS cerrojos [MAX_CERROJOS];"
 else
 	print #f, "CERROJOS *cerrojos;"
 end if

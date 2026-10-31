@@ -3,12 +3,15 @@
 
 // 128K stuff
 
-void SetRAMBank(void) {
-#asm
-	.SetRAMBank
-			ld	a, 16
-			or	b
-			ld	bc, $7ffd
-			out (C), a
-#endasm
+// SetRAMBank: pone en 0xC000 la página de RAM que diga B. Se llama desde
+// ensamblador (call SetRAMBank).
+void set_ram_bank (void) __naked {
+	__asm
+	SetRAMBank::
+		ld a, #16
+		or b
+		ld bc, #0x7ffd
+		out (c), a
+		ret
+	__endasm;
 }

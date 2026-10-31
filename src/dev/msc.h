@@ -422,18 +422,18 @@ void msc_clausules (void);
 		while (n --) {
 			#ifdef CPC
 				// En CPC hay 6 interrupciones por frame
-				#asm
+				__asm
 					halt
 					halt
 					halt
 					halt
 					halt
 					halt
-				#endasm
+				__endasm;
 			#else
-				#asm
+				__asm
 					halt
-				#endasm
+				__endasm;
 			#endif
 		}
 	}

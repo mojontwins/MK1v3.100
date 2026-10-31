@@ -257,7 +257,7 @@
 // You can add the numbers to get combined behaviours
 // Save for 10 (special), but that's obvious, innit?
 #ifndef COMPRESSED_LEVELS
-	unsigned char comportamiento_tiles [] = {
+	const unsigned char comportamiento_tiles [] = {
 		0, 8, 8, 0, 0, 8, 4, 9, 8, 8, 8, 4, 4, 8, 4,10,
 		0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

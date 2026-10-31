@@ -4,6 +4,11 @@
 
 /*
  *      Sprite Pack V2.2 for the Z88DK Small C+ Cross Compiler
+ *
+ *      Versión para SDCC de MK1 v3.100: las funciones usan la convención
+ *      __smallc (los argumentos van en la pila de izquierda a derecha, como
+ *      en sccz80), así que los envoltorios de cwrapper/ leen la pila igual
+ *      que antes, y devuelven en L (8 bits) o HL (16 bits), como sccz80.
  * 
  *      Visit http://www.geocities.com/aralbrec
  *      for a tutorial introduction.
@@ -394,175 +399,175 @@ XREF SPBorderClr
 
 /* interrupt mode 2 */
 
-extern void __LIB__  sp_InitIM2(void *default_isr);           /* void (*default_isr)(void)  */
-extern void __LIB__ *sp_InstallISR(uchar vector, void *isr);          /* void (*isr)(void)  */
-extern void __LIB__  sp_EmptyISR(void);
-extern void __LIB__ *sp_CreateGenericISR(void *addr);
-extern void __LIB__  sp_RegisterHook(uchar vector, void *hook);       /* void (*hook)(void) */
-extern void __LIB__  sp_RegisterHookFirst(uchar vector, void *hook);  /* void (*hook)(void) */
-extern void __LIB__  sp_RegisterHookLast(uchar vector, void *hook);   /* void (*hook)(void) */
-extern int  __LIB__  sp_RemoveHook(uchar vector, void *hook);         /* void (*hook)(void) */
+extern void sp_InitIM2(void *default_isr) __smallc;           /* void (*default_isr)(void)  */
+extern void *sp_InstallISR(uchar vector, void *isr) __smallc;          /* void (*isr)(void)  */
+extern void sp_EmptyISR(void) __smallc;
+extern void *sp_CreateGenericISR(void *addr) __smallc;
+extern void sp_RegisterHook(uchar vector, void *hook) __smallc;       /* void (*hook)(void) */
+extern void sp_RegisterHookFirst(uchar vector, void *hook) __smallc;  /* void (*hook)(void) */
+extern void sp_RegisterHookLast(uchar vector, void *hook) __smallc;   /* void (*hook)(void) */
+extern int sp_RemoveHook(uchar vector, void *hook) __smallc;         /* void (*hook)(void) */
 
 
 /* miscellaneous functions */
 
-extern void __LIB__  sp_Initialize(uchar colour, uchar udg);
-extern void __LIB__ *sp_SwapEndian(void *ptr);
-extern void __LIB__  sp_Swap(void *addr1, void *addr2, uint bytes);
-extern int  __LIB__  sp_PFill(uint xcoord, uchar ycoord, void *pattern, uint stackdepth);
-extern int  __LIB__  sp_StackSpace(void *addr);    /* returns "SP - addr" */
-extern uint __LIB__  sp_Random32(uint *hi);        /* returns 32 bit random number */
-extern void __LIB__  sp_Border(uchar colour);      /* set border colour */
-extern uchar __LIB__ sp_inp(uint port);
-extern void __LIB__  sp_outp(uint port, uchar value);
+extern void sp_Initialize(uchar colour, uchar udg) __smallc;
+extern void *sp_SwapEndian(void *ptr) __smallc;
+extern void sp_Swap(void *addr1, void *addr2, uint bytes) __smallc;
+extern int sp_PFill(uint xcoord, uchar ycoord, void *pattern, uint stackdepth) __smallc;
+extern int sp_StackSpace(void *addr) __smallc;    /* returns "SP - addr" */
+extern uint sp_Random32(uint *hi) __smallc;        /* returns 32 bit random number */
+extern void sp_Border(uchar colour) __smallc;      /* set border colour */
+extern uchar sp_inp(uint port) __smallc;
+extern void sp_outp(uint port, uchar value) __smallc;
 
 
 /* rectangle, interval and point intersections (miscellaneous directory) */
 
-extern int  __LIB__  sp_IntRect(struct sp_Rect *r1, struct sp_Rect *r2, struct sp_Rect *result);
-extern int  __LIB__  sp_IntLargeRect(struct sp_LargeRect *r1, struct sp_LargeRect *r2, struct sp_LargeRect *result);
-extern int  __LIB__  sp_IntPtLargeRect(uint x, uint y, struct sp_LargeRect *r);
-extern int  __LIB__  sp_IntIntervals(struct sp_Interval *i1, struct sp_Interval *i2, struct sp_Interval *result);
-extern int  __LIB__  sp_IntPtInterval(uint x, struct sp_Interval *i);
+extern int sp_IntRect(struct sp_Rect *r1, struct sp_Rect *r2, struct sp_Rect *result) __smallc;
+extern int sp_IntLargeRect(struct sp_LargeRect *r1, struct sp_LargeRect *r2, struct sp_LargeRect *result) __smallc;
+extern int sp_IntPtLargeRect(uint x, uint y, struct sp_LargeRect *r) __smallc;
+extern int sp_IntIntervals(struct sp_Interval *i1, struct sp_Interval *i2, struct sp_Interval *result) __smallc;
+extern int sp_IntPtInterval(uint x, struct sp_Interval *i) __smallc;
 
 
 /* sprites */
 
-extern struct sp_SS __LIB__ *sp_CreateSpr(uchar type, uchar rows, void *graphic, uchar plane/*, uchar extra*/);
-extern int  __LIB__  sp_AddColSpr(struct sp_SS *sprite, void *graphic/*, uchar extra*/);
-extern void __LIB__  sp_DeleteSpr(struct sp_SS *sprite);
-extern void __LIB__  sp_IterateSprChar(struct sp_SS *sprite, void *hook);
+extern struct sp_SS *sp_CreateSpr(uchar type, uchar rows, void *graphic, uchar plane) __smallc;
+extern int sp_AddColSpr(struct sp_SS *sprite, void *graphic) __smallc;
+extern void sp_DeleteSpr(struct sp_SS *sprite) __smallc;
+extern void sp_IterateSprChar(struct sp_SS *sprite, void *hook) __smallc;
                                        /* void (*hook)(struct sp_CS *cs)) */
-extern void __LIB__  sp_RemoveDList(struct sp_SS *sprite);
-extern void __LIB__  sp_MoveSprAbs(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix);
-extern void __LIB__  sp_MoveSprAbsC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix);
-extern void __LIB__  sp_MoveSprAbsNC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix);
-extern void __LIB__  sp_MoveSprRel(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix);
-extern void __LIB__  sp_MoveSprRelC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix);
-extern void __LIB__  sp_MoveSprRelNC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix);
+extern void sp_RemoveDList(struct sp_SS *sprite) __smallc;
+extern void sp_MoveSprAbs(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix) __smallc;
+extern void sp_MoveSprAbsC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix) __smallc;
+extern void sp_MoveSprAbsNC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, uchar row, uchar col, uchar hpix, uchar vpix) __smallc;
+extern void sp_MoveSprRel(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix) __smallc;
+extern void sp_MoveSprRelC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix) __smallc;
+extern void sp_MoveSprRelNC(struct sp_SS *sprite, struct sp_Rect *clip, int animate, char rel_row, char rel_col, char rel_hpix, char rel_vpix) __smallc;
 
 
 /* background tiles */
 
-extern void __LIB__  sp_PrintAt(uchar row, uchar col, uchar colour, uchar udg);
-extern void __LIB__  sp_PrintAtInv(uchar row, uchar col, uchar colour, uchar udg);
-extern uint __LIB__  sp_ScreenStr(uchar row, uchar col);
-extern void __LIB__  sp_PrintAtDiff(uchar row, uchar col, uchar colour, uchar udg);
-extern void __LIB__  sp_PrintString(struct sp_PSS *ps, uchar *s);
-extern void __LIB__  sp_ComputePos(struct sp_PSS *ps, uchar x, uchar y);
-extern void __LIB__ *sp_TileArray(uchar c, void *addr);
-extern void __LIB__ *sp_Pallette(uchar c, void *addr);
-extern void __LIB__  sp_GetTiles(struct sp_Rect *r, void *dest);
-extern void __LIB__  sp_PutTiles(struct sp_Rect *r, void *src);
-extern void __LIB__  sp_IterateDList(struct sp_Rect *r, void *hook);
+extern void sp_PrintAt(uchar row, uchar col, uchar colour, uchar udg) __smallc;
+extern void sp_PrintAtInv(uchar row, uchar col, uchar colour, uchar udg) __smallc;
+extern uint sp_ScreenStr(uchar row, uchar col) __smallc;
+extern void sp_PrintAtDiff(uchar row, uchar col, uchar colour, uchar udg) __smallc;
+extern void sp_PrintString(struct sp_PSS *ps, uchar *s) __smallc;
+extern void sp_ComputePos(struct sp_PSS *ps, uchar x, uchar y) __smallc;
+extern void *sp_TileArray(uchar c, void *addr) __smallc;
+extern void *sp_Pallette(uchar c, void *addr) __smallc;
+extern void sp_GetTiles(struct sp_Rect *r, void *dest) __smallc;
+extern void sp_PutTiles(struct sp_Rect *r, void *src) __smallc;
+extern void sp_IterateDList(struct sp_Rect *r, void *hook) __smallc;
                      /* ^ void (*hook)(void *dlist_addr) */
 
 
 /* dynamic block memory allocator */
 
-extern void __LIB__ *sp_AddMemory(uchar queue, uchar number, uint size, void *addr);
-extern void __LIB__ *sp_BlockAlloc(uchar queue);
-extern void __LIB__ *sp_BlockFit(uchar queue, uchar numcheck);
-extern void __LIB__  sp_FreeBlock(void *addr);
-extern void __LIB__  sp_InitAlloc(void);
-extern uint __LIB__  sp_BlockCount(uchar queue);
+extern void *sp_AddMemory(uchar queue, uchar number, uint size, void *addr) __smallc;
+extern void *sp_BlockAlloc(uchar queue) __smallc;
+extern void *sp_BlockFit(uchar queue, uchar numcheck) __smallc;
+extern void sp_FreeBlock(void *addr) __smallc;
+extern void sp_InitAlloc(void) __smallc;
+extern uint sp_BlockCount(uchar queue) __smallc;
 
 
 /* updater */
 
-extern void __LIB__  sp_Invalidate(struct sp_Rect *area, struct sp_Rect *clip);
-extern void __LIB__  sp_Validate(struct sp_Rect *area, struct sp_Rect *clip);
-extern void __LIB__  sp_ClearRect(struct sp_Rect *area, uchar colour, uchar udg, uchar flags);
-extern void __LIB__  sp_UpdateNow(void);
-extern void __LIB__ *sp_CompDListAddr(uchar row, uchar col);
-extern void __LIB__ *sp_CompDirtyAddr(uchar row, uchar col, uchar *mask);
+extern void sp_Invalidate(struct sp_Rect *area, struct sp_Rect *clip) __smallc;
+extern void sp_Validate(struct sp_Rect *area, struct sp_Rect *clip) __smallc;
+extern void sp_ClearRect(struct sp_Rect *area, uchar colour, uchar udg, uchar flags) __smallc;
+extern void sp_UpdateNow(void) __smallc;
+extern void *sp_CompDListAddr(uchar row, uchar col) __smallc;
+extern void *sp_CompDirtyAddr(uchar row, uchar col, uchar *mask) __smallc;
 
 
 /* input */
 
-extern uchar __LIB__ sp_JoySinclair1(void);
-extern uchar __LIB__ sp_JoySinclair2(void);
-extern uchar __LIB__ sp_JoyTimexEither(void);
-extern uchar __LIB__ sp_JoyTimexLeft(void);
-extern uchar __LIB__ sp_JoyTimexRight(void);
-extern uchar __LIB__ sp_JoyFuller(void);
-extern uchar __LIB__ sp_JoyKempston(void);
-extern uchar __LIB__ sp_JoyKeyboard(struct sp_UDK *keys);
-extern void  __LIB__ sp_WaitForKey(void);
-extern void  __LIB__ sp_WaitForNoKey(void);
-extern uint  __LIB__ sp_Pause(uint ticks);
-extern void  __LIB__ sp_Wait(uint ticks);
-extern uint  __LIB__ sp_LookupKey(uchar c);  /* use "iferror(..)" to see if char not found */
-extern uchar __LIB__ sp_GetKey(void);        /* returns ascii code, 0 if no key pressed */
-extern uchar __LIB__ sp_Inkey(void);         /* returns ascii code, 0 if no key pressed */
-extern int   __LIB__ sp_KeyPressed(uint scancode);
-extern void  __LIB__ sp_MouseAMXInit(uchar xvector, uchar yvector);
-extern void  __LIB__ sp_MouseAMX(uint *xcoord, uchar *ycoord, uchar *buttons);
-extern void  __LIB__ sp_SetMousePosAMX(uint xcoord, uchar ycoord);
-extern void  __LIB__ sp_MouseKempston(uint *xcoord, uchar *ycoord, uchar *buttons);
-extern void  __LIB__ sp_SetMousePosKempston(uint xcoord, uchar ycoord);
-extern void  __LIB__ sp_MouseSim(struct sp_UDM *m, uint *xcoord, uchar *ycoord, uchar *buttons);
-extern void  __LIB__ sp_SetMousePosSim(struct sp_UDM *m, uint xcoord, uchar ycoord);
+extern uchar sp_JoySinclair1(void) __smallc;
+extern uchar sp_JoySinclair2(void) __smallc;
+extern uchar sp_JoyTimexEither(void) __smallc;
+extern uchar sp_JoyTimexLeft(void) __smallc;
+extern uchar sp_JoyTimexRight(void) __smallc;
+extern uchar sp_JoyFuller(void) __smallc;
+extern uchar sp_JoyKempston(void) __smallc;
+extern uchar sp_JoyKeyboard(struct sp_UDK *keys) __smallc;
+extern void sp_WaitForKey(void) __smallc;
+extern void sp_WaitForNoKey(void) __smallc;
+extern uint sp_Pause(uint ticks) __smallc;
+extern void sp_Wait(uint ticks) __smallc;
+extern uint sp_LookupKey(uchar c) __smallc;  /* use "iferror(..)" to see if char not found */
+extern uchar sp_GetKey(void) __smallc;        /* returns ascii code, 0 if no key pressed */
+extern uchar sp_Inkey(void) __smallc;         /* returns ascii code, 0 if no key pressed */
+extern int sp_KeyPressed(uint scancode) __smallc;
+extern void sp_MouseAMXInit(uchar xvector, uchar yvector) __smallc;
+extern void sp_MouseAMX(uint *xcoord, uchar *ycoord, uchar *buttons) __smallc;
+extern void sp_SetMousePosAMX(uint xcoord, uchar ycoord) __smallc;
+extern void sp_MouseKempston(uint *xcoord, uchar *ycoord, uchar *buttons) __smallc;
+extern void sp_SetMousePosKempston(uint xcoord, uchar ycoord) __smallc;
+extern void sp_MouseSim(struct sp_UDM *m, uint *xcoord, uchar *ycoord, uchar *buttons) __smallc;
+extern void sp_SetMousePosSim(struct sp_UDM *m, uint xcoord, uchar ycoord) __smallc;
 
 
 /* screen address helpers */
 
-extern void __LIB__ *sp_CharDown(void *scrnaddr);
-extern void __LIB__ *sp_CharLeft(void *scrnaddr);
-extern void __LIB__ *sp_CharRight(void *scrnaddr);
-extern void __LIB__ *sp_CharUp(void *scrnaddr);
-extern void __LIB__ *sp_GetAttrAddr(void *scrnaddr);
-extern void __LIB__ *sp_GetCharAddr(uchar row, uchar col);
-extern void __LIB__ *sp_GetScrnAddr(uint xcoord, uchar ycoord, uchar *mask);
-extern void __LIB__ *sp_PixelDown(void *scrnaddr);
-extern void __LIB__ *sp_PixelUp(void *scrnaddr);
-extern void __LIB__ *sp_PixelLeft(void *scrnaddr, uchar *mask);
-extern void __LIB__ *sp_PixelRight(void *scrnaddr, uchar *mask);
+extern void *sp_CharDown(void *scrnaddr) __smallc;
+extern void *sp_CharLeft(void *scrnaddr) __smallc;
+extern void *sp_CharRight(void *scrnaddr) __smallc;
+extern void *sp_CharUp(void *scrnaddr) __smallc;
+extern void *sp_GetAttrAddr(void *scrnaddr) __smallc;
+extern void *sp_GetCharAddr(uchar row, uchar col) __smallc;
+extern void *sp_GetScrnAddr(uint xcoord, uchar ycoord, uchar *mask) __smallc;
+extern void *sp_PixelDown(void *scrnaddr) __smallc;
+extern void *sp_PixelUp(void *scrnaddr) __smallc;
+extern void *sp_PixelLeft(void *scrnaddr, uchar *mask) __smallc;
+extern void *sp_PixelRight(void *scrnaddr, uchar *mask) __smallc;
 
 
 /* AY Sound Chip - don't use incomplete
 
-extern void  __LIB__ sp_AY_Reset(void);
-extern void  __LIB__ sp_AY_Silence(void);
-extern void  __LIB__ sp_AY_SaveState(struct sp_AYSTATE *s, uint mask);
-extern void  __LIB__ sp_AY_RestoreState(struct sp_AYSTATE *s, uint mask);
-extern void  __LIB__ sp_AY_Out(uchar reg, uchar data);
-extern uchar __LIB__ sp_AY_In(uchar reg);
-extern uchar __LIB__ *sp_AY_OutList(uchar *addr);
-extern void  __LIB__ sp_AY_PlayPSG2(struct sp_AYPSG2 *s);
+extern void sp_AY_Reset(void) __smallc;
+extern void sp_AY_Silence(void) __smallc;
+extern void sp_AY_SaveState(struct sp_AYSTATE *s, uint mask) __smallc;
+extern void sp_AY_RestoreState(struct sp_AYSTATE *s, uint mask) __smallc;
+extern void sp_AY_Out(uchar reg, uchar data) __smallc;
+extern uchar sp_AY_In(uchar reg) __smallc;
+extern uchar *sp_AY_OutList(uchar *addr) __smallc;
+extern void sp_AY_PlayPSG2(struct sp_AYPSG2 *s) __smallc;
 
 */
 
 
 /* linked list ADT */
 
-extern struct sp_List __LIB__ *sp_ListCreate(void);
-extern uint __LIB__  sp_ListCount(struct sp_List *list);
-extern void __LIB__ *sp_ListFirst(struct sp_List *list);
-extern void __LIB__ *sp_ListLast(struct sp_List *list);
-extern void __LIB__ *sp_ListNext(struct sp_List *list);
-extern void __LIB__ *sp_ListPrev(struct sp_List *list);
-extern void __LIB__ *sp_ListCurr(struct sp_List *list);
-extern int  __LIB__  sp_ListAdd(struct sp_List *list, void *item);
-extern int  __LIB__  sp_ListInsert(struct sp_List *list, void *item);
-extern int  __LIB__  sp_ListAppend(struct sp_List *list, void *item);
-extern int  __LIB__  sp_ListPrepend(struct sp_List *list, void *item);
-extern void __LIB__ *sp_ListRemove(struct sp_List *list);
-extern void __LIB__  sp_ListConcat(struct sp_List *list1, struct sp_List *list2);
-extern void __LIB__  sp_ListFree(struct sp_List *list, void *free);
+extern struct sp_List *sp_ListCreate(void) __smallc;
+extern uint sp_ListCount(struct sp_List *list) __smallc;
+extern void *sp_ListFirst(struct sp_List *list) __smallc;
+extern void *sp_ListLast(struct sp_List *list) __smallc;
+extern void *sp_ListNext(struct sp_List *list) __smallc;
+extern void *sp_ListPrev(struct sp_List *list) __smallc;
+extern void *sp_ListCurr(struct sp_List *list) __smallc;
+extern int sp_ListAdd(struct sp_List *list, void *item) __smallc;
+extern int sp_ListInsert(struct sp_List *list, void *item) __smallc;
+extern int sp_ListAppend(struct sp_List *list, void *item) __smallc;
+extern int sp_ListPrepend(struct sp_List *list, void *item) __smallc;
+extern void *sp_ListRemove(struct sp_List *list) __smallc;
+extern void sp_ListConcat(struct sp_List *list1, struct sp_List *list2) __smallc;
+extern void sp_ListFree(struct sp_List *list, void *free) __smallc;
                                  /* void (*free)(void *item) */
-extern void __LIB__ *sp_ListTrim(struct sp_List *list);
-extern void __LIB__ *sp_ListSearch(struct sp_List *list, void *match, void *item1);
+extern void *sp_ListTrim(struct sp_List *list) __smallc;
+extern void *sp_ListSearch(struct sp_List *list, void *match, void *item1) __smallc;
                                  /* int (*match)(void *item1, void *item2); Set carry if = */
 
 
 /* hashtable ADT */
 
-extern struct sp_HashTable __LIB__ *sp_HashCreate(uint size, void *hashfunc, void *match, void *delete);
-extern struct sp_HashCell  __LIB__ *sp_HashRemove(struct sp_HashTable *ht, void *key);
-extern void __LIB__ *sp_HashLookup(struct sp_HashTable *ht, void *key);
-extern void __LIB__ *sp_HashAdd(struct sp_HashTable *ht, void *key, void *value);
-extern void __LIB__  sp_HashDelete(struct sp_HashTable *ht);
+extern struct sp_HashTable *sp_HashCreate(uint size, void *hashfunc, void *match, void *delete) __smallc;
+extern struct sp_HashCell *sp_HashRemove(struct sp_HashTable *ht, void *key) __smallc;
+extern void *sp_HashLookup(struct sp_HashTable *ht, void *key) __smallc;
+extern void *sp_HashAdd(struct sp_HashTable *ht, void *key, void *value) __smallc;
+extern void sp_HashDelete(struct sp_HashTable *ht) __smallc;
 
 
 /* heap array ADT aka priority queue */
@@ -575,11 +580,11 @@ extern void __LIB__  sp_HashDelete(struct sp_HashTable *ht);
                           return carry set and true if item1<item2 for min heap
 */
 
-extern void __LIB__ sp_Heapify(void **array, uint n, void *compare);
-extern void __LIB__ sp_HeapSiftDown(uint start, void **array, uint n, void *compare);
-extern void __LIB__ sp_HeapSiftUp(uint start, void **array, void *compare);
-extern void __LIB__ sp_HeapAdd(void *item, void **array, uint n, void *compare); /* n++ after */
-extern void __LIB__ sp_HeapExtract(void **array, uint n, void *compare);         /* n-- after */
+extern void sp_Heapify(void * *array, uint n, void *compare) __smallc;
+extern void sp_HeapSiftDown(uint start, void * *array, uint n, void *compare) __smallc;
+extern void sp_HeapSiftUp(uint start, void * *array, void *compare) __smallc;
+extern void sp_HeapAdd(void *item, void * *array, uint n, void *compare) __smallc; /* n++ after */
+extern void sp_HeapExtract(void * *array, uint n, void *compare) __smallc;         /* n-- after */
                     /* ^ extracts item stored in array[1], moved to array[n] after call */
 
 
@@ -607,15 +612,15 @@ extern void __LIB__ sp_HeapExtract(void **array, uint n, void *compare);        
       to memory in each call, automatically advancing memory pointers.
 */
 
-extern struct sp_HuffmanCodec  __LIB__ *sp_HuffCreate(uint symbols);
-extern void  __LIB__  sp_HuffDelete(struct sp_HuffmanCodec *hc);
-extern void  __LIB__  sp_HuffAccumulate(struct sp_HuffmanCodec *hc, uchar c);
-extern int   __LIB__  sp_HuffExtract(struct sp_HuffmanCodec *hc, uint n);
+extern struct sp_HuffmanCodec *sp_HuffCreate(uint symbols) __smallc;
+extern void sp_HuffDelete(struct sp_HuffmanCodec *hc) __smallc;
+extern void sp_HuffAccumulate(struct sp_HuffmanCodec *hc, uchar c) __smallc;
+extern int sp_HuffExtract(struct sp_HuffmanCodec *hc, uint n) __smallc;
                       /* ^ return 0 = success, else n; enter n=0 if first call */
-extern void  __LIB__  sp_HuffSetState(struct sp_HuffmanCodec *hc, void *addr, uchar bit);
-extern void  __LIB__ *sp_HuffGetState(struct sp_HuffmanCodec *hc, uchar *bit);
-extern uchar __LIB__  sp_HuffDecode(struct sp_HuffmanCodec *hc);
-extern void  __LIB__  sp_HuffEncode(struct sp_HuffmanCodec *hc, uchar c);
+extern void sp_HuffSetState(struct sp_HuffmanCodec *hc, void *addr, uchar bit) __smallc;
+extern void *sp_HuffGetState(struct sp_HuffmanCodec *hc, uchar *bit) __smallc;
+extern uchar sp_HuffDecode(struct sp_HuffmanCodec *hc) __smallc;
+extern void sp_HuffEncode(struct sp_HuffmanCodec *hc, uchar c) __smallc;
 
 
 #endif  /* _SPRITEPACK_H */

@@ -7,12 +7,7 @@
 // Special keys
 
 void main (void) {
-	#ifndef CPC
-		#asm
-				ld  sp, STACK_ADDR
-		#endasm
-	#endif
-
+	// La pila la coloca crt0 (en STACK_ADDR, ver churromain.c).
 	cortina ();
 	system_init ();
 
@@ -57,6 +52,7 @@ void main (void) {
 					hook_level_intro ();
 				#else
 					clear_gamearea_tiles ();
+					memcpy (level_str, " LEVEL 00 ", 11);
 					level_str [7] = '0' + (level + 1) / 10;
 					level_str [8] = '0' + (level + 1) % 10;
 					print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
@@ -87,6 +83,7 @@ void main (void) {
 			// Con niveles, hotspots, cerrojos y enemigos vienen nuevos en el
 			// bundle; init_malotes sigue haciendo falta para fijar su vida.
 			#ifndef COMPRESSED_LEVELS
+				init_enems ();
 				init_hotspots ();
 				#if !defined DEACTIVATE_KEYS
 					init_cerrojos ();

@@ -9,166 +9,174 @@
 // Frames extra por si se pueden eliminar los enemigos:
 
 #ifdef NEEDS_EXPLOSION_SPRITE
-    extern unsigned char sprite_17_a []; 
+    extern const unsigned char sprite_17_a []; 
 #endif
 
-extern unsigned char sprite_18_a []; 
+extern const unsigned char sprite_18_a []; 
 
 #ifdef NEEDS_BULLET_SPRITE
-    extern unsigned char sprite_19_a [];
-    extern unsigned char sprite_19_b [];
+    extern const unsigned char sprite_19_a [];
+    extern const unsigned char sprite_19_b [];
 #endif
 
 #ifdef NEEDS_EXPLOSION_SPRITE
-    #asm
-        ._sprite_17_a
-            defb 0, 128
-            defb 56, 0
-            defb 117, 0
-            defb 123, 0
-            defb 127, 0
-            defb 57, 0
-            defb 0, 0
-            defb 96, 0
-            defb 238, 0
-            defb 95, 0
-            defb 31, 0
-            defb 62, 0
-            defb 53, 128
-            defb 42, 128
-            defb 20, 128
-            defb 0, 192
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-     
-        ._sprite_17_b
-            defb 0, 3
-            defb 240, 1
-            defb 248, 0
-            defb 236, 0
-            defb 212, 0
-            defb 248, 0
-            defb 224, 1
-            defb 24, 0
-            defb 124, 0
-            defb 120, 0
-            defb 244, 0
-            defb 168, 0
-            defb 0, 1
-            defb 0, 3
-            defb 0, 63
-            defb 0, 127
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-     
-        ._sprite_17_c
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-            defb 0, 255
-    #endasm
+    void extrasprites_asm1 (void) __naked {
+    	__asm
+	    	_sprite_17_a:
+	    	.db 0, 128
+	    	.db 56, 0
+	    	.db 117, 0
+	    	.db 123, 0
+	    	.db 127, 0
+	    	.db 57, 0
+	    	.db 0, 0
+	    	.db 96, 0
+	    	.db 238, 0
+	    	.db 95, 0
+	    	.db 31, 0
+	    	.db 62, 0
+	    	.db 53, 128
+	    	.db 42, 128
+	    	.db 20, 128
+	    	.db 0, 192
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+
+	    	_sprite_17_b:
+	    	.db 0, 3
+	    	.db 240, 1
+	    	.db 248, 0
+	    	.db 236, 0
+	    	.db 212, 0
+	    	.db 248, 0
+	    	.db 224, 1
+	    	.db 24, 0
+	    	.db 124, 0
+	    	.db 120, 0
+	    	.db 244, 0
+	    	.db 168, 0
+	    	.db 0, 1
+	    	.db 0, 3
+	    	.db 0, 63
+	    	.db 0, 127
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+
+	    	_sprite_17_c:
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+    	__endasm;
+    }
 #endif
 
-#asm
-	._sprite_18_a
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		
-	._sprite_18_b
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		
-	._sprite_18_c
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-		defb 0, 255, 0, 255, 0, 255, 0, 255
-#endasm
+void extrasprites_asm2 (void) __naked {
+	__asm
+		_sprite_18_a:
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+
+		_sprite_18_b:
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+
+		_sprite_18_c:
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+		.db 0, 255, 0, 255, 0, 255, 0, 255
+	__endasm;
+}
 
 #ifdef NEEDS_BULLET_SPRITE
-    #asm	              	
-    	._sprite_19_a
-    		defb 0, 255
-    		defb 0, 195
-    		defb 24, 129
-    		defb 60, 0
-    		defb 60, 0
-    		defb 24, 129
-    		defb 0, 195
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    	
-    	._sprite_19_b
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    		defb 0, 255
-    #endasm
+    void extrasprites_asm3 (void) __naked {
+    	__asm
+	    	_sprite_19_a:
+	    	.db 0, 255
+	    	.db 0, 195
+	    	.db 24, 129
+	    	.db 60, 0
+	    	.db 60, 0
+	    	.db 24, 129
+	    	.db 0, 195
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+
+	    	_sprite_19_b:
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+	    	.db 0, 255
+    	__endasm;
+    }
 #endif
 
 // Final de los gráficos de sprites. En 128K comp-zx.sh comprueba que queda
 // por debajo de 0xC000 (los niveles pueden cargar sprites encima).
-#asm
-	._sprites_end
-#endasm
+void extrasprites_asm4 (void) __naked {
+	__asm
+		_sprites_end:
+	__endasm;
+}

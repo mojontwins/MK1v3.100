@@ -6,243 +6,244 @@
 // I removed di's and ei's, not needed here.
 // Copyleft 2010 The Mojon Twins
 
-#asm
-	.playsfx
+void beeper_asm1 (void) __naked {
+	__asm
+		playsfx:
 		;di
-		ld l,a
-		ld h,0
-		add hl,hl
-		ld de,proclist
-		add hl,de
-		ld a,(hl)
+		ld l, a
+		ld h, #0
+		add hl, hl
+		ld de, #proclist
+		add hl, de
+		ld a, (hl)
 		inc hl
-		ld h,(hl)
-		ld l,a
-		ld de,0
+		ld h, (hl)
+		ld l, a
+		ld de, #0
 		jp (hl)
-	
-	.sound1	;enemy destroyed
-		ex de,hl
-		ld bc,500
-	.sound1l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
-		ld e,a
+
+		sound1:;enemy destroyed
+		ex de, hl
+		ld bc, #500
+		sound1l0:
+		ld a, (hl)
+		and #16
+		out (#0xFE), a
+		ld e, a
 		inc a
 		sla a
 		sla a
-	.sound1l1
+		sound1l1:
 		dec a
-		jr nz,sound1l1
-		out ($FE),a
-		ld a,e
+		jr nz, sound1l1
+		out (#0xFE), a
+		ld a, e
 		inc a
-		add a,a
-		add a,a
-		add a,a
-	.sound1l2
+		add a, a
+		add a, a
+		add a, a
+		sound1l2:
 		dec a
-		jr nz,sound1l2
-		ld a,b
+		jr nz, sound1l2
+		ld a, b
 		inc hl
 		dec bc
-		ld a,b
+		ld a, b
 		or c
-		jr nz,sound1l0
+		jr nz, sound1l0
 		;ei
 		ret
-	
-	.sound2	;enemy hit
-		ex de,hl
-		ld bc,40*256+100
-	.sound2l0
-		ld a,(hl)
-		and 16
-		out ($FE),a
+
+		sound2:;enemy hit
+		ex de, hl
+		ld bc, #40*256+100
+		sound2l0:
+		ld a, (hl)
+		and #16
+		out (#0xFE), a
 		inc hl
-		ld a,c
-	.sound2l1
+		ld a, c
+		sound2l1:
 		dec a
-		jr nz,sound2l1
-		out ($FE),a
-		ld a,c
-	.sound2l2
+		jr nz, sound2l1
+		out (#0xFE), a
+		ld a, c
+		sound2l2:
 		dec a
-		jr nz,sound2l2
+		jr nz, sound2l2
 		djnz sound2l0
 		;ei
 		ret
-	
-	.sound3	;something
-		ex de,hl
-		ld b,100
-		ld de,$1020
-	.sound3l0
-		ld a,(hl)
+
+		sound3:;something
+		ex de, hl
+		ld b, #100
+		ld de, #0x1020
+		sound3l0:
+		ld a, (hl)
 		and d
-		out ($FE),a
+		out (#0xFE), a
 		inc hl
-		ld a,e
-	.sound3l0a
+		ld a, e
+		sound3l0a:
 		dec a
-		jr nz,sound3l0a
+		jr nz, sound3l0a
 		djnz sound3l0
-		ld b,250
-	.sound3l1
-		ld a,(hl)
+		ld b, #250
+		sound3l1:
+		ld a, (hl)
 		and d
-		out ($FE),a
+		out (#0xFE), a
 		inc hl
-		ld a,2
-	.sound3l2
+		ld a, #2
+		sound3l2:
 		dec a
-		jr nz,sound3l2
+		jr nz, sound3l2
 		xor a
-		out ($FE),a
-		ld a,e
-	.sound3l3
+		out (#0xFE), a
+		ld a, e
+		sound3l3:
 		dec a
-		jr nz,sound3l3
+		jr nz, sound3l3
 		djnz sound3l1
 		;ei
 		ret
-	
-	.sound4	;jump
-		ld bc,20*256+250
-	.sound4l0
-		ld a,16
-		out ($FE),a
-		ld a,4
-	.sound4l1
+
+		sound4:;jump
+		ld bc, #20*256+250
+		sound4l0:
+		ld a, #16
+		out (#0xFE), a
+		ld a, #4
+		sound4l1:
 		dec a
-		jr nz,sound4l1
-		out ($FE),a
-		ld a,c
-	.sound4l2
+		jr nz, sound4l1
+		out (#0xFE), a
+		ld a, c
+		sound4l2:
 		dec a
-		jr nz,sound4l2
+		jr nz, sound4l2
 		dec c
 		dec c
 		djnz sound4l0
 		;ei
 		ret
-	
-	.sound5	;player hit
-		ex de,hl
-		ld bc,100*256+16
-	.sound5l0
-		ld a,(hl)
+
+		sound5:;player hit
+		ex de, hl
+		ld bc, #100*256+16
+		sound5l0:
+		ld a, (hl)
 		and c
-		out ($FE),a
+		out (#0xFE), a
 		inc hl
-		ld a,110
+		ld a, #110
 		sub b
-		ld e,a
+		ld e, a
 		and c
-		out ($FE),a
-	.sound5l1
+		out (#0xFE), a
+		sound5l1:
 		dec e
-		jr nz,sound5l1
+		jr nz, sound5l1
 		djnz sound5l0
 		;ei
 		ret
-	
-	.sound6	;enemy destroyed 2
-		ex de,hl
-		ld bc,20*256+16
-	.sound6l0
-		ld a,(hl)
+
+		sound6:;enemy destroyed 2
+		ex de, hl
+		ld bc, #20*256+16
+		sound6l0:
+		ld a, (hl)
 		inc hl
 		and c
-		out ($FE),a
+		out (#0xFE), a
 		xor a
-	.sound6l0a
+		sound6l0a:
 		dec a
-		jr nz,sound6l0a
+		jr nz, sound6l0a
 		djnz sound6l0
-	.sound6l1
-		ld a,(hl)
+		sound6l1:
+		ld a, (hl)
 		inc hl
 		and c
-		out ($FE),a
-	.sound6l2
+		out (#0xFE), a
+		sound6l2:
 		dec a
-		jr nz,sound6l2
+		jr nz, sound6l2
 		djnz sound6l1
 		;ei
 		ret
-		
-	.sound7	;shot
-		ex de,hl
-		ld bc,100*256
-	.sound7l0
-		ld a,(hl)
+
+		sound7:;shot
+		ex de, hl
+		ld bc, #100*256
+		sound7l0:
+		ld a, (hl)
 		inc hl
 		or c
-		and 16
-		out ($FE),a
-		ld a,(hl)
+		and #16
+		out (#0xFE), a
+		ld a, (hl)
 		srl a
 		srl a
-	.sound7l1
+		sound7l1:
 		dec a
-		jr nz,sound7l1
-		ld a,c
-		add a,4
-		ld c,a
+		jr nz, sound7l1
+		ld a, c
+		add a, #4
+		ld c, a
 		djnz sound7l0
 		;ei
 		ret
-	
-	.sound8	;take item
-		ld a,200
+
+		sound8:;take item
+		ld a, #200
 		jr soundItem
-	.sound9
-		ld a,175
+		sound9:
+		ld a, #175
 		jr soundItem
-	.sound10
-		ld a,100
-	.soundItem
-		ld (frq),a
-		ld b,4
-		ld d,128
-	.sound8l2
+		sound10:
+		ld a, #100
+		soundItem:
+		ld (frq), a
+		ld b, #4
+		ld d, #128
+		sound8l2:
 		push bc
-	;.frq=$+1
-	;	ld bc,2*256+200
-		defb #01	;ld bc
-	.frq
-		defb 200	;+200
-		defb 2	;2*256
-	.sound8l0
+		;.frq=$+1
+		;	ld bc,2*256+200
+		.db #01;ld bc
+		frq:
+		.db 200;+200
+		.db 2;2*256
+		sound8l0:
 		push bc
-		ld b,50
-	.sound8l1
-		xor 16
-		and 16
-		out ($FE),a
-		ld e,a
-		ld a,d
-	.sound8l2b
+		ld b, #50
+		sound8l1:
+		xor #16
+		and #16
+		out (#0xFE), a
+		ld e, a
+		ld a, d
+		sound8l2b:
 		dec a
-		jr nz,sound8l2b
-		out ($FE),a
-		ld a,129
+		jr nz, sound8l2b
+		out (#0xFE), a
+		ld a, #129
 		sub d
-	.sound8l3
+		sound8l3:
 		dec a
-		jr nz,sound8l3
-		ld a,e
-		ld e,c
-	.sound8l4
+		jr nz, sound8l3
+		ld a, e
+		ld e, c
+		sound8l4:
 		dec e
-		jr nz,sound8l4
+		jr nz, sound8l4
 		djnz sound8l1
 		pop bc
-		ld a,c
-		sub 16
-		ld c,a
+		ld a, c
+		sub #16
+		ld c, a
 		djnz sound8l0
 		pop bc
 		srl d
@@ -250,24 +251,25 @@
 		djnz sound8l2
 		;ei
 		ret
-	
-	.proclist
-		defw sound1 	// 0 Enemy destroyed
-		defw sound2 	// 1 Enemy Hit
-		defw sound3 	// 2 Something
-		defw sound4 	// 3 Jump
-		defw sound5 	// 4 Player hit
-		defw sound6 	// 5 Enemy destroyed 2
-		defw sound7 	// 6 Shot
-		defw sound8 	// 7 Item 1
-		defw sound9 	// 8 Item 2
-		defw sound10 	// 9 Item 3
-		defw sound4 	// 10 Puncho
-		defw sound8 	// 11 Coin
-		defw sound3 	// 12 Talk 1
-		defw sound7 	// 13 Talk 2
-		defw sound3 	// 14 Key in lock
-#endasm
+
+		proclist:
+		.dw sound1; 0 Enemy destroyed
+		.dw sound2; 1 Enemy Hit
+		.dw sound3; 2 Something
+		.dw sound4; 3 Jump
+		.dw sound5; 4 Player hit
+		.dw sound6; 5 Enemy destroyed 2
+		.dw sound7; 6 Shot
+		.dw sound8; 7 Item 1
+		.dw sound9; 8 Item 2
+		.dw sound10; 9 Item 3
+		.dw sound4; 10 Puncho
+		.dw sound8; 11 Coin
+		.dw sound3; 12 Talk 1
+		.dw sound7; 13 Talk 2
+		.dw sound3; 14 Key in lock
+	__endasm;
+}
 
 /*
 	TABLA DE SONIDOS
@@ -293,11 +295,13 @@
 
 // Los efectos de beeper se tocan con las interrupciones deshabilitadas: la
 // ISR rompería la temporización del sonido.
-void __FASTCALL__ peta_el_beeper (unsigned char n) {
-	#asm
-		ld a, l
+// El efecto llega en A (convención de SDCC para un argumento de 8 bits).
+void peta_el_beeper (unsigned char n) __naked {
+	(void) n;
+	__asm
 		di
 		call playsfx
 		ei
-	#endasm
+		ret
+	__endasm;
 }

@@ -1,0 +1,42 @@
+;
+; PixelDown
+; Alvin Albrecht 2002
+;
+
+	.include "SPconfig.inc"
+	.module SPPixelDown
+	.globl SPPixelDown
+
+; Pixel Down
+;
+; Adjusts screen address HL to move one pixel down in the display.
+; (0,0) is located at the top left corner of the screen.
+;
+; enter: HL = valid screen address
+; exit : Carry = moved off screen
+;        HL = moves one pixel down
+; used : AF, HL
+
+SPPixelDown:
+	inc h
+	ld a, h
+	and #0x07
+	ret nz
+	ld a, h
+	sub #0x08
+	ld h, a
+	ld a, l
+	add a, #0x20
+	ld l, a
+	ret nc
+	ld a, h
+	add a, #0x08
+	ld h, a
+	.if DISP_HIRES
+	and #0x18
+	cp #0x18
+	.else
+	cp #0x58
+	.endif
+	ccf
+	ret

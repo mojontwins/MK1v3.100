@@ -1,0 +1,36 @@
+;
+; JoyKempston
+; Alvin Albrecht 2002
+;
+; Reads Kempston joystick.
+;
+
+	.module SPJoyKempston
+	.globl SPJoyKempston
+	.globl SPtbllookup
+
+; JoyKempston
+;
+; Reads Kempston joystick.
+; You must make sure the real hardware is
+; present or you may get false readings.
+;
+; exit:   a = F111RLDU active low
+; uses:   af, de
+
+SPJoyKempston:
+	in a, (#0x1f); 000FUDLR active high
+	cpl; active low
+	and #0x1f
+	ld de, #kemptbl; use table to transform
+	jp SPtbllookup
+
+kemptbl:
+	.db 0x70,0x78,0x74,0x7c
+	.db 0x72,0x7a,0x76,0x7e
+	.db 0x71,0x79,0x75,0x7d
+	.db 0x73,0x7b,0x77,0x7f
+	.db 0xf0,0xf8,0xf4,0xfc
+	.db 0xf2,0xfa,0xf6,0xfe
+	.db 0xf1,0xf9,0xf5,0xfd
+	.db 0xf3,0xfb,0xf7,0xff

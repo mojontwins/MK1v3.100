@@ -7,15 +7,8 @@ unsigned char px, py, pxx, pyy, pt, pt_alt;
 unsigned char *pptr, *pptr_alt; 
 
 void blackout (void) {
-	#asm
-		ld hl, 22528
-		ld (hl), 0
-		push hl
-		pop de
-		inc de
-		ld bc, 767
-		ldir
-	#endasm
+	// Atributos a 0: tinta y papel negros
+	memset ((void *) 22528, 0, 768);
 }
 
 #ifdef NO_MASKS
@@ -27,20 +20,16 @@ void blackout (void) {
 void system_init (void) {
 	// Install ISR
 	
-	#asm
-		di
-	#endasm
+	__asm__ ("di");
 
 	// Interrupciones en modo 2 con la ISR de splib2 en 0xF1F1 y nuestro
 	// "hook" ISR: cuenta frames para la sincronía (GAME_FRAME_TICKS) y en 128K
 	// además llama al WYZ player.
-	sp_InitIM2(0xf1f1);
-	sp_CreateGenericISR(0xf1f1);
-	sp_RegisterHook(255, ISR);
+	sp_InitIM2 ((void *) 0xf1f1);
+	sp_CreateGenericISR ((void *) 0xf1f1);
+	sp_RegisterHook (255, ISR_HOOK);
 
-	#asm
-		ei
-	#endasm
+	__asm__ ("ei");
 
 	#ifdef MODE_128K
 		wyz_init ();
@@ -54,7 +43,7 @@ void system_init (void) {
 	joyfunc = sp_JoyKeyboard;
 
 	// Load tileset
-	allpurposepuntero = tileset;
+	allpurposepuntero = (unsigned char *) tileset;
 	gpit = 0; do {
 		sp_TileArray (gpit, allpurposepuntero);
 		allpurposepuntero += 8;
@@ -202,7 +191,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, unsigned char
 
 void pad_read (void) {
 	pad_this_frame = pad1;
-	pad1 = pad0 = (joyfunc) (&keys); 
+	pad1 = pad0 = joyfunc ((struct sp_UDK *) &keys); 
 
 	// Keys held this frame
 	pad_this_frame = (~pad_this_frame) | pad1;
@@ -212,14 +201,14 @@ void pad_read (void) {
 unsigned char en_an_last_x [3], en_an_last_y [3];
 
 void saca_a_todo_el_mundo_de_aqui (void) {
-	sp_MoveSprAbs (sp_player, spritesClip, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);				
+	sp_MoveSprAbs (sp_player, SPRITES_CLIP, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);				
 	for (gpit = 0; gpit < 3; gpit ++) {
-		sp_MoveSprAbs (sp_moviles [gpit], spritesClip, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);
+		sp_MoveSprAbs (sp_moviles [gpit], SPRITES_CLIP, 0, VIEWPORT_Y + 30, VIEWPORT_X + 20, 0, 0);
 		en_an_last_y [gpit] = 0xff;		// Fuera de pantalla: obliga a moverlo la próxima vez
 	}
 	#ifdef PLAYER_CAN_FIRE
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++)
-			sp_MoveSprAbs (sp_bullets [gpit], spritesClip, 0, -2, -2, 0, 0);
+			sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, -2, -2, 0, 0);
 	#endif
 
 }
@@ -232,7 +221,7 @@ void update_this_enemy (void) {
 	if (en_an_next_frame [gpit] == en_an_current_frame [gpit] &&
 		_en_x == en_an_last_x [gpit] && _en_y == en_an_last_y [gpit]) return;
 	en_an_last_x [gpit] = _en_x; en_an_last_y [gpit] = _en_y;
-	sp_MoveSprAbs (sp_moviles [gpit], spritesClip, en_an_next_frame [gpit] - en_an_current_frame [gpit], VIEWPORT_Y + (_en_y >> 3), VIEWPORT_X + (_en_x >> 3), _en_x & 7, _en_y & 7);
+	sp_MoveSprAbs (sp_moviles [gpit], SPRITES_CLIP, en_an_next_frame [gpit] - en_an_current_frame [gpit], VIEWPORT_Y + (_en_y >> 3), VIEWPORT_X + (_en_x >> 3), _en_x & 7, _en_y & 7);
 	en_an_current_frame [gpit] = en_an_next_frame [gpit];
 }
 
@@ -262,9 +251,9 @@ void render_sprites (void) {
 	// Render player
 
 	if ( !(player.estado & EST_PARP) || !(half_life) )
-		sp_MoveSprAbs (sp_player, spritesClip, player.next_frame - player.current_frame, VIEWPORT_Y + (gpy >> 3), VIEWPORT_X + (gpx >> 3), gpx & 7, gpy & 7);
+		sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame, VIEWPORT_Y + (gpy >> 3), VIEWPORT_X + (gpx >> 3), gpx & 7, gpy & 7);
 	else
-		sp_MoveSprAbs (sp_player, spritesClip, player.next_frame - player.current_frame, -2, -2, 0, 0);
+		sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame, -2, -2, 0, 0);
 
 	player.current_frame = player.next_frame;
 
@@ -273,9 +262,9 @@ void render_sprites (void) {
 	#ifdef PLAYER_CAN_FIRE
 		for (gpit = 0; gpit < MAX_BULLETS; gpit ++) {
 			if (bullets_estado [gpit] == 1) {
-				sp_MoveSprAbs (sp_bullets [gpit], spritesClip, 0, VIEWPORT_Y + (bullets_y [gpit] >> 3), VIEWPORT_X + (bullets_x [gpit] >> 3), bullets_x [gpit] & 7, bullets_y [gpit] & 7);
+				sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, VIEWPORT_Y + (bullets_y [gpit] >> 3), VIEWPORT_X + (bullets_x [gpit] >> 3), bullets_x [gpit] & 7, bullets_y [gpit] & 7);
 			} else {
-				sp_MoveSprAbs (sp_bullets [gpit], spritesClip, 0, -2, -2, 0, 0);
+				sp_MoveSprAbs (sp_bullets [gpit], SPRITES_CLIP, 0, -2, -2, 0, 0);
 			}
 		}
 	#endif		
@@ -283,9 +272,9 @@ void render_sprites (void) {
 }
 
 #ifdef PLAYER_STEP_SOUND
-	void step (void) {
-		#asm
-			ld a, 16
+	void step (void) __naked {
+		__asm
+			ld a, #16
 			out (254), a
 			nop
 			nop
@@ -296,95 +285,91 @@ void render_sprites (void) {
 			nop
 			nop
 			nop
-			xor 16
+			xor #16
 			out (254), a
-		#endasm	
+			ret
+		__endasm;
 	}
 #endif
 
-void cortina (void) {
-	#asm
-			// Antes que nada vamos a limpiar el PAPER de toda la pantalla
-			// para que no queden artefactos feos
-			
-			ld	de, 22528			// Apuntamos con DE a la zona de atributos
-			ld	b,	3				// Procesamos 3 tercios
-		.clearb1
-			push bc
-			
-			// Con b = 0, djnz da 256 vueltas.
-			ld	b, 0				// Procesamos los 256 atributos de cada tercio
-		.clearb2
-		
-			ld	a, (de)				// Nos traemos un atributo
-			and	199					// Le hacemos la máscara 11000111 y dejamos PAPER a 0
-			ld	(de), a				// Y lo volvemos a poner
-			
-			inc de					// Siguiente atributo
-		
-			djnz clearb2
-			
-			pop bc
-			djnz clearb1
-			
-			//// Y ahora el código original que escribí para UWOL:	
-		
-			ld	a,	8
-		
-		.repitatodo
-			ld	c,	a			// Salvamos el contador de "repitatodo" en 'c'
-		
-			ld	hl, 16384
-			ld	a,	12
-		
-		.bucle
-			ld	b,	a			// Salvamos el contador de "bucle" en 'b'
-			ld	a,	255
-		
-		.bucle1
-			sla (hl)
-			inc hl
-			dec a
-			jr	nz, bucle1
-				
-			ld	a,	255
-		.bucle2
-			srl (hl)
-			inc hl
-			dec a
-			jr	nz, bucle2
-				
-			ld	a,	b			// Restituimos el contador de "bucle" a 'a'
-			dec a
-			jr	nz, bucle
-		
-			ld	a,	c			// Restituimos el contador de "repitatodo" a 'a'
-			dec a
-			jr	nz, repitatodo
-	#endasm
+void cortina (void) __naked {
+	__asm
+		; Antes que nada vamos a limpiar el PAPER de toda la pantalla
+		; para que no queden artefactos feos
+
+		ld de, #22528; Apuntamos con DE a la zona de atributos
+		ld b, #3; Procesamos 3 tercios
+		clearb1:
+		push bc
+
+		; Con b = 0, djnz da 256 vueltas.
+		ld b, #0; Procesamos los 256 atributos de cada tercio
+		clearb2:
+
+		ld a, (de); Nos traemos un atributo
+		and #199; Le hacemos la máscara 11000111 y dejamos PAPER a 0
+		ld (de), a; Y lo volvemos a poner
+
+		inc de; Siguiente atributo
+
+		djnz clearb2
+
+		pop bc
+		djnz clearb1
+
+		;// Y ahora el código original que escribí para UWOL:
+
+		ld a, #8
+
+		repitatodo:
+		ld c, a; Salvamos el contador de "repitatodo" en 'c'
+
+		ld hl, #16384
+		ld a, #12
+
+		bucle:
+		ld b, a; Salvamos el contador de "bucle" en 'b'
+		ld a, #255
+
+		bucle1:
+		sla (hl)
+		inc hl
+		dec a
+		jr nz, bucle1
+
+		ld a, #255
+		bucle2:
+		srl (hl)
+		inc hl
+		dec a
+		jr nz, bucle2
+
+		ld a, b; Restituimos el contador de "bucle" a 'a'
+		dec a
+		jr nz, bucle
+
+		ld a, c; Restituimos el contador de "repitatodo" a 'a'
+		dec a
+		jr nz, repitatodo
+		ret
+	__endasm;
 }
 
 void espera_activa (int espera) {
 	// Espera "espera" frames (1/50 s cada uno, con halt) o hasta que se pulse
 	// una tecla.
 	do {
-		#asm
+		__asm
 			halt
-		#endasm
+		__endasm;
 		if (sp_GetKey ()) break;
 	} while (--espera);
 }
 
 void select_joyfunc (void) {
-	#ifdef MODE_128K
-	#else
-		#asm
-			; Music generated by beepola
-			; Sin interrupciones mientras suena (es todo temporización)
-			di
-			call musicstart
-			ei
-		#endasm
+	#ifndef MODE_128K
+		// La música del título (Beepola, speccy/music.h)
+		play_title_music ();
 	#endif
 	
 	gpit = 0;
@@ -397,11 +382,11 @@ void select_joyfunc (void) {
 				break;
 			case '2':
 				gpit = 1;
-				joyfunc = sp_JoyKempston;
+				joyfunc = (JOYFUNC) sp_JoyKempston;
 				break;
 			case '3':
 				gpit = 1;
-				joyfunc = sp_JoySinclair1;
+				joyfunc = (JOYFUNC) sp_JoySinclair1;
 				break;
 		}			
 	}

@@ -188,5 +188,5 @@ typedef struct sprite {
 
 // Main sprite array. Can contain as many as 16 sprites.
 
-SPR sp_sw [SW_SPRITES_ALL] 					AT (BASE_SPRITES);
+AT (BASE_SPRITES) SPR sp_sw [SW_SPRITES_ALL];
 

@@ -5,6 +5,10 @@
 // Esqueleto de juegos de la churrera
 // Copyleft 2010-2014 The Mojon Twins
 
+// Funciones de la librería de SDCC que usa el motor
+void *memcpy (void *dest, const void *src, unsigned int n);
+void *memset (void *s, int c, unsigned int n) __sdcccall(0) __z88dk_callee;
+
 #include "config.h"
 
 #ifdef CPC
@@ -58,6 +62,13 @@
 	#define AD_FREE 		(0xF000 - (NUMBLOCKS * 15))
 #endif
 
+// crt0 coloca la pila en __stack_top.
+void stack_top_symbol (void) __naked {
+	__asm
+		__stack_top == STACK_ADDR
+	__endasm;
+}
+
 // Cosas del juego:
 
 #ifdef CPC
@@ -75,6 +86,8 @@
 	#else
 		#include "speccy/isr.h"
 		#include "speccy/beeper.h"
+		// La música del título (Beepola). Phaser engine by Shiru.
+		#include "speccy/music.h"
 	#endif
 #else
 	#include "cpc/efectos.h"
@@ -164,7 +177,3 @@
 
 #include "mainloop.h"
 
-#ifdef HAS_BEEPER
-	// From beepola. Phaser engine by Shiru.
-	#include "speccy/music.h"
-#endif

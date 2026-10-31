@@ -10,16 +10,18 @@
 	extern unsigned char s_marco [];
 	extern unsigned char s_ending [];
 
-	#asm
-		._s_title
-			BINARY "title.bin"
-		._s_marco
-		#ifndef DIRECT_TO_PLAY
-			BINARY "marco.bin"
-		#endif
-		._s_ending
-			BINARY "ending.bin"
-	#endasm
+	void pantallas_asm1 (void) __naked {
+		__asm
+			_s_title:
+			.incbin "title.bin"
+			_s_marco:
+			#ifndef DIRECT_TO_PLAY
+			.incbin "marco.bin"
+			#endif
+			_s_ending:
+			.incbin "ending.bin"
+		__endasm;
+	}
 #endif
 
 void title (void) {

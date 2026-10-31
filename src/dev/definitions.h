@@ -61,7 +61,7 @@ typedef struct {
 	int vx, vy;
 	char g, ax, rx;
 	unsigned char crouch, cont_salto;
-	unsigned char *current_frame, *next_frame;
+	const unsigned char *current_frame, *next_frame;
 	unsigned char saltando;
 	unsigned char frame, subframe, facing;
 	unsigned char estado;
@@ -87,35 +87,35 @@ unsigned char enoffs; 				// Índice de los enemigos de la pantalla
 unsigned char enoffsmasi;
 unsigned char *map_pointer;
 
-unsigned char en_an_frame [3]						AT (BASE_ARRAYS);
-unsigned char en_an_count [3] 						AT (BASE_ARRAYS + 3);
-unsigned char *en_an_current_frame [3] 				AT (BASE_ARRAYS + 6);
-unsigned char *en_an_next_frame [3] 				AT (BASE_ARRAYS + 12);
+AT (BASE_ARRAYS) unsigned char en_an_frame [3];
+AT (BASE_ARRAYS + 3) unsigned char en_an_count [3];
+AT (BASE_ARRAYS + 6) const unsigned char *en_an_current_frame [3];
+AT (BASE_ARRAYS + 12) const unsigned char *en_an_next_frame [3];
 	
 #ifdef PLAYER_CAN_FIRE
-	unsigned char en_an_morido  [3] 				AT (BASE_ARRAYS + 18);
+	AT (BASE_ARRAYS + 18) unsigned char en_an_morido  [3];
 #endif
 
 // Posición (8.8) y velocidad propias de fanties y enemigos de tipo 6.
 #ifdef ENEMS_HAVE_FREE_COORDS
-	unsigned int en_an_x [3] 						AT (BASE_ARRAYS + 21);
-	unsigned int en_an_y [3] 						AT (BASE_ARRAYS + 27);
-	signed int en_an_vx [3] 						AT (BASE_ARRAYS + 33);
-	signed int en_an_vy [3] 						AT (BASE_ARRAYS + 39);
+	AT (BASE_ARRAYS + 21) unsigned int en_an_x [3];
+	AT (BASE_ARRAYS + 27) unsigned int en_an_y [3];
+	AT (BASE_ARRAYS + 33) signed int en_an_vx [3];
+	AT (BASE_ARRAYS + 39) signed int en_an_vy [3];
 	#ifdef ENABLE_RANDOM_RESPAWN
-		unsigned char en_an_fanty_activo [3] 		AT (BASE_ARRAYS + 45);
+		AT (BASE_ARRAYS + 45) unsigned char en_an_fanty_activo [3];
 	#endif
 #endif
 		
-unsigned char en_an_state [3] 						AT (BASE_ARRAYS + 48);
+AT (BASE_ARRAYS + 48) unsigned char en_an_state [3];
 
 #ifdef ENABLE_PURSUERS
-	unsigned char en_an_alive [3] 					AT (BASE_ARRAYS + 51);
-	unsigned char en_an_dead_row [3] 				AT (BASE_ARRAYS + 54);
-	unsigned char en_an_rawv [3] 					AT (BASE_ARRAYS + 57);
+	AT (BASE_ARRAYS + 51) unsigned char en_an_alive [3];
+	AT (BASE_ARRAYS + 54) unsigned char en_an_dead_row [3];
+	AT (BASE_ARRAYS + 57) unsigned char en_an_rawv [3];
 #endif
 
-unsigned char en_an_base_frame [3]	 				AT (BASE_ARRAYS + 60);
+AT (BASE_ARRAYS + 60) unsigned char en_an_base_frame [3];
 
 // Variables temporales para los enemigos
 unsigned char _en_x, _en_y, _en_x1, _en_x2, _en_y1, _en_y2, _en_t, _en_life;
@@ -128,28 +128,28 @@ signed char _en_mx, _en_my;
 // Disparos
 
 #ifdef PLAYER_CAN_FIRE
-	unsigned char bullets_x [MAX_BULLETS] 			AT (BASE_ARRAYS + 63);
-	unsigned char bullets_y [MAX_BULLETS] 			AT (BASE_ARRAYS + 63 + MAX_BULLETS);
-	signed char bullets_mx [MAX_BULLETS] 			AT (BASE_ARRAYS + 63 + 2 * MAX_BULLETS);
-	unsigned char bullets_estado [MAX_BULLETS] 		AT (BASE_ARRAYS + 63 + 3 * MAX_BULLETS);
-	signed char bullets_my [MAX_BULLETS] 			AT (BASE_ARRAYS + 63 + 4 * MAX_BULLETS);
+	AT (BASE_ARRAYS + 63) unsigned char bullets_x [MAX_BULLETS];
+	AT (BASE_ARRAYS + 63 + MAX_BULLETS) unsigned char bullets_y [MAX_BULLETS];
+	AT (BASE_ARRAYS + 63 + 2 * MAX_BULLETS) signed char bullets_mx [MAX_BULLETS];
+	AT (BASE_ARRAYS + 63 + 3 * MAX_BULLETS) unsigned char bullets_estado [MAX_BULLETS];
+	AT (BASE_ARRAYS + 63 + 4 * MAX_BULLETS) signed char bullets_my [MAX_BULLETS];
 	#ifdef LIMITED_BULLETS
-		unsigned char bullets_life [MAX_BULLETS] 	AT (BASE_ARRAYS + 63 + 5 * MAX_BULLETS);
+		AT (BASE_ARRAYS + 63 + 5 * MAX_BULLETS) unsigned char bullets_life [MAX_BULLETS];
 	#endif
 
 	unsigned char blx, bly;
 #endif
 
-unsigned char *address AT (BASE_ARRAYS + 63 + 6 * MAX_BULLETS);
-unsigned char *destination AT (BASE_ARRAYS + 65 + 6 * MAX_BULLETS);
-unsigned char ram_page AT (BASE_ARRAYS + 67 + 6 * MAX_BULLETS);
+AT (BASE_ARRAYS + 63 + 6 * MAX_BULLETS) unsigned char *address;
+AT (BASE_ARRAYS + 65 + 6 * MAX_BULLETS) unsigned char *destination;
+AT (BASE_ARRAYS + 67 + 6 * MAX_BULLETS) unsigned char ram_page;
 
 // Mapa / pantallas
 
 // atributos de la pantalla: Contiene información
 // sobre qué tipo de tile hay en cada casilla
-unsigned char map_attr [150] AT (BASE_ROOM_BUFFERS);
-unsigned char map_buff [150] AT (BASE_ROOM_BUFFERS + 150);
+AT (BASE_ROOM_BUFFERS) unsigned char map_attr [150];
+AT (BASE_ROOM_BUFFERS + 150) unsigned char map_buff [150];
 
 // posición del objeto (hotspot). Para no objeto,
 // se colocan a 240,240, que está siempre fuera de pantalla.
@@ -166,7 +166,7 @@ unsigned char n_pant;
 	unsigned char x_pant, y_pant;
 #endif
 
-unsigned char level = 0;
+unsigned char level;
 unsigned char maincounter;
 
 unsigned char objs_old, keys_old, life_old, killed_old;
@@ -175,7 +175,7 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 // Golpes recibidos por cada tile de la pantalla (BASE_BRK_BUFF lo fija cada
 // plataforma en su sysvars.h).
 #ifdef BREAKABLE_WALLS
-	unsigned char brk_buff [150] AT (BASE_BRK_BUFF);
+	AT (BASE_BRK_BUFF) unsigned char brk_buff [150];
 #endif
 
 // Scripting (msc4, ver msc.h)
@@ -305,14 +305,14 @@ unsigned char cx1, cx2, cy1, cy2, at1, at2;
 #endif
 
 #ifdef COMPRESSED_LEVELS
-	unsigned char *level_str = " LEVEL 00 ";
+	unsigned char level_str [11];			// " LEVEL nn " (se escribe en mainloop)
 #endif
 
 #ifdef GET_X_MORE
-	unsigned char *getxmore = " GET X MORE ";
+	unsigned char getxmore [13];			// " GET n MORE " (se escribe en engine.h)
 #endif
 
-unsigned char *spacer = "            ";
+#define spacer ((unsigned char *) "            ")
 
 unsigned char *allpurposepuntero;
 

@@ -2,7 +2,9 @@
 // Copyleft 2010-2013, 2020-2025 by The Mojon Twins
 
 extern unsigned char tileset [0];
-#asm
-	._tileset
-		BINARY "ts.bin"
-#endasm
+void tileset_asm1 (void) __naked {
+	__asm
+		_tileset:
+		.incbin "ts.bin"
+	__endasm;
+}

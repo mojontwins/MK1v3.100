@@ -151,7 +151,7 @@ End If
 
 mapPants = mapW * mapH
 
-Print #fOut, "// MTE MK1 (la Churrera) v4"
+Print #fOut, "// La Churrera Engine 3.100"
 Print #fOut, "// Copyleft 2010-2014, 2020-2025 by the Mojon Twins"
 Print #fOut, ""
 
@@ -174,7 +174,8 @@ Print #fOut, "	unsigned char life;"
 Print #fOut, "#endif"
 Print #fOut, "} MALOTE;"
 Print #fOut, ""
-Print #fOut, "MALOTE malotes [] = {"
+Print #fOut, "// Datos iniciales (const); el motor los copia en malotes al empezar."
+Print #fOut, "const MALOTE malotes_ini [] = {"
 
 first = -1
 For i = 1 To mapPants
@@ -279,12 +280,13 @@ If indexed Then
 	If nonEmptyEnems < mapPants * nEnems Then Print #fOut, "	{0xff}"
 End If
 Print #fOut, "};"
+Print #fOut, "MALOTE malotes [sizeof (malotes_ini) / sizeof (MALOTE)];"
 Print #fOut, ""
 
 ' New: Index
 If indexed Then
 Print #fOut, "// enoffs index, contains enoffs for each screen"
-Print #fOut, "unsigned char enoffs_index [] = {"
+Print #fOut, "const unsigned char enoffs_index [] = {"
 k = 0
 
 For j = 0 To mapH - 1
@@ -324,7 +326,8 @@ Print #fOut, "typedef struct {"
 Print #fOut, "	unsigned char xy, tipo, act;"
 Print #fOut, "} HOTSPOT;"
 Print #fOut, ""
-Print #fOut, "HOTSPOT hotspots [] = {"
+Print #fOut, "// Datos iniciales (const, todos activos); el motor los copia en hotspots."
+Print #fOut, "const HOTSPOT hotspots_ini [] = {"
 
 For i = 1 To mapPants
 	If empty Then
@@ -345,13 +348,14 @@ For i = 1 To mapPants
 	typeCounters (t) = typeCounters (t) + 1
 
 	Print #fOut, "	{";
-	Print #fOut, xy; ", "; t; ", 0";
+	Print #fOut, xy; ", "; t; ", 1";
 	Print #fOut, "}";
 
 	If i < mapPants Then Print #fOut, ", " Else Print #fOut, ""
 Next i
 
 Print #fOut, "};"
+Print #fOut, "HOTSPOT hotspots [sizeof (hotspots_ini) / sizeof (HOTSPOT)];"
 Print #fOut, ""
 
 For i = 0 To 255

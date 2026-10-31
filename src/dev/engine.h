@@ -12,7 +12,7 @@
 // Índice de la casilla (x, y) en los buffers de la pantalla (15x10 tiles):
 // x + 15 * y. El producto sale de una tabla, que es mucho más rápido que
 // multiplicar o desplazar en sccz80. Se usa en cada consulta al mapa.
-unsigned char mul15 [] = { 0, 15, 30, 45, 60, 75, 90, 105, 120, 135 };
+const unsigned char mul15 [] = { 0, 15, 30, 45, 60, 75, 90, 105, 120, 135 };
 #define bufidx(x, y) ((x) + mul15 [(y)])
 
 // attr: comportamiento del tile (x, y); 0 si está fuera de la pantalla.
@@ -47,49 +47,50 @@ unsigned char collide (unsigned char x1, unsigned char y1, unsigned char x2, uns
 	#endif
 }
 
-unsigned char rand (void) {
-	#asm
-		.rand16
-			ld	hl, _seed
-			ld	a, (hl)
-			ld	e, a
-			inc	hl
-			ld	a, (hl)
-			ld	d, a
-			
-			// Ahora DE = [SEED]
-						
-			ld	a,	d
-			ld	h,	e
-			ld	l,	253
-			or	a
-			sbc	hl,	de
-			sbc	a, 	0
-			sbc	hl,	de
-			ld	d, 	0
-			sbc	a, 	d
-			ld	e,	a
-			sbc	hl,	de
-			jr	nc,	nextrand
-			inc	hl
-		.nextrand
-			ld	d,	h
-			ld	e,	l
-			ld	hl, _seed
-			ld	a,	e
-			ld	(hl), a
-			inc	hl
-			ld	a,	d
-			ld	(hl), a
-			
-			// Ahora [SEED] = HL
-		
-			ld  l, e 
-			ld  h, 0	
-	#endasm
+// Generador pseudoaleatorio de 16 bits (semilla en seed); devuelve el byte bajo.
+unsigned char rand (void) __naked {
+	__asm
+		rand16:
+		ld hl, #_seed
+		ld a, (hl)
+		ld e, a
+		inc hl
+		ld a, (hl)
+		ld d, a
+
+		; Ahora DE = [SEED]
+
+		ld a, d
+		ld h, e
+		ld l, #253
+		or a
+		sbc hl, de
+		sbc a, #0
+		sbc hl, de
+		ld d, #0
+		sbc a, d
+		ld e, a
+		sbc hl, de
+		jr nc, nextrand
+		inc hl
+		nextrand:
+		ld d, h
+		ld e, l
+		ld hl, #_seed
+		ld a, e
+		ld (hl), a
+		inc hl
+		ld a, d
+		ld (hl), a
+
+		; Ahora [SEED] = HL
+
+		ld a, e
+		ret
+	__endasm;
 }
 
-unsigned int __FASTCALL__ abs (signed int n) {
+unsigned int abs (signed int n) {
 	if (n < 0)
 		return (unsigned int) (-n);
 	else 
@@ -268,18 +269,20 @@ void set_map_tile (unsigned char x, unsigned char y, unsigned char t, unsigned c
 
 #if !defined COMPRESSED_LEVELS && !defined DEACTIVATE_KEYS
 	void init_cerrojos (void) {
-		// Activa todos los cerrojos	
-		for (gpit = 0; gpit < MAX_CERROJOS; gpit ++)
-			cerrojos [gpit].st = 1;	
+		// Todos los cerrojos cerrados: los datos iniciales (mapa.h)
+		memcpy (cerrojos, cerrojos_ini, sizeof (cerrojos));
 	}
 #endif
 
 #if !defined COMPRESSED_LEVELS
 	void init_hotspots (void) {
-		// Activa todos los hotspots
-		for (gpit = 0; gpit < MAP_W * MAP_H; gpit ++) {
-			hotspots [gpit].act = 1;
-		}
+		// Todos los hotspots activos: los datos iniciales (enems.h)
+		memcpy (hotspots, hotspots_ini, sizeof (hotspots));
+	}
+
+	void init_enems (void) {
+		// Los enemigos como estaban al principio (enems.h)
+		memcpy (malotes, malotes_ini, sizeof (malotes));
 	}
 #endif
 
@@ -337,6 +340,7 @@ void do_hotspots (void) {
 								// Cartel "GET X MORE" con los objetos que faltan.
 								if (LEVEL_MAX_OBJS > player.objs) {
 									print_str (10, 11, 79, spacer);
+									memcpy (getxmore, " GET X MORE ", 13);
 									getxmore [5] = '0' + LEVEL_MAX_OBJS - player.objs;
 									print_str (10, 12, 79, getxmore);
 									print_str (10, 13, 79, spacer);
