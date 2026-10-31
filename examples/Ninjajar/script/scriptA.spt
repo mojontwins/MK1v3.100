@@ -1,0 +1,453 @@
+# Ninjajar - Nivel 9: el lago oscuro (mapa A)
+# Convertido del script original de 2014 (msc3) a msc4.
+
+ROOMS = 14
+TEXT WIDTH = 24
+
+
+##############################################################################
+# LEVEL A
+##############################################################################
+
+# flag 2: switch 1 (0/1)
+# flag 3: switch 2 (0/1)
+# flag 4: switch 3 (0/1)
+# flag 5: switch 4 (0/1)
+# flag 6: Pulpo con todo su pulpor:
+#	0 - te dice que busque las tijeras.
+#	1 - tienes las tijeras.
+# flag 7: tienes una flor
+#	0 - No tienes flor.
+#	1 a 5 - tienes la flor N
+# flag 8: puerta abierta
+# flag 9: ya has hablado con pulpor. Por si vas con las llaves de entrada.
+
+ENTERING GAME
+	IF TRUE
+	THEN
+		SET FLAG 2 = 0
+		SET FLAG 3 = 0
+		SET FLAG 4 = 0
+		SET FLAG 5 = 0
+		SET FLAG 6 = 0
+		SET FLAG 7 = 0
+		SET FLAG 8 = 0
+		SET FLAG 9 = 0
+	END
+END
+
+# Pantalla inicial
+ENTERING SCREEN 0
+	IF TRUE
+	THEN
+		SET TILE (7, 8) = 33
+	END
+END
+
+PRESS FIRE AT SCREEN 0
+	IF PLAYER NEAR 7, 8
+	THEN
+		TEXT BOX "CARTEL: LAGO OSCURO, OSCURO CUAL OJETE DE UN MASAI FAN DE BAUHAUS EN UNA NOCHE DE LUNA NUEVA"
+		REENTER
+	END
+END
+
+# Tijeras
+ENTERING SCREEN 1
+	IF FLAG 6 <> 1
+	THEN
+		SET TILE (7, 8) = 18
+		SET FIRE ZONE 97, 113, 127, 143
+	END
+END
+
+PRESS FIRE AT SCREEN 1
+	IF FLAG 6 = 0
+	IF FLAG 9 = 0
+	IF PLAYER NEAR 7, 8
+	THEN
+		TEXT BOX "VAYA, UNAS TIJERAS. ME LAS QUEDO POR SI ACASO"
+		REDRAW
+	END
+
+	IF FLAG 6 = 0
+	IF FLAG 9 = 1
+	IF PLAYER NEAR 7, 8
+	THEN
+		TEXT BOX "ANDA, AQUI ESTABAN... YA DECIA YO QUE LAS HABIA VISTO POR AQUI..."
+		REDRAW
+	END
+
+	IF FLAG 6 <> 1
+	IF PLAYER NEAR 7, 8
+	THEN
+		# Coger tijeras
+		SET FLAG 6 = 1
+		# Ponerlas en el inventario
+		PRINT TILE (24, 22) = 18
+		# Pito
+		SOUND 20
+	END
+END
+
+# Switch 1
+ENTERING SCREEN 3
+	IF FLAG 2 = 0
+	THEN
+		SET TILE (8, 7) = 20
+		SET FIRE ZONE 113, 30, 143, 120
+	END
+
+	IF FLAG 2 = 1
+	THEN
+		SET TILE (8, 7) = 21
+	END
+END
+
+PRESS FIRE AT SCREEN 3
+	IF FLAG 2 = 0
+	IF PLAYER NEAR 8, 7
+	THEN
+		SET FLAG 2 = 1
+		SET TILE (8, 7) = 21
+		SOUND 16
+	END
+
+	IF FLAG 2 = 1
+	IF FLAG 3 = 1
+	IF FLAG 4 = 1
+	IF FLAG 5 = 1
+	IF FLAG 8 = 0
+	THEN
+		TEXT BOX "SE OYE UN CHIRRIDO DE PUERTA CHUNGA ABRIENDOSE NO MUY LEJOS..."
+		SET FLAG 8 = 1
+		REENTER
+	END
+END
+
+# Switch 2, puerta
+ENTERING SCREEN 6
+	# Puerta abierta?
+	IF FLAG 2 = 1
+	IF FLAG 3 = 1
+	IF FLAG 4 = 1
+	IF FLAG 5 = 1
+	THEN
+		SET FLAG 8 = 1
+	END
+
+	# Pintar puerta?
+	IF FLAG 8 = 0
+	THEN
+		SET TILE (4, 8) = 32
+	END
+
+	# Switch 2
+	IF FLAG 3 = 0
+	THEN
+		SET TILE (13, 1) = 20
+		SET FIRE ZONE 193, 1, 223, 31
+	END
+
+	IF FLAG 3 = 1
+	THEN
+		SET TILE (13, 1) = 21
+	END
+END
+
+PRESS FIRE AT SCREEN 6
+	IF FLAG 3 = 0
+	IF PLAYER NEAR 13, 1
+	THEN
+		SET FLAG 3 = 1
+		SOUND 16
+		SET TILE (13, 1) = 21
+		REENTER
+	END
+
+	#IF FLAG 2 = 1
+	#IF FLAG 3 = 1
+	#IF FLAG 4 = 1
+	#IF FLAG 5 = 1
+	#IF FLAG 8 = 0
+	#THEN
+	#	EXTERN 96
+	#	REDRAW
+	#	SET TILE (13, 1) = 21
+	#	SET FLAG 8 = 1
+	#END
+END
+
+# Switch 3
+ENTERING SCREEN 8
+	# Switch 2
+	IF FLAG 4 = 0
+	THEN
+		SET TILE (8, 4) = 20
+		SET FIRE ZONE 113, 49, 143, 79
+	END
+
+	IF FLAG 4 = 1
+	THEN
+		SET TILE (8, 4) = 21
+	END
+END
+
+PRESS FIRE AT SCREEN 8
+	IF FLAG 4 = 0
+	IF PLAYER NEAR 8, 4
+	THEN
+		SET FLAG 4 = 1
+		SET TILE (8, 4) = 21
+		SOUND 16
+	END
+
+	IF FLAG 2 = 1
+	IF FLAG 3 = 1
+	IF FLAG 4 = 1
+	IF FLAG 5 = 1
+	IF FLAG 8 = 0
+	THEN
+		TEXT BOX "SE OYE UN CHIRRIDO DE PUERTA CHUNGA ABRIENDOSE NO MUY LEJOS..."
+		SET FLAG 8 = 1
+		REENTER
+	END
+END
+
+# Switch 4
+ENTERING SCREEN 9
+	# Switch 2
+	IF FLAG 5 = 0
+	THEN
+		SET TILE (1, 1) = 20
+		SET FIRE ZONE 1, 1, 31, 31
+	END
+
+	IF FLAG 5 = 1
+	THEN
+		SET TILE (1, 1) = 21
+	END
+END
+
+PRESS FIRE AT SCREEN 9
+	IF FLAG 5 = 0
+	IF PLAYER NEAR 1, 1
+	THEN
+		SET FLAG 5 = 1
+		SET TILE (1, 1) = 21
+		SOUND 16
+	END
+
+	IF FLAG 2 = 1
+	IF FLAG 3 = 1
+	IF FLAG 4 = 1
+	IF FLAG 5 = 1
+	IF FLAG 8 = 0
+	THEN
+		TEXT BOX "SE OYE UN CHIRRIDO DE PUERTA CHUNGA ABRIENDOSE NO MUY LEJOS..."
+		SET FLAG 8 = 1
+		REENTER
+	END
+END
+
+# Los ababoles marinos
+ENTERING SCREEN 11
+	# Pintamos o no cada ababol dependiendo del valor del
+	# flag 7. Solo si el flag 7 <> N pintaremos el ababol N, porque
+	# si flag 7 valiese N es que hemos cogido el ababol N...
+	IF FLAG 7 <> 1
+	THEN
+		SET TILE (2, 4) = 30
+	END
+
+	IF FLAG 7 <> 2
+	THEN
+		SET TILE (4, 4) = 30
+	END
+
+	IF FLAG 7 <> 3
+	THEN
+		SET TILE (6, 4) = 30
+	END
+
+	IF FLAG 7 <> 4
+	THEN
+		SET TILE (8, 4) = 30
+	END
+
+	IF FLAG 7 <> 5
+	THEN
+		SET TILE (10, 4) = 30
+	END
+
+	# Por último vamos a colocar un fire_zone que los
+	# englobe a todos. Los fire_zone siempre ralentizan la ejecución,
+	# pero como los ababoles están bastante juntos, casi seguro que
+	# cuando entremos en el fire_zone estaremos tocando un ababol,
+	# así que no se notará.
+	# Sólo si no tenemos ababol, of course.
+	IF FLAG 7 = 0
+	IF FLAG 6 = 1
+	THEN
+		SET FIRE ZONE 17, 49, 145, 79
+	END
+
+	# Cartelico
+	IF TRUE
+	THEN
+		SET TILE (7, 8) = 33
+	END
+END
+
+PRESS FIRE AT SCREEN 11
+	# Lógica para cortar cada ababol... Es cosa fásil.
+	# Al final de cada cláusula quitamos el FIRE_ZONE
+	# para aligerar un poco.
+
+	IF PLAYER NEAR 2, 4
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		SOUND 20
+		SET FLAG 7 = 1
+		PRINT TILE (22, 22) = 30
+		SET TILE (2, 4) = 0
+		#SET_FIRE_ZONE 0, 0, 0, 0
+	END
+
+	IF PLAYER NEAR 4, 4
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		SOUND 20
+		SET FLAG 7 = 2
+		PRINT TILE (22, 22) = 30
+		SET TILE (4, 4) = 0
+		#SET_FIRE_ZONE 0, 0, 0, 0
+	END
+
+	IF PLAYER NEAR 6, 4
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		SOUND 20
+		SET FLAG 7 = 3
+		PRINT TILE (22, 22) = 30
+		SET TILE (6, 4) = 0
+		#SET_FIRE_ZONE 0, 0, 0, 0
+	END
+
+	IF PLAYER NEAR 8, 4
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		SOUND 20
+		SET FLAG 7 = 4
+		PRINT TILE (22, 22) = 30
+		SET TILE (8, 4) = 0
+		#SET_FIRE_ZONE 0, 0, 0, 0
+	END
+
+	IF PLAYER NEAR 10, 4
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		SOUND 20
+		SET FLAG 7 = 5
+		PRINT TILE (22, 22) = 30
+		SET TILE (10, 4) = 0
+		#SET_FIRE_ZONE 0, 0, 0, 0
+	END
+
+	IF FLAG 7 <> 0
+	THEN
+		SET FIRE ZONE 0, 0, 0, 0
+	END
+
+	IF PLAYER NEAR 7, 8
+	THEN
+		TEXT BOX "EL JARDIN DEL PULPO"
+		REENTER
+	END
+END
+
+# El pulpo
+ENTERING SCREEN 12
+	IF TRUE
+	THEN
+		SET TILE (5, 4) = 24
+		SET TILE (6, 4) = 25
+		SET TILE (5, 5) = 26
+		SET TILE (6, 5) = 27
+		SET TILE (5, 6) = 28
+		SET TILE (6, 6) = 29
+		SET FIRE ZONE 81, 65, 111, 95
+	END
+END
+
+PRESS FIRE AT SCREEN 12
+	IF PLAYER NEAR 6, 5
+	IF FLAG 9 = 0
+	THEN
+		TEXT BOX "PULPO: HOLA, PERSONAJE. SOY EL GRAN PULPO AL-AG-ALLEGA, REY DE LAS PROFUNDIDADES DEL LAGO OSCURO."
+		TEXT BOX "PULPO: QUE VAS CAMINO DEL CASTILLO? DIFICIL LO TIENES. NADIE HA PODIDO SALIR DEL LAGO OSCURO JAMAS..."
+		TEXT BOX "PULPO: BUENO, NADIE A QUIEN YO NO LE HAYA INDICADO EL CAMINO, SE ENTIENDE. YO AQUI LO PETO, SABES?"
+		TEXT BOX "PULPO: PERO NADIE OBTIENE NADA SIN DAR NADA A CAMBIO: NECESITO TU AYUDA. LLEVO DIAS CON GANAS DE ENSALADA DE ABABOL MARINO."
+		TEXT BOX "PULPO: EL PROBLEMA ES QUE ME HA SALIDO UN PADRASTRO EN EL TENTACULO Y NO PUEDO IR YO. LAS TIJERAS LAS DEJE POR AHI PERDIDAS"
+		TEXT BOX "PULPO: Y AHI DETRAS PODRAS ENCONTRAR MI JARDIN DE ABABOLES. AH, Y RECUERDA BIEN QUE EN EL PUNTO MEDIO ESTA LA VIRTUD... TALUEGO!"
+		SET FLAG 9 = 1
+		PX = 112
+		REENTER
+	END
+
+	IF PLAYER NEAR 6, 5
+	IF FLAG 6 = 0
+	THEN
+		TEXT BOX "PULPO: AUN NO TIENES MI ABABOL MARINO?"
+		PX = 112
+		REENTER
+	END
+
+	# Tenemos tijeras, no tenemos flor
+	IF PLAYER NEAR 6, 5
+	IF FLAG 6 = 1
+	IF FLAG 7 = 0
+	THEN
+		TEXT BOX "PULPO: VEO QUE HAS ENCONTRADO LAS TIJERAS. BIEN, AHORA TRAEME MI ABABOL MARINO. RECUERDA QUE EN EL PUNTO MEDIO ESTA LA VIRTUD!"
+		PX = 112
+		REENTER
+	END
+
+	# Tenemos tijeras, la flor no es la correcta
+	# Notese que si flag 7 vale 0 también se cumpliría
+	# IF FLAG 7 <> 3, pero como ese caso está controlado
+	# justo arriba y al final hay un REENTER que interrumpe
+	# la ejecución, nos vale así:
+	IF PLAYER NEAR 6, 5
+	IF FLAG 6 = 1
+	IF FLAG 7 <> 3
+	THEN
+		TEXT BOX "PULPO: JODOPETACA QUE ABABOL! TE HE DICHO QUE EN EL PUNTO MEDIO ESTA LA VIRTUD! A CASCARLA LAS TIJERAS. VUELVE A POR ELLAS!"
+		SOUND 22
+		# Tijeras a tomar polculo
+		SET FLAG 6 = 0
+		# Fuera ababoles
+		SET FLAG 7 = 0
+		# Eliminamos los dos objetos del inventario:
+		PRINT TILE (22, 22) = 47
+		PRINT TILE (24, 22) = 47
+		PX = 112
+		REENTER
+	END
+
+	# Tenemos tijeras, tenemos la flor correcta
+	IF PLAYER NEAR 6, 5
+	IF FLAG 6 = 1
+	IF FLAG 7 = 3
+	THEN
+		TEXT BOX "PULPO: GRANDE, NINJAJAR. ERES EL CAMPEON DEL CAMPEONATO. TE AYUDARE INDICANDOTE COMO LLEGAR AL CASTILLO."
+		TEXT BOX "PULPO: ES MUY FACIL: SOLO TIENES QUE METERTE POR MI ESCUPIDERA. Y CUIDADO CON TOCARME EL CULO. YA SE QUE SOY IRRESISTIBLE..."
+		EXTERN 0
+		WIN GAME
+	END
+END

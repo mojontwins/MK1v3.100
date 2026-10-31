@@ -1,0 +1,12 @@
+# Scripts de los niveles (comp-zx los compila juntos con msc4)
+../script/script5.spt
+../script/script8.spt
+../script/script9.spt
+../script/scriptB.spt
+../script/scriptA.spt
+../script/scriptD.spt
+../script/scriptC.spt
+../script/scriptZ.spt
+../script/scriptY.spt
+../script/scriptX.spt
+../script/script4.spt

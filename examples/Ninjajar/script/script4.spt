@@ -1,0 +1,57 @@
+# Ninjajar - Nivel 3: el club exclusivo, los llanos del marrano (mapa 4)
+# Convertido del script original de 2014 (msc3) a msc4.
+
+ROOMS = 12
+TEXT WIDTH = 24
+
+
+##############################################################################
+# LEVEL 4 - CLUB EXCLUSIVO
+##############################################################################
+
+ENTERING SCREEN 2
+	IF TRUE
+	THEN
+		SET TILE (12, 7) = 18
+	END
+END
+
+ENTERING SCREEN 3
+	IF TRUE
+	THEN
+		SET TILE (4, 7) = 23
+		SET TILE (4, 8) = 24
+		SET TILE (6, 7) = 25
+		SET TILE (6, 8) = 20
+		SET TILE (7, 7) = 26
+		SET TILE (7, 8) = 26
+		SET TILE (8, 7) = 27
+		SET TILE (8, 8) = 28
+		SET TILE (9, 7) = 26
+		SET TILE (9, 8) = 26
+		SET TILE (10, 7) = 26
+		SET TILE (10, 8) = 29
+		SET TILE (11, 7) = 26
+		SET TILE (11, 8) = 30
+		# SET TILE (12, 8) = 30
+		SET TILE (2, 6) = 32
+		SET TILE (3, 6) = 32
+		SET TILE (4, 6) = 32
+		SET TILE (5, 6) = 32
+		SET TILE (6, 6) = 34
+		SET TILE (7, 6) = 33
+		SET TILE (8, 6) = 33
+		SET TILE (9, 6) = 33
+		SET TILE (10, 6) = 33
+		SET TILE (11, 6) = 33
+		# SET TILE (12, 6) = 33
+	END
+END
+
+PRESS FIRE AT SCREEN 3
+	IF PLAYER NEAR 4, 8
+	THEN
+		TEXT BOX "MATON: LO SIENTO. ESTE ES EL CLUB PARA GENTE GUAY. PARA ENTRAR TIENES QUE MEDIR MAS DE 16 PIXELS O SABER BAILAR."
+		REENTER
+	END
+END

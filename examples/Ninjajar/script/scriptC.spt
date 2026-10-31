@@ -1,0 +1,137 @@
+# Ninjajar - Nivel 13: la lava (mapa C)
+# Convertido del script original de 2014 (msc3) a msc4.
+
+ROOMS = 10
+TEXT WIDTH = 24
+
+
+##############################################################################
+# LEVEL C - LAVA
+##############################################################################
+
+# Nivel Lava
+# flag 3: bloques aparecidos
+# flag 30: Parcheado en el motor para activar la lava / trampilla abierta
+
+ENTERING GAME
+# atención a lo que hacemos aquí:
+# el flag 29 se pone a 0 cuando empezamos a jugar.
+# eso significa que LA PRIMERA VEZ que ejecutamos este script
+# estará a 0. Es entonces cuando ponemos los flags a 0, para que
+# cuando nos mate la lava se conserve el flag 3:
+
+	IF FLAG 29 = 0
+	THEN
+		SET FLAG 3 = 0
+		SET FLAG 29 = 1
+	END
+
+	IF TRUE
+	THEN
+
+		SET FLAG 30 = 0
+	END
+END
+
+ENTERING SCREEN 0
+	IF TRUE
+	THEN
+		SET TILE (2, 7) = 24
+	END
+
+	IF FLAG 30 = 1
+	THEN
+		SET TILE (3, 4) = 0
+		SET TILE (4, 4) = 0
+		SET TILE (5, 4) = 0
+		SET TILE (6, 4) = 0
+		SET TILE (7, 4) = 0
+		SET TILE (8, 4) = 0
+		SET TILE (9, 4) = 0
+		SET TILE (10, 4) = 0
+		SET TILE (11, 4) = 0
+	END
+END
+
+PRESS FIRE AT SCREEN 0
+	IF PLAYER NEAR 2, 7
+	THEN
+		TEXT BOX "CARTEL: PARA ABRIR LA COMPUERTA HAY QUE ACTIVAR LA TRAMPA. <IE JE JE."
+		REENTER
+	END
+END
+
+ENTERING SCREEN 5
+	IF TRUE
+	THEN
+		SET TILE (1, 5) = 28
+	END
+
+	IF FLAG 3 = 1
+	THEN
+		SET TILE (5, 4) = 7
+		SET TILE (5, 3) = 1
+		SET TILE (9, 3) = 7
+		SET TILE (9, 2) = 2
+	END
+END
+
+PRESS FIRE AT SCREEN 5
+	IF PLAYER NEAR 1, 4
+	IF FLAG 3 = 0
+	THEN
+		SET FLAG 5 = 1
+		SOUND 16
+		SET TILE (5, 4) = 7
+		SET TILE (5, 3) = 1
+		SET TILE (9, 3) = 7
+		SET TILE (9, 2) = 2
+	END
+END
+
+ENTERING SCREEN 9
+	IF TRUE
+	THEN
+		SET TILE (4, 8) = 24
+	END
+
+	IF FLAG 30 = 0
+	THEN
+		SET TILE (2, 8) = 26
+	END
+
+	IF FLAG 30 = 1
+	THEN
+		SET TILE (2, 8) = 27
+	END
+END
+
+PRESS FIRE AT SCREEN 9
+	IF PLAYER NEAR 4, 8
+	IF FLAG 30 = 0
+	THEN
+		TEXT BOX "CARTEL: ACCIONA LA PALANCA PARA ACTIVAR LA TRAMPA"
+		REDRAW
+		SET TILE (4, 8) = 24
+		SET TILE (2, 8) = 26
+	END
+
+	IF PLAYER NEAR 4, 8
+	IF FLAG 30 = 1
+	THEN
+		TEXT BOX "CARTEL: ACCIONA LA PALANCA PARA ACTIVAR LA TRAMPA"
+		REDRAW
+		SET TILE (4, 8) = 24
+		SET TILE (2, 8) = 27
+	END
+
+	IF PLAYER NEAR 2, 8
+	IF FLAG 30 = 0
+	THEN
+		SET TILE (2, 8) = 27
+		SHOW
+		SOUND 22
+		SET FLAG 30 = 1
+		MUSIC 14
+	END
+END
