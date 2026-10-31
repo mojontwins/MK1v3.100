@@ -6,7 +6,7 @@
 // I removed di's and ei's, not needed here.
 // Copyleft 2010 The Mojon Twins
 
-void beeper_asm1 (void) __naked {
+void beeper_code (void) __naked {
 	__asm
 		playsfx:
 		;di

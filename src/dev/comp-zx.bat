@@ -1,8 +1,8 @@
 @echo off
 rem Compila el juego para ZX Spectrum en Windows.
 rem Uso: comp-zx.bat [justcompile] [noclean]
-rem Antes, en la misma ventana: C:\z88dk10-orig\setenv.bat (z88dk 1.10, ver
-rem env\z88dk10-orig.zip). Las utilidades estan en ..\utils.
+rem Necesita GBDK-2020 (su SDCC) en C:\gbdk, o donde diga GBDK_HOME. Las
+rem utilidades estan en ..\utils.
 rem
 rem Con ACTIVATE_SCRIPTING compila los scripts con msc4 (..\script\script.spt
 rem o la lista de scripts.txt).
@@ -23,6 +23,8 @@ set game=bootee
 
 cd /d "%~dp0"
 set "U=%~dp0..\utils"
+if not defined GBDK_HOME set "GBDK_HOME=C:\gbdk"
+set "G=%GBDK_HOME%\bin"
 
 rem Un juego puede traer un game.bat que cambie "game" y un convert.bat con la
 rem conversion de sus graficos (en lugar de la de bootee de mas abajo).
@@ -132,14 +134,25 @@ if errorlevel 1 exit /b 1
 
 :compile
 echo ### COMPILANDO GUEGO ###
-if exist zcc_opt.def del zcc_opt.def
-zcc +zx -a -vn churromain.c -o %game%.asm -lsplib2f -zorg=24200 > nul 2>&1
-if exist zcc_opt.def del zcc_opt.def
-zcc +zx -m -vn churromain.c -o %game%.bin -lsplib2f -zorg=24200
+rem SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
+rem enlazador pone el codigo en 24200, detras las variables, y ihx2bin saca el
+rem binario (sin las variables, que crt0 pone a cero al arrancar).
+"%G%\sdcc" -mz80 --no-std-crt0 -c churromain.c
 if errorlevel 1 (echo ERROR& exit /b 1)
-"%U%\printsize" %game%.bin
+"%G%\sdasz80" -g -o crt0.rel speccy\crt0.s
+if errorlevel 1 (echo ERROR& exit /b 1)
+"%G%\sdldz80" -n -m -w -i -b _CODE=24200 %game%.ihx crt0.rel churromain.rel -k speccy -l splib2.lib -k "%GBDK_HOME%\lib\z80" -l z80.lib
+if errorlevel 1 (echo ERROR& exit /b 1)
+"%U%\ihx2bin" %game%.ihx %game%.bin 24200
+if errorlevel 1 exit /b 1
 
 if %mode128%==0 goto :tape
+rem Todo lo que se usa con otra pagina de RAM en 0xC000 tiene que estar por debajo.
+set bad=0
+for %%s in (_zx0_depack _unpack_RAMn SetRAMBank _isr_hook _tileset _sprites_end _level_data_end _msc_buffer) do call :checkaddr %%s
+if %bad%==1 exit /b 1
+
+:tape
 rem Todo lo que se usa con otra pagina de RAM en 0xC000 tiene que estar por debajo.
 set bad=0
 for %%s in (DEPACK _UNPACK_RAMN SETRAMBANK _ISR _TILESET _SPRITES_END _LEVEL_DATA_END _MSC_BUFFER) do call :checkaddr %%s
@@ -176,7 +189,7 @@ copy /b loader.tap + !tapes! + main.tap %game%.tap > nul
 :clean
 if %noclean%==1 goto :done
 echo ### LIMPIANDO ###
-for %%f in (loader.tap screen.tap main.tap reubica.tap ram?.tap *.scr *.bin zcc_opt.def loader128.bas librarian.default.txt) do del "%%f" > nul 2>&1
+for %%f in (loader.tap screen.tap main.tap reubica.tap ram?.tap *.scr *.bin *.rel *.ihx *.asm *.lst *.sym loader128.bas librarian.default.txt) do del "%%f" > nul 2>&1
 
 :done
 echo ### DONE ###
@@ -218,14 +231,14 @@ set "sym_%1=0x!a!"
 exit /b 0
 
 rem :checkaddr SIMBOLO  -> bad=1 si SIMBOLO esta en 0xC000 o mas en el .map
-rem (z88dk escribe "SIMBOLO   = 5F3E, L: CHURROMAIN")
+rem (sdldz80 -w escribe "     0000B0E4  SIMBOLO   modulo")
 :checkaddr
 set "a="
-for /f "usebackq tokens=1,3 delims=,	 " %%a in ("%game%.map") do if not defined a if "%%a"=="%1" set "a=%%b"
+for /f "usebackq tokens=1,2" %%a in ("%game%.map") do if not defined a if "%%b"=="%1" set "a=%%a"
 if not defined a exit /b 0
 set /a v=0x!a!
 if !v! GEQ 49152 (
-	echo ERROR 128K: %1 esta en $!a!, por encima de 0xC000
+	echo ERROR 128K: %1 esta en $!a:~4!, por encima de 0xC000
 	set bad=1
 )
 exit /b 0

@@ -20,7 +20,7 @@ extern const unsigned char sprite_18_a [];
 #endif
 
 #ifdef NEEDS_EXPLOSION_SPRITE
-    void extrasprites_asm1 (void) __naked {
+    void sprite_17_data (void) __naked {
     	__asm
 	    	_sprite_17_a:
 	    	.db 0, 128
@@ -103,7 +103,7 @@ extern const unsigned char sprite_18_a [];
     }
 #endif
 
-void extrasprites_asm2 (void) __naked {
+void sprite_18_data (void) __naked {
 	__asm
 		_sprite_18_a:
 		.db 0, 255, 0, 255, 0, 255, 0, 255
@@ -132,7 +132,7 @@ void extrasprites_asm2 (void) __naked {
 }
 
 #ifdef NEEDS_BULLET_SPRITE
-    void extrasprites_asm3 (void) __naked {
+    void sprite_19_data (void) __naked {
     	__asm
 	    	_sprite_19_a:
 	    	.db 0, 255
@@ -175,7 +175,7 @@ void extrasprites_asm2 (void) __naked {
 
 // Final de los gráficos de sprites. En 128K comp-zx.sh comprueba que queda
 // por debajo de 0xC000 (los niveles pueden cargar sprites encima).
-void extrasprites_asm4 (void) __naked {
+void sprites_end_mark (void) __naked {
 	__asm
 		_sprites_end:
 	__endasm;

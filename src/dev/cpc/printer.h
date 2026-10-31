@@ -521,7 +521,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, char *s) {
 }
 
 #ifndef DEACTIVATE_OBJECTS
-	void draw_objs () {
+	void draw_objs (void) {
 		// Con un solo objeto y scripting: icono del objeto y contador en un flag.
 		#ifdef SHOW_OBJECT_ICON
 			if (player.objs) {

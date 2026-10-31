@@ -14,7 +14,7 @@ void play_title_music (void) __naked {
 	__endasm;
 }
 
-void music_asm1 (void) __naked {
+void music_code (void) __naked {
 	__asm
 		; *****************************************************************************
 		; * Phaser1 Engine, with synthesised drums

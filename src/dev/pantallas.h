@@ -10,7 +10,7 @@
 	extern unsigned char s_marco [];
 	extern unsigned char s_ending [];
 
-	void pantallas_asm1 (void) __naked {
+	void pantallas_data (void) __naked {
 		__asm
 			_s_title:
 			.incbin "title.bin"

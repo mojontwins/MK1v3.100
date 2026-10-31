@@ -85,7 +85,7 @@ unsigned char gpx, gpy; 			// Coordenadas de pixel
 
 unsigned char enoffs; 				// Índice de los enemigos de la pantalla
 unsigned char enoffsmasi;
-unsigned char *map_pointer;
+const unsigned char *map_pointer;
 
 AT (BASE_ARRAYS) unsigned char en_an_frame [3];
 AT (BASE_ARRAYS + 3) unsigned char en_an_count [3];

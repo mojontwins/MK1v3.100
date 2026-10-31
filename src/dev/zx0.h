@@ -4,7 +4,7 @@
 // zx0.h
 // Cointains the ZX0 decompressor.
 
-void zx0_asm1 (void) __naked {
+void zx0_depack (void) __naked {
 	__asm
 		; -----------------------------------------------------------------------------
 		; ZX0 decoder by Einar Saukas & Urusergi

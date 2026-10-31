@@ -11,6 +11,7 @@ cd /d "%~dp0"
 fbc buildlevel.bas cmdlineparser.bas
 fbc librarian.bas cmdlineparser.bas
 fbc defb2bin.bas
+fbc ihx2bin.bas
 fbc ene2h.bas mtparser.bas cmdlineparser.bas
 fbc imanol.bas cmdlineparser.bas
 fbc mapcnv.bas

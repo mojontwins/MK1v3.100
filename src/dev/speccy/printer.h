@@ -38,7 +38,7 @@ void system_init (void) {
 	// splib2 initialization
 	sp_Initialize (7, 0);
 	sp_Border (BLACK);
-	sp_AddMemory(0, NUMBLOCKS, 14, AD_FREE);
+	sp_AddMemory (0, NUMBLOCKS, 14, (void *) AD_FREE);
 
 	joyfunc = sp_JoyKeyboard;
 
@@ -172,7 +172,7 @@ void print_str (unsigned char x, unsigned char y, unsigned char c, unsigned char
 }
 
 #ifndef DEACTIVATE_OBJECTS
-	void draw_objs () {
+	void draw_objs (void) {
 		#ifdef SHOW_OBJECT_ICON
 			if (player.objs) {
 				sp_PrintAtInv (OBJECTS_ICON_Y, OBJECTS_ICON_X, 135, 132);
@@ -253,7 +253,7 @@ void render_sprites (void) {
 	if ( !(player.estado & EST_PARP) || !(half_life) )
 		sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame, VIEWPORT_Y + (gpy >> 3), VIEWPORT_X + (gpx >> 3), gpx & 7, gpy & 7);
 	else
-		sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame, -2, -2, 0, 0);
+		sp_MoveSprAbs (sp_player, SPRITES_CLIP, player.next_frame - player.current_frame, 254, 254, 0, 0);	// fuera de la pantalla
 
 	player.current_frame = player.next_frame;
 

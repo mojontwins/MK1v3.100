@@ -1,7 +1,7 @@
 #!/bin/bash
 # Equivalente Linux de comp-zx.bat
 # Uso: ./comp-zx.sh [justcompile] [noclean]
-# Requiere z88dk 1.10 en el PATH (source z88env.sh, ver env/setup-linux.sh)
+# Requiere GBDK-2020 (su SDCC): GBDK_HOME apuntando a donde esté instalado.
 #
 # Con ACTIVATE_SCRIPTING compila los scripts con msc4 (../script/script.spt
 # o la lista de scripts.txt).
@@ -19,6 +19,7 @@
 game=bootee
 
 cd "$(dirname "$0")"
+: "${GBDK_HOME:?Pon en GBDK_HOME la carpeta de GBDK-2020}"
 U=../utils/linux
 
 # Un juego puede traer un game.sh que cambie "game" y defina convert_assets,
@@ -106,22 +107,24 @@ if [ $mode128 = 1 ]; then
 fi
 
 echo "### COMPILANDO GUEGO ###"
-rm -f zcc_opt.def
-zcc +zx -a -vn churromain.c -o $game.asm -lsplib2f -zorg=24200 > /dev/null 2>&1
-rm -f zcc_opt.def
-if ! zcc +zx -m -vn churromain.c -o $game.bin -lsplib2f -zorg=24200; then
-	echo "ERROR"; exit 1
-fi
-$U/printsize $game.bin
+# SDCC compila todo el motor de una vez (churromain.c incluye el resto); el
+# enlazador pone el código en 24200, detrás las variables, y ihx2bin saca el
+# binario (sin las variables, que crt0 pone a cero al arrancar).
+G="$GBDK_HOME/bin"
+"$G/sdcc" -mz80 --no-std-crt0 -c churromain.c || { echo "ERROR"; exit 1; }
+"$G/sdasz80" -g -o crt0.rel speccy/crt0.s || { echo "ERROR"; exit 1; }
+"$G/sdldz80" -n -m -w -i -b _CODE=24200 $game.ihx crt0.rel churromain.rel \
+	-k speccy -l splib2.lib -k "$GBDK_HOME/lib/z80" -l z80.lib || { echo "ERROR"; exit 1; }
+$U/ihx2bin $game.ihx $game.bin 24200 || exit 1
 
 if [ $mode128 = 1 ]; then
 	# Todo lo que se usa con otra página de RAM en 0xC000 tiene que estar por debajo.
 	bad=0
-	for s in DEPACK _UNPACK_RAMN SETRAMBANK _ISR _TILESET _SPRITES_END _LEVEL_DATA_END _MSC_BUFFER; do
-		a=$(grep -m1 -E "^$s[[:space:]]" $game.map | sed -E 's/.*= ([0-9A-F]+),.*/\1/')
+	for s in _zx0_depack _unpack_RAMn SetRAMBank _isr_hook _tileset _sprites_end _level_data_end _msc_buffer; do
+		a=$(awk -v s=$s '$2 == s { print $1; exit }' $game.map)
 		[ -z "$a" ] && continue
 		if [ $((16#$a)) -ge $((0xC000)) ]; then
-			echo "ERROR 128K: $s está en \$$a, por encima de 0xC000"; bad=1
+			echo "ERROR 128K: $s está en \$${a:4}, por encima de 0xC000"; bad=1
 		fi
 	done
 	[ $bad = 1 ] && exit 1
@@ -153,7 +156,7 @@ fi
 
 if [ $noclean = 0 ]; then
 	echo "### LIMPIANDO ###"
-	rm -f loader.tap screen.tap main.tap reubica.tap ram?.tap *.scr *.bin zcc_opt.def loader128.bas librarian.default.txt
+	rm -f loader.tap screen.tap main.tap reubica.tap ram?.tap *.scr *.bin *.rel *.ihx *.asm *.lst *.sym *.noi loader128.bas librarian.default.txt
 fi
 
 echo "### DONE ###"
