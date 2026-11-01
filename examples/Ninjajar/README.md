@@ -23,11 +23,20 @@ make.bat
 Deja `ninjajar.tap`, para un Spectrum 128K. `make.bat noclean` deja los
 ficheros intermedios en `build\dev`. (En Linux: `./make.sh`.)
 
+`make.bat gb` hace la versión de Game Boy, `ninjajar.gb` (en desarrollo:
+todavía sin sonido y con gráficos provisionales, sacados de los del
+Spectrum).
+
 ## Controles
 
 M D A S N (fuego, derecha, izquierda, abajo, arriba); W también sube nadando.
 O un joystick Kempston o Sinclair. FIRE da puñetazos, ARRIBA salta y ABAJO
 habla con los personajes y usa las cosas. H pausa, Y abandona.
+
+En Game Boy: A da puñetazos, B (o ARRIBA) salta, ABAJO habla y usa, START
+pausa y SELECT abandona. En el título, START juega y SELECT pide la
+contraseña, que se escribe con la cruceta (ARRIBA y ABAJO cambian la letra,
+IZQUIERDA y DERECHA mueven el cursor) y se acaba con START.
 
 ## Qué hay aquí
 
@@ -37,12 +46,16 @@ habla con los personajes y usa las cosas. H pausa, Y abandona.
 | `dev/custom.h` | El código propio: dedicatoria, menú y contraseñas, mapa del mundo, lava, el "¡ay!" al morir, "zone clear", "game over", final y créditos. |
 | `dev/extern.h` | Lo que llaman los scripts: el recuadro de los diálogos (`TEXT BOX`), la cortina y las cinemáticas. |
 | `dev/levelset.h` | La secuencia de niveles: bundle, tileset, spriteset, música y script de cada uno. |
-| `dev/levels.bat` (`levels.sh`) | Construye los niveles, tilesets, spritesets, scripts y pantallas. |
+| `dev/bundles.bat` (`bundles.sh`) | Construye los bundles de los niveles (los mismos en todas las máquinas). |
+| `dev/levels.bat` (`levels.sh`) | Los bundles y los tilesets, spritesets, scripts y pantallas del Spectrum. |
+| `dev/levels_gb.bat` (`levels_gb.sh`) | Lo mismo para Game Boy (gráficos de `gfx/gb`). |
+| `dev/librarian_gb.txt`, `dev/convert_gb.bat` | Los recursos de los bancos de ROM y la conversión de la fuente y los sprites de Game Boy (en Linux, `convert_assets_gb` de `game.sh`). |
 | `dev/scripts.txt` | Los scripts, que msc4 compila juntos. |
 | `dev/librarian.txt` | Los recursos que van en las páginas de RAM. |
 | `dev/game.bat`, `dev/convert.bat` | El nombre del juego y la conversión del tileset base, los sprites y la pantalla de carga (en Linux, `game.sh`). |
 | `script/` | Un script por nivel (los que tienen). |
 | `texts/credits.bin` | Los créditos, en líneas de 32 caracteres (`credits.txt` es el texto). |
+| `gfx/gb/` | Los gráficos de Game Boy (provisionales). |
 | `gfx/`, `map/`, `enems/`, `levels/` | Gráficos, mapas (Mappy), enemigos (`.ene`) y comportamientos de cada mapa. |
 | `ogt/zx128/` | El WYZ player del original (con las canciones comprimidas con aPLib y el sample del "¡ay!"), las canciones, los instrumentos y los efectos. |
 

@@ -5,9 +5,14 @@
 // Variables y macros que dependen del sistema (Game Boy). Es el equivalente
 // de speccy/sysvars.h y cpc/sysvars.h.
 
-// Efectos de sonido (todavía no hay: llegarán con el driver de sonido)
+// Efectos de sonido y música (todavía no hay: llegarán con el driver de
+// sonido). Las llamadas al WYZ player del código de los juegos no hacen nada.
 #define PLAY_SFX(n)
 #define peta_el_beeper(n)
+#define wyz_play_music(n)
+#define wyz_play_sound(n)
+#define wyz_stop_sound()
+#define wyz_play_sample(n)
 
 // En Game Boy las variables no van en direcciones fijas: la RAM (8K) la
 // reparte el enlazador y gbcheck comprueba que cabe. (GBDK define AT como

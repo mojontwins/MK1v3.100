@@ -5,9 +5,10 @@ rem
 rem El juego solo trae lo suyo (dev\: config.h, custom.h, levelset.h, ...;
 rem y sus graficos, mapas, enemigos, scripts, textos y musica). make.bat copia src\dev a build\,
 rem pone encima los archivos del juego y llama a comp-zx.bat, asi que el juego
-rem usa siempre el motor actual. Deja ninjajar.tap aqui.
+rem usa siempre el motor actual. Deja ninjajar.tap aqui. Con "gb", la version
+rem de Game Boy (comp-gb.bat): ninjajar.gb.
 rem
-rem Uso: make.bat [noclean]     (noclean deja los intermedios en build\dev)
+rem Uso: make.bat [gb] [noclean]     (noclean deja los intermedios en build\dev)
 rem Requiere las utilidades compiladas (src\utils\build-windows.bat) y GBDK-2020
 rem en C:\gbdk (o donde diga GBDK_HOME).
 rem
@@ -31,7 +32,15 @@ mklink /J "%B%\utils" "%REPO%\src\utils" > nul
 for %%d in (gfx map enems levels ogt script texts) do mklink /J "%B%\%%d" "%HERE%\%%d" > nul
 xcopy /e /q /y "%HERE%\dev\*" "%B%\dev\" > nul
 
+if /i "%1"=="gb" goto :gb
 call "%B%\dev\comp-zx.bat" %*
 if errorlevel 1 exit /b 1
 copy /y "%B%\dev\ninjajar.tap" "%HERE%\" > nul
 echo ninjajar.tap listo
+exit /b 0
+
+:gb
+call "%B%\dev\comp-gb.bat" %2 %3
+if errorlevel 1 exit /b 1
+copy /y "%B%\dev\ninjajar.gb" "%HERE%\" > nul
+echo ninjajar.gb listo

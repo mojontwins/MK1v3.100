@@ -7,6 +7,9 @@
 #  * Convierte el mapa, los enemigos y los gráficos de ../gfx/gb (mkts_om
 #    platform=gb). Un juego puede traer en su game.sh una convert_assets_gb
 #    propia.
+#  * Con scripting, compila los scripts (msc4, con los textos en líneas de
+#    GB_TEXT_WIDTH caracteres) y, si el juego trae levels_gb.sh, construye
+#    sus niveles.
 #  * Reparte los recursos de librarian_gb.txt (o los de bootee) en bancos de
 #    ROM desde el 3 con librarian platform=gb, que genera librarian.h y un
 #    res_bankN.s por banco.
@@ -46,11 +49,36 @@ if [ $justcompile = 0 ]; then
 		$U/mkts_om $G mode=chars in=../gfx/gb/font.png out=font_raw.bin max=64 > /dev/null || exit 1
 		$U/mkts_om $G mode=strait2x2 in=../gfx/gb/work.png out=tileset_raw.bin max=48 > /dev/null || exit 1
 		$U/mkts_om $G mode=sprites in=../gfx/gb/sprites.png out=sprites_raw.bin max=32 > /dev/null || exit 1
+		# (mkts_om avisa si una pantalla tiene más de 192 patrones)
 		for s in title ending; do
-			$U/mkts_om $G mode=scr in=../gfx/gb/$s.png out=${s}_raw.bin > /dev/null || exit 1
+			$U/mkts_om $G mode=scr in=../gfx/gb/$s.png out=${s}_raw.bin > mkts.log || exit 1
+			grep -i warning mkts.log
 		done
 		for s in font tileset sprites title ending; do z ${s}_raw.bin $s.bin; done
 	fi
+fi
+
+if grep -qE '^[[:space:]]*#define[[:space:]]+ACTIVATE_SCRIPTING\b' config.h; then
+	echo "### COMPILANDO SCRIPT ###"
+	# Como en comp-zx.sh, pero con los textos partidos en líneas de
+	# GB_TEXT_WIDTH caracteres (18 si config.h no dice otra cosa): la
+	# pantalla del Game Boy tiene 20 de ancho.
+	scripts=../script/script.spt
+	[ -f scripts.txt ] && scripts=$(grep -v '^#' scripts.txt | tr '\n' ',' | sed 's/,*$//')
+	mw=$(grep -E '^#define[[:space:]]+MAP_W\b' config.h | awk '{print $3}')
+	mh=$(grep -E '^#define[[:space:]]+MAP_H\b' config.h | awk '{print $3}')
+	tw=$(grep -E '^#define[[:space:]]+GB_TEXT_WIDTH\b' config.h | awk '{print $3}')
+	textres=""; grep -qE '^[[:space:]]*#define[[:space:]]+SCRIPT_TEXTS_AS_RESOURCE\b' config.h && textres=textres
+	$U/msc4 in=$scripts v=3_100 output=c rooms=$((mw * mh)) textwidth=${tw:-18} $textres > msc4.log || { cat msc4.log; echo "ERROR en el script"; exit 1; }
+	grep -iE "warning" msc4.log; grep -iE "error|wrong|unexpected|unknown|expecting|too long" msc4.log && { echo "ERROR en el script"; exit 1; }
+fi
+
+# Paso propio del juego para construir sus niveles y sus gráficos de Game
+# Boy (bundles, tilesets, spritesets, scripts, pantallas). Ver
+# docs/formato-niveles.md. Se ejecuta antes de librarian.
+if [ $justcompile = 0 ] && [ -x ./levels_gb.sh ]; then
+	echo "### CONSTRUYENDO NIVELES ###"
+	./levels_gb.sh || { echo "ERROR en levels_gb.sh"; exit 1; }
 fi
 
 echo "### RECURSOS EN BANCOS DE ROM ###"
@@ -79,6 +107,6 @@ $U/gbcheck obj_gb/$game.map || exit 1
 
 if [ $noclean = 0 ]; then
 	echo "### LIMPIANDO ###"
-	rm -rf obj_gb res_bank*.s *_raw.bin font.bin tileset.bin sprites.bin title.bin ending.bin librarian.h librarian_gb.default.txt
+	rm -rf obj_gb res_bank*.s *_raw.bin *.bin librarian.h librarian_gb.default.txt msc4.log mkts.log
 fi
 echo "### DONE ###"

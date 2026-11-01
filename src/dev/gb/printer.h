@@ -51,7 +51,10 @@ void system_init (void) {
 
 	// Los sprites (la pantalla sigue apagada desde gb_init)
 	get_resource (RES_SPRITES, GB_VRAM_SPRITES);
-	gb_tileset_res = RES_TILESET;
+	// El tileset del juego (con niveles, cada nivel pone el suyo)
+	#ifdef RES_TILESET
+		gb_tileset_res = RES_TILESET;
+	#endif
 	gb_spriteset_res = 0xff;
 }
 
@@ -113,6 +116,36 @@ void gb_win_open (unsigned char n) {
 void gb_win_close (void) {
 	wait_vbl_done ();
 	gb_set_wy ((unsigned char) GB_VIEW_H);
+}
+
+// Texto sobre una pantalla fija (cinemáticas): la ventana, con n filas
+// vacías (las 20... para print_str), tapa la parte de abajo.
+void gb_win_fixed (unsigned char n) {
+	gb_ptr = (unsigned char *) GB_WIN_MAP;
+	for (pt = 0; pt < n; pt ++) {
+		for (px = 0; px < 20; px ++) gb_vram_put (gb_ptr ++, GB_CHAR (' '));
+		gb_ptr += 12;
+	}
+	wait_vbl_done ();
+	WY_REG = 144 - (n << 3);
+	WX_REG = 7;
+	LCDC_REG |= LCDCF_WINON;
+}
+
+void gb_win_fixed_off (void) {
+	wait_vbl_done ();
+	LCDC_REG &= ~LCDCF_WINON;
+}
+
+// Una pantalla vacía (todo el fondo con espacios), sin sprites ni ventana,
+// con fundido.
+void gb_text_screen (void) {
+	gb_fade_out (0);
+	DISPLAY_OFF;
+	gb_fixed_screen ();
+	memset ((void *) GB_BKG_MAP, GB_CHAR (' '), 32 * 18);
+	DISPLAY_ON;
+	gb_fade_in (0);
 }
 
 // Dibuja el tile grande t (2x2 caracteres) en (x, y).

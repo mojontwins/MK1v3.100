@@ -245,6 +245,16 @@
 #define FLAG_X					29
 #define FLAG_Y					0		// ...en estas coordenadas
 
+// Game Boy: el marcador (una fila, en la ventana) y el ancho de los textos
+// (la ventana tiene 20 caracteres: 18 de texto y el borde del recuadro).
+#define GB_HUD_ROWS				1
+#define GB_HUD_LINE0			" LIFE 00   COINS 00 "
+#define GB_LIFE_X				6
+#define GB_LIFE_Y				0
+#define GB_FLAG_X				17
+#define GB_FLAG_Y				0
+#define GB_TEXT_WIDTH			18
+
 // Text
 //#define LINE_OF_TEXT			1		// If defined, scripts can show text @ Y = # (TEXT "...")
 //#define LINE_OF_TEXT_X		1		// X coordinate.

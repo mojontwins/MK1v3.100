@@ -23,33 +23,51 @@
 // RES_ENDING, RES_ENDING1..4, RES_CREDITS. Canciones (ogt/zx128/wyzplayer.asm):
 // 4 título, 5 mapa del mundo, 7 zona superada, 8 game over, 9 final, 12
 // créditos. Efectos: los de Ninjajar son PLAY_SFX (NJ_SFX (n)).
+//
+// En Game Boy (GB) cambia lo que toca la pantalla y el teclado: las
+// pantallas fijas son de 160x144 (gb_show_screen), los mensajes y los
+// textos van en la ventana y la contraseña se escribe con la cruceta.
 
 #define NJ_SFX(n)			(15 + (n))		// Efecto n de Ninjajar (wyzplayer.asm)
 
 // Ganchos que se usan antes de definirlos (extern.h va después)
 void curtain (void);
 
+// Espera al siguiente frame
+#ifdef GB
+	#define WAIT_FRAME()	wait_vbl_done ()
+#else
+	#define WAIT_FRAME()	__asm__ ("halt")
+#endif
+
 // ¿Tecla o fuego pulsado?
 unsigned char button_pressed (void) {
-	return sp_GetKey () || (joyfunc ((struct sp_UDK *) &keys) & sp_FIRE) == 0;
+	#ifdef GB
+		return joypad ();
+	#else
+		return sp_GetKey () || (joyfunc ((struct sp_UDK *) &keys) & sp_FIRE) == 0;
+	#endif
 }
 
 // Espera n frames o hasta que se pulse algo
 void wait_button (unsigned int n) {
 	do {
-		__asm
-			halt
-		__endasm;
+		WAIT_FRAME ();
 		if (button_pressed ()) break;
 	} while (-- n);
 }
 
-// Un mensaje en el centro de la pantalla
+// Un mensaje en el centro de la pantalla (en Game Boy, en la ventana)
 #define MESSAGE_COLOUR		79
 void print_message (const unsigned char *s) {
-	print_str (10, 11, MESSAGE_COLOUR, spacer);
-	print_str (10, 12, MESSAGE_COLOUR, s);
-	print_str (10, 13, MESSAGE_COLOUR, spacer);
+	#ifdef GB
+		gb_win_open (3);
+		print_str (4, 20 + GB_HUD_ROWS + 1, MESSAGE_COLOUR, s);
+	#else
+		print_str (10, 11, MESSAGE_COLOUR, spacer);
+		print_str (10, 12, MESSAGE_COLOUR, s);
+		print_str (10, 13, MESSAGE_COLOUR, spacer);
+	#endif
 	sp_UpdateNow ();
 	sp_WaitForNoKey ();
 }
@@ -86,6 +104,34 @@ void gen_password (void) {
 	password_text [PASSWORD_LENGTH] = 0;
 }
 
+#ifdef GB
+// Game Boy: la contraseña se escribe con la cruceta (ARRIBA y ABAJO cambian
+// la letra, IZQUIERDA y DERECHA mueven el cursor) y START (o A) acaba.
+#define GB_MENU_Y			15
+void do_password (void) {
+	print_str (0, GB_MENU_Y, MENU_COLOR, "      PASSWORD      ");
+	for (gpit = 0; gpit < PASSWORD_LENGTH; gpit ++) password_text [gpit] = 'A';
+	password_text [PASSWORD_LENGTH] = 0;
+	gpit = 0;
+	sp_WaitForNoKey ();
+	while (1) {
+		print_str (0, GB_MENU_Y + 1, MENU_COLOR, "      ");
+		print_str (6, GB_MENU_Y + 1, MENU_COLOR, password_text);
+		print_str (14, GB_MENU_Y + 1, MENU_COLOR, "      ");
+		print_str (0, GB_MENU_Y + 2, MENU_COLOR, "                    ");
+		sp_PrintAtInv (GB_MENU_Y + 2, 6 + gpit, MENU_COLOR, '^' - 32);
+		while (!(gpjt = joypad ())) wait_vbl_done ();
+		if (gpjt & (J_START | J_A)) break;
+		if (gpjt & J_UP) password_text [gpit] = password_text [gpit] == 'P' ? 'A' : password_text [gpit] + 1;
+		if (gpjt & J_DOWN) password_text [gpit] = password_text [gpit] == 'A' ? 'P' : password_text [gpit] - 1;
+		if ((gpjt & J_RIGHT) && gpit < PASSWORD_LENGTH - 1) gpit ++;
+		if ((gpjt & J_LEFT) && gpit) gpit --;
+		PLAY_SFX (NJ_SFX (0));
+		sp_WaitForNoKey ();
+	}
+	sp_WaitForNoKey ();
+	PLAY_SFX (NJ_SFX (1));
+#else
 void do_password (void) {
 	print_str (MENU_X, MENU_Y, MENU_COLOR, " PASSWORD ");
 	print_str (MENU_X, MENU_Y + 2, MENU_COLOR, "          ");
@@ -119,6 +165,7 @@ void do_password (void) {
 	wyz_stop_sound ();
 	PLAY_SFX (NJ_SFX (1));
 	password_text [PASSWORD_LENGTH] = ' ';
+#endif
 
 	// Si la comprobación cuadra, vale
 	pass_a = makebyte (password_text [7], password_text [0]);
@@ -137,23 +184,44 @@ void do_password (void) {
 unsigned char hook_after_title (void) {
 	level = 0;
 	flags [1] = 0;
-	print_str (MENU_X - 6, MENU_Y, MENU_COLOR,     "      1 JUGAR         ");
-	print_str (MENU_X - 6, MENU_Y + 1, MENU_COLOR, "                      ");
-	print_str (MENU_X - 6, MENU_Y + 2, MENU_COLOR, "      2 PASSWORD      ");
-	sp_UpdateNow ();
-	while (1) {
-		gpjt = sp_GetKey ();
-		if (gpjt == '1') {
-			wyz_stop_sound ();
-			PLAY_SFX (NJ_SFX (1));
-			break;
+	#ifdef GB
+		// START juega, SELECT pide la contraseña
+		print_str (0, GB_MENU_Y, MENU_COLOR,     "    START  JUGAR    ");
+		print_str (0, GB_MENU_Y + 1, MENU_COLOR, "                    ");
+		print_str (0, GB_MENU_Y + 2, MENU_COLOR, "   SELECT PASSWORD  ");
+		sp_WaitForNoKey ();
+		while (1) {
+			gpjt = joypad ();
+			if (gpjt & (J_START | J_A)) {
+				PLAY_SFX (NJ_SFX (1));
+				break;
+			}
+			if (gpjt & J_SELECT) {
+				PLAY_SFX (NJ_SFX (0));
+				do_password ();
+				break;
+			}
+			wait_vbl_done ();
 		}
-		if (gpjt == '2') {
-			PLAY_SFX (NJ_SFX (0));
-			do_password ();
-			break;
+	#else
+		print_str (MENU_X - 6, MENU_Y, MENU_COLOR,     "      1 JUGAR         ");
+		print_str (MENU_X - 6, MENU_Y + 1, MENU_COLOR, "                      ");
+		print_str (MENU_X - 6, MENU_Y + 2, MENU_COLOR, "      2 PASSWORD      ");
+		sp_UpdateNow ();
+		while (1) {
+			gpjt = sp_GetKey ();
+			if (gpjt == '1') {
+				wyz_stop_sound ();
+				PLAY_SFX (NJ_SFX (1));
+				break;
+			}
+			if (gpjt == '2') {
+				PLAY_SFX (NJ_SFX (0));
+				do_password ();
+				break;
+			}
 		}
-	}
+	#endif
 	espera_activa (40);
 	return level;
 }
@@ -164,8 +232,12 @@ unsigned char hook_after_title (void) {
 
 #define HOOK_GAME_INIT
 void hook_game_init (void) {
-	get_resource (RES_DEDICADO, 16384);
-	memset ((unsigned char *) 22528, 71, 768);
+	#ifdef GB
+		gb_show_screen (RES_DEDICADO);
+	#else
+		get_resource (RES_DEDICADO, 16384);
+		memset ((unsigned char *) 22528, 71, 768);
+	#endif
 	wait_button (250);
 }
 
@@ -207,14 +279,26 @@ const unsigned char arrowcoords [] = {
 #define HOOK_LEVEL_INTRO
 void hook_level_intro (void) {
 	cortina ();
-	get_resource (RES_LEVEL, 16384);
-	if (level > 0) {
-		gen_password ();
-		print_str (12, 20, 71, password_text);
-	} else {
-		print_str (12, 20, 71, "TUTORIAL");
-	}
-	sp_PrintAtInv (arrowcoords [level + level + 1], arrowcoords [level + level], (unsigned char) (71 + 128), 30);
+	#ifdef GB
+		// El mapa del mundo es el del Spectrum a 5/8: las coordenadas también
+		gb_show_screen (RES_LEVEL);
+		if (level > 0) {
+			gen_password ();
+			print_str (6, 16, 71, password_text);
+		} else {
+			print_str (6, 16, 71, "TUTORIAL");
+		}
+		sp_PrintAtInv ((arrowcoords [level + level + 1] * 5) >> 3, (arrowcoords [level + level] * 5) >> 3, 71, 30);
+	#else
+		get_resource (RES_LEVEL, 16384);
+		if (level > 0) {
+			gen_password ();
+			print_str (12, 20, 71, password_text);
+		} else {
+			print_str (12, 20, 71, "TUTORIAL");
+		}
+		sp_PrintAtInv (arrowcoords [level + level + 1], arrowcoords [level + level], (unsigned char) (71 + 128), 30);
+	#endif
 	sp_UpdateNow ();
 	wyz_play_music (5);
 	wait_button (2500);
@@ -289,9 +373,7 @@ void hook_each_frame (void) {
 void hook_player_dies (void) {
 	wyz_play_sample (0);
 	gpit = 50; do {
-		__asm
-			halt
-		__endasm;
+		WAIT_FRAME ();
 	} while (-- gpit);
 }
 
@@ -316,21 +398,34 @@ void hook_game_over (void) {
 unsigned char credits_line [33];
 
 void credits_line_at (unsigned char y) {
-	ram_page = resources [RES_CREDITS].ramPage;
-	address = (unsigned char *) (resources [RES_CREDITS].ramOffset + gpjt * 32);
-	destination = credits_line;
-	ram_copy_len = 32;
-	copy_from_RAMn ();
-	credits_line [32] = 0;
-	print_str (0, y, 71, credits_line);
+	#ifdef GB
+		// En Game Boy caben 20: los del centro de la línea
+		gb_copy_from_bank (gb_res_bank (RES_CREDITS), gb_res_addr (RES_CREDITS) + gpjt * 32, credits_line, 32);
+		credits_line [26] = 0;
+		print_str (0, y, 71, credits_line + 6);
+	#else
+		ram_page = resources [RES_CREDITS].ramPage;
+		address = (unsigned char *) (resources [RES_CREDITS].ramOffset + gpjt * 32);
+		destination = credits_line;
+		ram_copy_len = 32;
+		copy_from_RAMn ();
+		credits_line [32] = 0;
+		print_str (0, y, 71, credits_line);
+	#endif
 	gpjt ++;
 }
 
 void credits (void) {
 	gpjt = 0;
 	for (rdt = 0; rdt < CREDITS_PAIRS; rdt ++) {
-		credits_line_at (10);
-		credits_line_at (13);
+		#ifdef GB
+			gb_text_screen ();
+			credits_line_at (7);
+			credits_line_at (10);
+		#else
+			credits_line_at (10);
+			credits_line_at (13);
+		#endif
 		sp_UpdateNow ();
 		wait_button (rdt < CREDITS_PAIRS - 1 ? 200 : 9999);
 		cortina ();
@@ -340,7 +435,11 @@ void credits (void) {
 // GAME ENDING del script (que ya ha mostrado las cinemáticas)
 #define HOOK_GAME_ENDING
 void hook_game_ending (void) {
-	get_resource (RES_ENDING, 16384);
+	#ifdef GB
+		gb_show_screen (RES_ENDING);
+	#else
+		get_resource (RES_ENDING, 16384);
+	#endif
 	wait_button (1000);
 	wyz_stop_sound ();
 	cortina ();

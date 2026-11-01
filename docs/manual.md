@@ -1642,9 +1642,10 @@ El port de Game Boy está a medio hacer: esto es lo que hay de momento y se
 irá completando. El objetivo es que el mismo juego (con sus gráficos de Game
 Boy) funcione igual que en ZX y CPC, en un cartucho MBC1 de DMG.
 
-Ya funciona el motor con la pantalla del juego, la cámara, los sprites y el
-marcador: `bootee` se juega entero. Faltan los scripts y los textos, el
-sonido y los juegos de niveles (Ninjajar).
+Ya funcionan el motor, la pantalla del juego con su cámara, los sprites, el
+marcador, los niveles (`COMPRESSED_LEVELS`), los scripts y los textos:
+`bootee` y Ninjajar (`examples/Ninjajar`, `make.bat gb`) se juegan. Falta
+el sonido.
 
 ## Compilar
 
@@ -1683,8 +1684,49 @@ También hay `GB_OBJECTS_ICON_X/Y`, `GB_KILLED_X/Y`, `GB_AMMO_X/Y`,
 Lo que se ve del juego mide 160 x (144 - 8 x `GB_HUD_ROWS`) píxeles; los
 sprites se apagan donde empieza la ventana, para que no la pisen.
 
-Los mensajes (GAME OVER, PAUSED, LEVEL XX) salen en el centro de lo que
-enseña la cámara.
+Los mensajes (GAME OVER, PAUSED) salen en la ventana, que crece hacia
+arriba: debajo del marcador quedan las filas del mensaje.
+
+## Ventana, textos y pantallas desde el código del juego
+
+`gb/printer.h` tiene lo que necesita el código propio de un juego
+(`custom.h`, `extern.h`) en Game Boy. En las funciones de imprimir, una `y`
+de 20 en adelante es la fila `y - 20` de la ventana.
+
+| Función | Qué hace |
+|---|---|
+| `gb_win_open (n)` | La ventana crece `n` filas; quedan vacías debajo del marcador (filas `20 + GB_HUD_ROWS`...). Para mensajes y recuadros de texto. |
+| `gb_win_close ()` | La ventana vuelve a ser solo el marcador. |
+| `gb_win_fixed (n)` / `gb_win_fixed_off ()` | Sobre una pantalla fija (una cinemática), la ventana con `n` filas vacías (las 20...) tapando la parte de abajo. |
+| `gb_show_screen (RES_X)` | Una pantalla fija, con fundidos (en lugar de `get_resource (RES_X, 16384)`). |
+| `gb_text_screen ()` | Una pantalla vacía para escribir (créditos...). |
+| `gb_fade_out (0)` y `gb_fade_pending = 1` | Fundido a negro; el siguiente `sp_UpdateNow` funde desde negro. |
+| `gb_copy_from_bank (gb_res_bank (RES_X), gb_res_addr (RES_X) + n, buffer, len)` | Copia un trozo de un recurso sin comprimir (en lugar de `copy_from_RAMn`). |
+
+Ninjajar es el ejemplo: busca `#ifdef GB` en su `custom.h` y su `extern.h`.
+
+## Scripts y textos
+
+El intérprete es el mismo, pero lee el script directamente de la ROM: con
+niveles, el script de cada nivel es un recurso **sin comprimir** (en
+`librarian_gb.txt`) y no ocupa RAM. Los textos (`SCRIPT_TEXTS_AS_RESOURCE`)
+también van sin comprimir. `comp-gb` compila los scripts con los textos
+partidos en líneas de `GB_TEXT_WIDTH` caracteres (`config.h`, 18 si no se
+dice): la pantalla tiene 20.
+
+## Juegos con niveles
+
+Como en ZX (capítulo 10), con estas diferencias:
+
+* Los gráficos de Game Boy van en `gfx/gb`. Cada tileset de nivel son 192
+  patrones (48 tiles, `mkts_om mode=strait2x2`) y cada spriteset, los 16
+  sprites del jugador y los enemigos (`mode=sprites max=16`); los extras
+  vienen siempre de `sprites.png`.
+* El juego trae un `levels_gb.bat` (`levels_gb.sh`) en lugar de
+  `levels.bat`, y un `librarian_gb.txt`. Los bundles son los mismos: en
+  Ninjajar están en `bundles.bat`, que llaman los dos.
+* La fuente y `sprites.png` se convierten en `convert_gb.bat`
+  (`convert_assets_gb` en `game.sh`).
 
 ## Los mandos
 
@@ -1759,7 +1801,7 @@ izquierda de su sitio) y el puño hacia la derecha y hacia la izquierda (20 y
 | `chars` | La fuente: 64 patrones. |
 | `strait2x2` | El tileset: 48 tiles de 2x2 patrones, 192 en total. |
 | `sprites` (`metasize=2,2`) | Sprites de 16x16 para el modo 8x16: cada columna de arriba abajo. Con un número impar de filas (`metasize=1,1`) se añade un patrón vacío debajo. |
-| `scr` | Una pantalla fija de 160x144: sus patrones sin repetir (como mucho 192; si hay más, avisa) y su mapa de 20x18, escritos de forma que, descomprimidos en 0x8C00, los patrones llenan 0x8C00-0x97FF y el mapa cae en el fondo, en 0x9800. |
+| `scr` | Una pantalla fija de 160x144: sus patrones sin repetir (como mucho 192; si hay más, avisa, y la compilación enseña el aviso) y su mapa de 20x18, escritos de forma que, descomprimidos en 0x8C00, los patrones llenan 0x8C00-0x97FF y el mapa cae en el fondo, en 0x9800. |
 
 ## Paletas y fundidos
 

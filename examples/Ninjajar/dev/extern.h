@@ -13,12 +13,24 @@
 //
 // En los textos, "<" es la Ñ y ";" las comillas (la fuente tiene ahí esos
 // dibujos).
+//
+// En Game Boy los textos van en la ventana: el recuadro debajo del marcador
+// (la ventana crece) y, en las cinemáticas, encima del dibujo, abajo.
 
 unsigned char is_cutscene;
 unsigned char exti, extx, exty, stepbystep, keyp;
 const unsigned char *extptr;
 
-// La cortina: borra la zona de juego de fuera hacia dentro
+// La cortina: borra la zona de juego de fuera hacia dentro. En Game Boy,
+// un fundido a negro: se vuelve a ver en cuanto se pinte otra cosa.
+#ifdef GB
+void curtain (void) {
+	saca_a_todo_el_mundo_de_aqui ();
+	sp_UpdateNow ();
+	gb_fade_out (0);
+	gb_fade_pending = 1;
+}
+#else
 void curtain (void) {
 	saca_a_todo_el_mundo_de_aqui ();
 	for (exti = 0; exti < 10; exti ++) {
@@ -36,6 +48,7 @@ void curtain (void) {
 		sp_UpdateNow ();
 	}
 }
+#endif
 
 void do_extern_action (unsigned char n, unsigned char m) {
 	switch (n) {
@@ -47,7 +60,11 @@ void do_extern_action (unsigned char n, unsigned char m) {
 			break;
 		case 2:
 			cortina ();
-			get_resource (RES_ENDING1 + m - 1, 16384);
+			#ifdef GB
+				gb_show_screen (RES_ENDING1 + m - 1);
+			#else
+				get_resource (RES_ENDING1 + m - 1, 16384);
+			#endif
 			break;
 		case 3:
 			cortina ();
@@ -56,6 +73,54 @@ void do_extern_action (unsigned char n, unsigned char m) {
 	}
 }
 
+#ifdef GB
+// TEXT BOX: el texto (ya partido en líneas de GB_TEXT_WIDTH) está en
+// msc_text_buf. Va en la ventana: en un recuadro debajo del marcador o, en
+// las cinemáticas, sin recuadro, sobre la parte de abajo del dibujo.
+void text_box (void) {
+	sp_UpdateNow ();						// Por si estaba fundida (curtain)
+	exti = 1;
+	for (extptr = msc_text_buf; *extptr; extptr ++) if (*extptr == '\n') exti ++;
+
+	if (is_cutscene == 0) {
+		gb_win_open (exti + 2);
+		exty = 20 + GB_HUD_ROWS;				// Fila del borde de arriba
+		print_str (0, exty, 1, "#$$$$$$$$$$$$$$$$$$%");
+		for (extx = 1; extx <= exti; extx ++) print_str (0, exty + extx, 1, "&                  '");
+		print_str (0, exty + exti + 1, 1, "())))))))))))))))))*");
+		exty ++;
+	} else {
+		gb_win_fixed (exti);
+		exty = 20;
+	}
+
+	// Letra a letra hasta que se pulse algo (después de soltar lo que se
+	// estuviera pulsando)
+	extx = 1;
+	stepbystep = 1; keyp = 1;
+	for (extptr = msc_text_buf; (exti = *extptr); extptr ++) {
+		if (exti == '\n') {
+			extx = 1; exty ++;
+		} else {
+			sp_PrintAtInv (exty, extx, 71, exti - 32);
+			extx ++;
+		}
+		if (stepbystep) {
+			if (exti != ' ' && is_cutscene == 0) PLAY_SFX (NJ_SFX (8));
+			gb_wait_frames (3);
+		}
+		if (button_pressed ()) {
+			if (keyp == 0) stepbystep = 0;
+		} else keyp = 0;
+	}
+
+	sp_WaitForNoKey ();
+	wait_button (5000);
+	sp_WaitForNoKey ();
+
+	if (is_cutscene) gb_win_fixed_off (); else gb_win_close ();
+}
+#else
 // TEXT BOX: el texto (ya partido en líneas de 24) está en msc_text_buf
 void text_box (void) {
 	if (is_cutscene == 0) {
@@ -124,3 +189,4 @@ void text_box (void) {
 		}
 	}
 }
+#endif
