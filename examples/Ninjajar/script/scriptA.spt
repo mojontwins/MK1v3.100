@@ -84,7 +84,7 @@ PRESS FIRE AT SCREEN 1
 		# Coger tijeras
 		SET FLAG 6 = 1
 		# Ponerlas en el inventario
-		PRINT TILE (24, 22) = 18
+		EXTERN 5, 18
 		# Pito
 		SOUND 20
 	END
@@ -310,7 +310,7 @@ PRESS FIRE AT SCREEN 11
 	THEN
 		SOUND 20
 		SET FLAG 7 = 1
-		PRINT TILE (22, 22) = 30
+		EXTERN 4, 30
 		SET TILE (2, 4) = 0
 		#SET_FIRE_ZONE 0, 0, 0, 0
 	END
@@ -321,7 +321,7 @@ PRESS FIRE AT SCREEN 11
 	THEN
 		SOUND 20
 		SET FLAG 7 = 2
-		PRINT TILE (22, 22) = 30
+		EXTERN 4, 30
 		SET TILE (4, 4) = 0
 		#SET_FIRE_ZONE 0, 0, 0, 0
 	END
@@ -332,7 +332,7 @@ PRESS FIRE AT SCREEN 11
 	THEN
 		SOUND 20
 		SET FLAG 7 = 3
-		PRINT TILE (22, 22) = 30
+		EXTERN 4, 30
 		SET TILE (6, 4) = 0
 		#SET_FIRE_ZONE 0, 0, 0, 0
 	END
@@ -343,7 +343,7 @@ PRESS FIRE AT SCREEN 11
 	THEN
 		SOUND 20
 		SET FLAG 7 = 4
-		PRINT TILE (22, 22) = 30
+		EXTERN 4, 30
 		SET TILE (8, 4) = 0
 		#SET_FIRE_ZONE 0, 0, 0, 0
 	END
@@ -354,7 +354,7 @@ PRESS FIRE AT SCREEN 11
 	THEN
 		SOUND 20
 		SET FLAG 7 = 5
-		PRINT TILE (22, 22) = 30
+		EXTERN 4, 30
 		SET TILE (10, 4) = 0
 		#SET_FIRE_ZONE 0, 0, 0, 0
 	END
@@ -434,8 +434,8 @@ PRESS FIRE AT SCREEN 12
 		# Fuera ababoles
 		SET FLAG 7 = 0
 		# Eliminamos los dos objetos del inventario:
-		PRINT TILE (22, 22) = 47
-		PRINT TILE (24, 22) = 47
+		EXTERN 4, 47
+		EXTERN 5, 47
 		PX = 112
 		REENTER
 	END

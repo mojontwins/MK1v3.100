@@ -8,6 +8,8 @@
 //                   debajo del dibujo, sin recuadro.
 //   EXTERN 2, n     una cinemática: el dibujo ENDINGn a pantalla completa.
 //   EXTERN 3        se acaban las cinemáticas.
+//   EXTERN 4..6, t  el inventario: el tile t en el hueco 0..2 del marcador
+//                   (47 lo vacía).
 //   TEXT BOX "..."  el recuadro de los diálogos, con el texto letra a letra
 //                   (una tecla lo escribe de golpe).
 //
@@ -50,6 +52,22 @@ void curtain (void) {
 }
 #endif
 
+// El inventario del marcador: tres huecos para un tile cada uno (las cosas
+// que se llevan; qué se lleva lo saben los flags del script). En el Spectrum
+// van en la fila 22, en x = 22, 24 y 28; en Game Boy, a la derecha de la
+// ventana (dos filas de marcador).
+#ifdef GB
+	const unsigned char hud_slot_x [] = { 13, 15, 17 };
+	#define HUD_SLOT_Y		20
+#else
+	const unsigned char hud_slot_x [] = { 22, 24, 28 };
+	#define HUD_SLOT_Y		22
+#endif
+
+void hud_slot (unsigned char n, unsigned char t) {
+	draw_coloured_tile (hud_slot_x [n], HUD_SLOT_Y, t);
+}
+
 void do_extern_action (unsigned char n, unsigned char m) {
 	switch (n) {
 		case 0:
@@ -69,6 +87,12 @@ void do_extern_action (unsigned char n, unsigned char m) {
 		case 3:
 			cortina ();
 			is_cutscene = 0;
+			break;
+		case 4:
+		case 5:
+		case 6:
+			// El inventario: el tile m en el hueco n - 4 del marcador
+			hud_slot (n - 4, m);
 			break;
 	}
 }

@@ -550,9 +550,11 @@ void msc_actions (void) {
 			#endif
 			#ifdef MSC_AU_50
 				case 0x50:								// PRINT TILE X, Y = T
-					// Coordenadas de pantalla en caracteres (para el marcador...).
+					// Coordenadas en caracteres desde la esquina del área de
+					// juego (sin tocar el mapa): las mismas en todas las
+					// máquinas, esté donde esté el área de juego.
 					a = msc_value (); b = msc_value ();
-					draw_coloured_tile (a, b, msc_value ());
+					draw_coloured_tile (VIEWPORT_X + a, VIEWPORT_Y + b, msc_value ());
 					break;
 			#endif
 			#ifdef MSC_AU_51

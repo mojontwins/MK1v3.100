@@ -626,7 +626,7 @@ vale 0 da 255.
 |---|---|
 | `SET TILE (x, y) = t` | Pone el tile `t` en las coordenadas de pantalla dadas (en tiles). El comportamiento del tile se toma de la tabla de comportamientos. |
 | `SET BEH (x, y) = b` | Cambia el *comportamiento* del tile en `(x, y)` sin tocar el tile en sí. |
-| `PRINT TILE (x, y) = t` | Dibuja un tile de color sobre la pantalla en `(x, y)` (overlay, no toca el mapa). `x`, `y` son coordenadas de **carácter** de la pantalla (para pintar en el marcador), no de tile. |
+| `PRINT TILE (x, y) = t` | Dibuja un tile sobre la pantalla en `(x, y)` (overlay, no toca el mapa). `x`, `y` son coordenadas de **carácter** (no de tile) contadas desde la esquina del área de juego (el intérprete les suma `VIEWPORT_X`, `VIEWPORT_Y`), así que valen igual en todas las máquinas. Para pintar en el marcador, que en cada máquina está en un sitio, mejor un `EXTERN` con `#ifdef` en `extern.h` (como hace Ninjajar). |
 | `WARP TO n, x, y` | Teletransporta al jugador a la pantalla `n`, posición en píxeles `(x*16, y*16)`. |
 | `WARP TO LEVEL l, n, x, y [, s]` | Termina el nivel y pasa al nivel `l` (con `COMPRESSED_LEVELS`), a su pantalla `n` y al tile `(x, y)`. Con `s` distinto de 0, sin la presentación del nivel ni el marco (sigue la pantalla que había). Termina el script. |
 | `REENTER` | Se vuelve a entrar en la pantalla: se repinta y se ejecutan otra vez sus `ENTERING`, pero sin resucitar a los enemigos (`RESPAWN_ON_ENTER`). Termina la **cláusula** (las siguientes sí se evalúan). |
