@@ -55,6 +55,61 @@ unsigned char collide (unsigned char x1, unsigned char y1, unsigned char x2, uns
 #endif
 
 // Generador pseudoaleatorio de 16 bits (semilla en seed); devuelve el byte bajo.
+#ifdef GB
+// En Game Boy (SM83 no tiene sbc hl, de): las mismas cuentas, byte a byte,
+// para que salgan los mismos números que en Z80. B hace de A del original.
+unsigned char rand (void) __naked {
+	__asm
+		ld hl, #_seed
+		ld a, (hl+)
+		ld e, a
+		ld d, (hl)
+
+		ld b, d
+		ld h, e
+		ld l, #253
+
+		; HL = HL - DE
+		ld a, l
+		sub a, e
+		ld l, a
+		ld a, h
+		sbc a, d
+		ld h, a
+		; B = B - acarreo
+		ld a, b
+		sbc a, #0
+		ld b, a
+		; HL = HL - DE - acarreo
+		ld a, l
+		sbc a, e
+		ld l, a
+		ld a, h
+		sbc a, d
+		ld h, a
+		; DE = B - acarreo
+		ld a, b
+		sbc a, #0
+		ld e, a
+		; HL = HL - DE - acarreo (D = 0)
+		ld a, l
+		sbc a, e
+		ld l, a
+		ld a, h
+		sbc a, #0
+		ld h, a
+		jr nc, 1$
+		inc hl
+	1$:
+		ld a, l
+		ld (#_seed), a
+		ld a, h
+		ld (#_seed + 1), a
+		ld a, l
+		ret
+	__endasm;
+}
+#else
 unsigned char rand (void) __naked {
 	__asm
 		rand16:
@@ -96,6 +151,7 @@ unsigned char rand (void) __naked {
 		ret
 	__endasm;
 }
+#endif
 
 unsigned int abs (signed int n) {
 	if (n < 0)
@@ -1725,13 +1781,33 @@ void move (void) {
 	void prepare_level (void) {
 		get_resource (levels [level].bundle, (unsigned int) &level_data);
 
-		if (levels [level].tileset != NO_RESOURCE)
-			get_resource (levels [level].tileset, LEVEL_TILESET_ADDR);
+		#ifdef GB
+			// En Game Boy van a la VRAM: se cargan con la pantalla apagada,
+			// en gb_game_frame.
+			if (levels [level].tileset != NO_RESOURCE)
+				gb_tileset_res = levels [level].tileset;
 
-		if (levels [level].spriteset != NO_RESOURCE)
-			get_resource (levels [level].spriteset, (unsigned int) (sprite_1_a - 16));
+			if (levels [level].spriteset != NO_RESOURCE)
+				gb_spriteset_res = levels [level].spriteset;
+		#else
+			if (levels [level].tileset != NO_RESOURCE)
+				get_resource (levels [level].tileset, LEVEL_TILESET_ADDR);
 
-		#ifdef ACTIVATE_SCRIPTING
+			if (levels [level].spriteset != NO_RESOURCE)
+				get_resource (levels [level].spriteset, (unsigned int) (sprite_1_a - 16));
+		#endif
+
+		#if defined ACTIVATE_SCRIPTING && defined GB
+			// El script del nivel se lee de la ROM, sin comprimir. Sin
+			// script, un índice vacío (todo 0).
+			if (levels [level].script != NO_RESOURCE) {
+				msc_bank = gb_res_bank (levels [level].script);
+				msc_script = gb_res_addr (levels [level].script);
+			} else {
+				msc_bank = 1;
+				msc_script = msc_empty;
+			}
+		#elif defined ACTIVATE_SCRIPTING
 			// El script del nivel. Sin script, un índice vacío (todo 0).
 			if (levels [level].script != NO_RESOURCE) {
 				get_resource (levels [level].script, (unsigned int) (msc_buffer));

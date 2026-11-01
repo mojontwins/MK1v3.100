@@ -5,8 +5,9 @@
 ' cabe:
 '  * el banco 0 (0x0000-0x3FFF);
 '  * cada banco de ROM (_CODE_n, 16K como mucho);
-'  * la RAM (0xC000-0xDFFF): las variables y, encima, la pila, de la que se
-'    reservan los bytes que diga stack= (por defecto 512).
+'  * la RAM (0xC000-0xDFFF): las variables y, encima, lo que diga stack=
+'    (por defecto 512: el segundo buffer de los sprites en 0xDE00 y la pila,
+'    que empieza en 0xE000).
 ' Escribe lo que ocupa cada cosa y sale con error si algo no cabe.
 '
 ' Uso: gbcheck juego.map [stack=512]
@@ -58,7 +59,7 @@ For i = 1 To 255
 		If bankUse (i) > 16384 Then Print "ERROR: el banco " & i & " no cabe": errors += 1
 	End If
 Next i
-Print "RAM: variables hasta $" & Hex (ramEnd, 4) & ", " & (&HE000 - stack - ramEnd) & " bytes libres (con " & stack & " de pila)"
+Print "RAM: variables hasta $" & Hex (ramEnd, 4) & ", " & (&HE000 - stack - ramEnd) & " bytes libres (con " & stack & " de pila y sprites)"
 If ramEnd + stack > &HE000 Then Print "ERROR: las variables y la pila no caben en los 8K de RAM": errors += 1
 
 If errors Then End 1

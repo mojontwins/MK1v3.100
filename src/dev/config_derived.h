@@ -32,8 +32,117 @@
 // Música y efectos con el WYZ player (chip AY) o con el beeper.
 #if defined MODE_128K || defined CPC
 	#define HAS_AY_MUSIC
-#else
+#elif !defined GB
 	#define HAS_BEEPER
+#endif
+
+// Game Boy: la pantalla del juego empieza en (0, 0) del fondo y el marcador
+// va en la ventana, en las coordenadas GB_*_X, GB_*_Y de config.h (la y es
+// la fila de la ventana: aquí se le suman 20, que es lo que entienden las
+// funciones de gb/printer.h). Lo que no tenga coordenadas de Game Boy no se
+// pinta (99).
+#ifdef GB
+	#undef VIEWPORT_X
+	#undef VIEWPORT_Y
+	#define VIEWPORT_X 0
+	#define VIEWPORT_Y 0
+
+	#undef LIFE_X
+	#undef LIFE_Y
+	#ifdef GB_LIFE_X
+		#define LIFE_X GB_LIFE_X
+		#define LIFE_Y (20 + GB_LIFE_Y)
+	#else
+		#define LIFE_X 99
+		#define LIFE_Y 99
+	#endif
+	#undef OBJECTS_X
+	#undef OBJECTS_Y
+	#ifdef GB_OBJECTS_X
+		#define OBJECTS_X GB_OBJECTS_X
+		#define OBJECTS_Y (20 + GB_OBJECTS_Y)
+	#else
+		#define OBJECTS_X 99
+		#define OBJECTS_Y 99
+	#endif
+	#undef OBJECTS_ICON_X
+	#undef OBJECTS_ICON_Y
+	#ifdef GB_OBJECTS_ICON_X
+		#define OBJECTS_ICON_X GB_OBJECTS_ICON_X
+		#define OBJECTS_ICON_Y (20 + GB_OBJECTS_ICON_Y)
+	#else
+		#define OBJECTS_ICON_X 99
+		#define OBJECTS_ICON_Y 99
+	#endif
+	#undef KEYS_X
+	#undef KEYS_Y
+	#ifdef GB_KEYS_X
+		#define KEYS_X GB_KEYS_X
+		#define KEYS_Y (20 + GB_KEYS_Y)
+	#else
+		#define KEYS_X 99
+		#define KEYS_Y 99
+	#endif
+	#undef KILLED_X
+	#undef KILLED_Y
+	#ifdef GB_KILLED_X
+		#define KILLED_X GB_KILLED_X
+		#define KILLED_Y (20 + GB_KILLED_Y)
+	#else
+		#define KILLED_X 99
+		#define KILLED_Y 99
+	#endif
+	#undef AMMO_X
+	#undef AMMO_Y
+	#ifdef GB_AMMO_X
+		#define AMMO_X GB_AMMO_X
+		#define AMMO_Y (20 + GB_AMMO_Y)
+	#else
+		#define AMMO_X 99
+		#define AMMO_Y 99
+	#endif
+	#undef TIMER_X
+	#undef TIMER_Y
+	#ifdef GB_TIMER_X
+		#define TIMER_X GB_TIMER_X
+		#define TIMER_Y (20 + GB_TIMER_Y)
+	#else
+		#define TIMER_X 99
+		#define TIMER_Y 99
+	#endif
+	#ifdef FLAG_X
+		#undef FLAG_X
+		#undef FLAG_Y
+		#ifdef GB_FLAG_X
+			#define FLAG_X GB_FLAG_X
+			#define FLAG_Y (20 + GB_FLAG_Y)
+		#else
+			#define FLAG_X 99
+			#define FLAG_Y 99
+		#endif
+	#endif
+	#ifdef ITEM_X
+		#undef ITEM_X
+		#undef ITEM_Y
+		#ifdef GB_ITEM_X
+			#define ITEM_X GB_ITEM_X
+			#define ITEM_Y (20 + GB_ITEM_Y)
+		#else
+			#define ITEM_X 99
+			#define ITEM_Y 99
+		#endif
+	#endif
+	#ifdef LINE_OF_TEXT
+		#undef LINE_OF_TEXT
+		#undef LINE_OF_TEXT_X
+		#ifdef GB_LINE_OF_TEXT
+			#define LINE_OF_TEXT_X GB_LINE_OF_TEXT_X
+			#define LINE_OF_TEXT (20 + GB_LINE_OF_TEXT)
+		#else
+			#define LINE_OF_TEXT_X 99
+			#define LINE_OF_TEXT 99
+		#endif
+	#endif
 #endif
 
 // Canción del título

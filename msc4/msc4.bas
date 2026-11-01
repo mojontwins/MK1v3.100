@@ -69,6 +69,7 @@ Dim Shared As Integer secFixOff (255), fixPos (1023)
 Dim Shared As Integer secFixCount, fixCount
 
 Dim Shared As Integer textWidth
+Dim Shared As Integer forcedTextWidth		' textwidth=N: manda sobre TEXT WIDTH
 Dim Shared As Integer textPoolIndex
 Dim Shared As Integer lastTextOffset
 Dim Shared As String textPool (16384)
@@ -1273,7 +1274,7 @@ Sub processScript (fIn As Integer)
 
 			ElseIf startsWith (tokens (), "text width") And tokens (2) = "=" And isNumber (tokens (3)) Then
 				If debug Then Print "Text width set to " & Val (tokens (3))
-				textWidth = Val (tokens (3))
+				If forcedTextWidth = 0 Then textWidth = Val (tokens (3))
 
 			ElseIf tokens (0) = "sub" Then
 
@@ -1827,11 +1828,14 @@ Sub usage
 	Print ""
 	Print "msc4.exe in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]"
 	Print "         [interpreter=msc-config.h] [scripts=msc-scripts.h] [text=text.bin] [textres]"
+	Print "         [textwidth=N]"
 	Print "         MK1 v3.100: the interpreter is src/dev/msc.h (pure C). msc4 writes"
 	Print "         f.spt.bin per input, msc-config.h (what the interpreter needs) and"
 	Print "         msc-scripts.h (bytecode as C arrays + encoded texts)."
 	Print "         textres: the encoded texts only go to text= (a 128K resource),"
 	Print "         not to msc-scripts.h."
+	Print "         textwidth: texts are split in lines of N characters, whatever"
+	Print "         TEXT WIDTH says in the scripts (e.g. narrower for Game Boy)."
 End Sub
 
 '' Interfaz
@@ -1901,7 +1905,8 @@ If textRes And Not outC Then Print "textres needs v=3_100 output=c": End 1
 
 lastTextOffset = 0
 textPoolIndex = 0
-textWidth = 24
+forcedTextWidth = Val (sclpGetValue ("textwidth"))
+textWidth = IIf (forcedTextWidth > 0, forcedTextWidth, 24)
 
 i = 0: While i < 127 And fileIns(i) <> ""
 	curLineNo = 0

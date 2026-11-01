@@ -28,8 +28,8 @@
 // Los RES_* los genera librarian a partir de los nombres de archivo. Sin
 // script (o sin scripting), NO_RESOURCE.
 
-#ifndef MODE_128K
-	#error "COMPRESSED_LEVELS necesita MODE_128K"
+#if !defined MODE_128K && !defined GB
+	#error "COMPRESSED_LEVELS necesita MODE_128K (o Game Boy)"
 #endif
 
 #define MAX_PANT			(MAP_W * MAP_H)

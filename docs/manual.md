@@ -1640,8 +1640,11 @@ Están todas en `src\utils`. Normalmente no hay que llamarlas a mano: lo hacen
 
 El port de Game Boy está a medio hacer: esto es lo que hay de momento y se
 irá completando. El objetivo es que el mismo juego (con sus gráficos de Game
-Boy) funcione igual que en ZX y CPC, en un cartucho MBC1 de DMG. Los juegos
-de Game Boy son siempre de niveles (`COMPRESSED_LEVELS`).
+Boy) funcione igual que en ZX y CPC, en un cartucho MBC1 de DMG.
+
+Ya funciona el motor con la pantalla del juego, la cámara, los sprites y el
+marcador: `bootee` se juega entero. Faltan los scripts y los textos, el
+sonido y los juegos de niveles (Ninjajar).
 
 ## Compilar
 
@@ -1650,21 +1653,72 @@ cd src\dev
 comp-gb.bat
 ```
 
-Deja `bootee.gb`. De momento solo arranca, enseña el título y, con START, el
-final, con fundidos. (En Linux: `./comp-gb.sh`.)
+Deja `bootee.gb`. (En Linux: `./comp-gb.sh`.)
+
+## Cómo se ve el juego
+
+La pantalla del Game Boy (160x144) es más pequeña que la del juego (240x160,
+15x10 tiles). La pantalla del juego entera se pinta en el fondo (32x32
+caracteres) y una cámara enseña un trozo, siguiendo al jugador y sin salirse
+de la pantalla del juego.
+
+El marcador va abajo, en la ventana. Se configura en `config.h`:
+
+```c
+#define GB_HUD_ROWS        2                        // Filas del marcador
+#define GB_HUD_LINE0       "  LIFE  ITEMS  KEYS "  // Textos fijos (20 caracteres)
+#define GB_HUD_LINE1       "                    "
+#define GB_LIFE_X          3                        // Dónde van los números:
+#define GB_LIFE_Y          1                        // la y es la fila del marcador
+#define GB_OBJECTS_X       9
+#define GB_OBJECTS_Y       1
+#define GB_KEYS_X          15
+#define GB_KEYS_Y          1
+```
+
+También hay `GB_OBJECTS_ICON_X/Y`, `GB_KILLED_X/Y`, `GB_AMMO_X/Y`,
+`GB_TIMER_X/Y`, `GB_FLAG_X/Y`, `GB_ITEM_X/Y` y `GB_LINE_OF_TEXT_X`,
+`GB_LINE_OF_TEXT`. Lo que no tenga coordenadas de Game Boy no se pinta
+(`VIEWPORT_X`, `VIEWPORT_Y` y las coordenadas del Spectrum no se usan).
+Lo que se ve del juego mide 160 x (144 - 8 x `GB_HUD_ROWS`) píxeles; los
+sprites se apagan donde empieza la ventana, para que no la pisen.
+
+Los mensajes (GAME OVER, PAUSED, LEVEL XX) salen en el centro de lo que
+enseña la cámara.
+
+## Los mandos
+
+| Botón | Qué hace |
+|---|---|
+| Cruceta | Moverse (ARRIBA salta en los juegos que saltan con ARRIBA). |
+| A | FIRE: disparo, puñetazo, acción. |
+| B | Saltar (hace de ARRIBA o, si el juego salta con FIRE, de FIRE; con `USE_TWO_BUTTONS` es la tecla de salto). |
+| ABAJO | La acción de los scripts (con `SCRIPTING_DOWN`). |
+| START | Pausa (`PAUSE_ABORT`); en el título, empezar. |
+| SELECT | Abortar la partida (`PAUSE_ABORT`). |
 
 ## La memoria
 
 * **Banco 0** (0x0000-0x3FFF, siempre visible): el arranque y las librerías
-  de GBDK, `gb/home.c` (paletas, fundidos, recursos, pantallas fijas) y
-  `gb/zx0.s` (el descompresor, en ensamblador del SM83).
-* **Banco 1** (0x4000-0x7FFF mientras se juega): el motor.
+  de GBDK, `gb/home.c` (interrupciones, paletas, fundidos, sprites, recursos,
+  pantallas fijas), `gb/vram.s` y `gb/zx0.s` (el descompresor), en
+  ensamblador del SM83.
+* **Banco 1** (0x4000-0x7FFF, siempre puesto): el motor, `gb/churromain.c`,
+  que es lo mismo que `churromain.c` con la capa del Game Boy
+  (`gb/sysvars.h` y `gb/printer.h`). Con el banco 0, el motor ve 32K
+  seguidos y no hay llamadas entre bancos; lo que hay que leer de otros
+  bancos lo leen funciones del banco 0 (`get_resource`, `gb_peek`,
+  `gb_copy_from_bank`), que luego vuelven a poner el banco 1.
 * **Bancos 3 en adelante**: los recursos (`librarian platform=gb`), cada uno
   comprimido con zx0. `get_resource (res, destino)` pone su banco, lo
   descomprime en la RAM o, con la pantalla apagada, en la VRAM, y deja el
   banco que había.
-* **RAM**: 8K (0xC000-0xDFFF) para todo, con la pila arriba. `gbcheck`
-  comprueba al compilar que nada se desborda.
+* **RAM**: 8K (0xC000-0xDFFF). Los sprites que copia el DMA están en 0xC000
+  (el `shadow_OAM` de GBDK) y en 0xDE00 (se escribe en uno mientras se
+  enseña el otro); la pila empieza en 0xE000. `gbcheck` comprueba al
+  compilar que los bancos no se desbordan y que las variables acaban antes
+  de 0xDE00 (`stack=512`, que incluye ese segundo buffer); si algo no cabe,
+  da un error.
 
 La VRAM:
 
@@ -1676,6 +1730,10 @@ La VRAM:
 | 0x9800 | El fondo (32x32: la pantalla de 30x20 cabe entera). |
 | 0x9C00 | La ventana: el marcador, los mensajes y los textos. |
 
+Los caracteres son los mismos que en el Spectrum: 0-63 la fuente y
+64 + 4 x t los cuatro del tile t. Con el fondo en el modo 0x8800, el carácter
+c es el tile c ^ 128 del Game Boy.
+
 ## Los gráficos
 
 Van en `gfx/gb` y los convierte `mkts_om platform=gb`. Los cuatro tonos se
@@ -1683,11 +1741,24 @@ detectan por el brillo (blanco, gris claro, gris oscuro y negro son los
 colores 0 a 3); un píxel transparente o de un color que no sea gris (magenta,
 por ejemplo) es el color 0, que en los sprites es transparente.
 
-| Modo | Para qué |
+| Fichero | Qué es |
+|---|---|
+| `font.png` | La fuente: 64 caracteres (256x16), como la del Spectrum. |
+| `work.png` | El tileset: 48 tiles de 16x16 (256x48), como el del Spectrum. |
+| `sprites.png` | 32 sprites de 16x16 (256x32, ver abajo). |
+| `title.png`, `ending.png` | Pantallas fijas de 160x144. |
+
+En `sprites.png`, la fila de arriba son los 16 sprites de siempre (jugador y
+enemigos, en el mismo orden que en el Spectrum) y la de abajo los extras:
+la explosión (17), uno vacío (18), la bala y los cocos (19, 8x8 arriba a la
+izquierda de su sitio) y el puño hacia la derecha y hacia la izquierda (20 y
+21, igual). Los 11 sitios que quedan son para el juego.
+
+| Modo de `mkts_om` | Para qué |
 |---|---|
 | `chars` | La fuente: 64 patrones. |
 | `strait2x2` | El tileset: 48 tiles de 2x2 patrones, 192 en total. |
-| `sprites` (`metasize=2,2`) | Sprites de 16x16 para el modo 8x16: cada columna de arriba abajo. Con un número impar de filas (`metasize=1,1`, la bala) se añade un patrón vacío debajo. |
+| `sprites` (`metasize=2,2`) | Sprites de 16x16 para el modo 8x16: cada columna de arriba abajo. Con un número impar de filas (`metasize=1,1`) se añade un patrón vacío debajo. |
 | `scr` | Una pantalla fija de 160x144: sus patrones sin repetir (como mucho 192; si hay más, avisa) y su mapa de 20x18, escritos de forma que, descomprimidos en 0x8C00, los patrones llenan 0x8C00-0x97FF y el mapa cae en el fondo, en 0x9800. |
 
 ## Paletas y fundidos
@@ -1696,13 +1767,14 @@ Las paletas (`GB_PAL_BG`, `GB_PAL_OBJ0`, `GB_PAL_OBJ1` en `config.h`, por
 defecto `0xE4`) dicen qué tono tiene cada color: así se eligen los tres
 tonos visibles de los sprites. `gb_fade_out (0)` / `gb_fade_in (0)` funden
 a negro y desde negro; con 1, a blanco y desde blanco. `GB_FADE_FRAMES` es
-la duración de cada paso.
+la duración de cada paso. `blackout ()` y `cortina ()` funden a negro.
 
 ## Pruebas
 
 `tests/gbrun` es un Game Boy sin pantalla (con Peanut-GB) para las pruebas,
 como `zxrun`: `gbrun juego.gb -f frames -k "60:sta+,62:sta-" -s 100 -o
-captura`.
+captura`. `-d dirección,bytes` vuelca memoria al acabar; las direcciones de
+las variables están en `obj_gb/juego.noi` (con `noclean`).
 
 ---
 

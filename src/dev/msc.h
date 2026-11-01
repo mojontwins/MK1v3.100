@@ -46,7 +46,9 @@
 // Estado del intérprete
 // ---------------------------------------------------------------------------
 
-const unsigned char *msc_script;		// Script activo (empieza por el índice)
+#ifndef GB
+	const unsigned char *msc_script;	// Script activo (empieza por el índice)
+#endif
 const unsigned char *msc_ptr;			// Siguiente byte a leer
 unsigned char msc_stop;			// Para cortar la ejecución (ver MSC_STOP_*)
 
@@ -55,9 +57,21 @@ unsigned char msc_stop;			// Para cortar la ejecución (ver MSC_STOP_*)
 #define MSC_STOP_ALL	2		// WIN GAME, GAME OVER: termina todo
 #define MSC_STOP_RERUN	3		// RERUN: vuelve a empezar la sección
 
+// MSC_PEEK (p) es el byte p del script. En Game Boy el script se lee de la
+// ROM, de su banco (msc_bank), con una función del banco 0.
+#ifdef GB
+	#define MSC_PEEK(p)		gb_peek (msc_bank, (p))
+#else
+	#define MSC_PEEK(p)		(*(p))
+#endif
+
 unsigned char msc_read (void) {
-	return *msc_ptr ++;
+	return MSC_PEEK (msc_ptr ++);
 }
+
+#if defined GB && defined MSC_AU_E3
+	unsigned char msc_line [33];		// TEXT: la línea, copiada de la ROM
+#endif
 
 // Palabra de 16 bits (LSB, MSB), como los offsets del índice. Se copia
 // byte a byte (en Z80 y en GB las palabras van LSB, MSB en memoria).
@@ -65,8 +79,8 @@ unsigned char msc_read (void) {
 // un cast; "(unsigned char *) (&variable)" sí funciona.
 unsigned int msc_word;
 unsigned int msc_read_word (void) {
-	((unsigned char *) (&msc_word)) [0] = *msc_ptr ++;
-	((unsigned char *) (&msc_word)) [1] = *msc_ptr ++;
+	((unsigned char *) (&msc_word)) [0] = msc_read ();
+	((unsigned char *) (&msc_word)) [1] = msc_read ();
 	return msc_word;
 }
 
@@ -117,7 +131,12 @@ unsigned int msc_read_word (void) {
 	void msc_decode_text (unsigned int offset, unsigned char *dest) {
 		unsigned char c;
 		if (offset != 0xffff) {
-			#ifdef MSC_TEXTS_RES
+			#if defined MSC_TEXTS_RES && defined GB
+				// Los textos están en un banco de ROM: se copia el trozo (lo
+				// que ocupa como mucho un texto) a la RAM.
+				gb_copy_from_bank (gb_res_bank (MSC_TEXTS_RES), gb_res_addr (MSC_TEXTS_RES) + offset, msc_text_enc, MSC_TEXT_MAX_ENC);
+				msc_tptr = msc_text_enc;
+			#elif defined MSC_TEXTS_RES
 				// Los textos están en una página de RAM: se copia el trozo
 				// (lo que ocupa como mucho un texto) aquí abajo.
 				ram_page = resources [MSC_TEXTS_RES].ramPage;
@@ -454,6 +473,8 @@ void msc_clausules (void);
 					halt
 					halt
 				__endasm;
+			#elif defined GB
+				wait_vbl_done ();
 			#else
 				__asm
 					halt
@@ -640,8 +661,18 @@ void msc_actions (void) {
 				case 0xE3:								// TEXT "..." (línea de texto)
 					// Longitud (con el 0 final) y el texto en ASCII
 					a = msc_read ();
-					print_str (LINE_OF_TEXT_X, LINE_OF_TEXT, LINE_OF_TEXT_ATTR, msc_ptr);
-					msc_ptr += a;
+					#ifdef GB
+						// Se copia a la RAM (como mucho 32 caracteres)
+						for (b = 0; b < a; b ++) {
+							c = msc_read ();
+							if (b < 32) msc_line [b] = c;
+						}
+						msc_line [32] = 0;
+						print_str (LINE_OF_TEXT_X, LINE_OF_TEXT, LINE_OF_TEXT_ATTR, msc_line);
+					#else
+						print_str (LINE_OF_TEXT_X, LINE_OF_TEXT, LINE_OF_TEXT_ATTR, msc_ptr);
+						msc_ptr += a;
+					#endif
 					break;
 			#endif
 			#ifdef MSC_AU_E4
@@ -727,8 +758,8 @@ void msc_actions (void) {
 // Ejecuta las cláusulas desde msc_ptr hasta el final de la sección.
 void msc_clausules (void) {
 	const unsigned char *next;
-	while (*msc_ptr != 0xFF) {
-		next = msc_ptr + *msc_ptr;
+	while (MSC_PEEK (msc_ptr) != 0xFF) {
+		next = msc_ptr + MSC_PEEK (msc_ptr);
 		msc_ptr ++;
 		if (msc_conditions ()) {
 			msc_actions ();
@@ -766,7 +797,7 @@ void msc_run_screen (unsigned char sect) {
 	msc_ty = (gpy + 8) >> 4;
 	msc_run (sect);
 	#ifdef MSC_SECT_ROOMS
-		if (n_pant < msc_script [MSC_IDX_ROOMS << 1]) {
+		if (n_pant < MSC_PEEK (msc_script + (MSC_IDX_ROOMS << 1))) {
 			// ENTERING SCREEN n = 16 + 2n, PRESS FIRE AT SCREEN n = 17 + 2n
 			msc_run (16 + n_pant + n_pant + (sect == MSC_FIRE_ANY));
 		}
@@ -793,9 +824,15 @@ void msc_init (void) {
 		f_zone_ac = 0;
 	#endif
 	script_result = 0;
-	#ifdef MSC_SCRIPTS_AS_RESOURCES
+	#if defined MSC_SCRIPTS_AS_RESOURCES && defined GB
+		// El script del nivel (prepare_level) está en la ROM: msc_script y
+		// msc_bank ya apuntan a él.
+	#elif defined MSC_SCRIPTS_AS_RESOURCES
 		msc_script = msc_buffer;
 	#else
 		msc_script = msc_scripts [0];
+		#ifdef GB
+			msc_bank = 1;
+		#endif
 	#endif
 }

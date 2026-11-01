@@ -5,7 +5,7 @@
 // Carga las pantallas fijas
 // Copyleft 2010 The Mojon Twins
 
-#ifndef MODE_128K
+#if !defined MODE_128K && !defined GB
 	extern const unsigned char s_title [];
 	extern const unsigned char s_marco [];
 	extern const unsigned char s_ending [];
@@ -29,7 +29,9 @@ void title (void) {
 	sp_UpdateNow();
 	blackout ();
 
-	#ifdef MODE_128K
+	#ifdef GB
+		gb_show_screen (RES_TITLE);
+	#elif defined MODE_128K
 		get_resource (RES_TITLE, 16384);
 	#else		
 		unpack_screen (s_title);
@@ -52,7 +54,9 @@ void game_ending (void) {
 	sp_UpdateNow();
 	blackout ();
 
-	#ifdef MODE_128K
+	#ifdef GB
+		gb_show_screen (RES_ENDING);
+	#elif defined MODE_128K
 		get_resource (RES_ENDING, 16384);
 	#else
 		unpack_screen (s_ending);
@@ -71,9 +75,15 @@ void game_ending (void) {
 }
 
 void recuadre (char *s) {
-	print_str (10, 11, 79, spacer);
-	print_str (10, 12, 79, s);
-	print_str (10, 13, 79, spacer);
+	#ifdef GB
+		// En la ventana, debajo del marcador
+		gb_win_open (3);
+		print_str (4, 20 + GB_HUD_ROWS + 1, 79, s);
+	#else
+		print_str (10, 11, 79, spacer);
+		print_str (10, 12, 79, s);
+		print_str (10, 13, 79, spacer);
+	#endif
 }
 
 void game_over (void) {
@@ -108,6 +118,9 @@ void game_over (void) {
 		#endif
 			
 		espera_activa (250);
+		#ifdef GB
+			gb_win_close ();
+		#endif
 	}
 #endif
 

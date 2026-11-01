@@ -163,6 +163,7 @@ msc4 in=f1.spt[,f2.spt,...] v=3_100 output=c [rooms=N]
 | `textdebug` | no | Vuelca la codificación en 5 bits de cada texto. |
 | `text=` | no | Fichero con los textos codificados (por defecto `text.bin`). |
 | `textres` | no | Los textos van **solo** en `text=`, que el juego pone como recurso de 128K (sin comprimir) en `librarian.txt`; no ocupan RAM. `comp-zx` lo pasa si `config.h` tiene `SCRIPT_TEXTS_AS_RESOURCE`. |
+| `textwidth=N` | no | Los textos se parten en líneas de N caracteres, diga lo que diga `TEXT WIDTH` en los scripts. Lo pasa `comp-gb` (con `GB_TEXT_WIDTH` de `config.h`, 18 si no está). |
 
 `debug` es *muy* útil mientras escribes un script.
 
@@ -228,7 +229,7 @@ sección) y surten efecto desde ese punto. Normalmente se ponen al principio.
 | `ALIAS` | `ALIAS %NOMBRE = N` | Liga el nombre `%NOMBRE` al número de flag `N`. Ver la [sección 8.3](#83-los-alias). |
 | `ITEM SLOT` | `ITEM SLOT = N` | Qué flag guarda el "objeto que llevas" (ver la [sección 14](#14-el-inventario-de-un-solo-hueco)). |
 | `ITEM EMPTY` | `ITEM EMPTY = N` | Qué valor de tile significa "no llevo nada" (por defecto `0`). La palabra `EMPTY` en el script se sustituye por este número. |
-| `TEXT WIDTH` | `TEXT WIDTH = N` | Ancho de línea (en caracteres) que usa el codificador de textos de 5 bits. Por defecto `24`. |
+| `TEXT WIDTH` | `TEXT WIDTH = N` | Ancho de línea (en caracteres) que usa el codificador de textos de 5 bits. Por defecto `24`. La opción `textwidth=N` de msc4 manda sobre él (la usa la compilación de Game Boy, con la pantalla más estrecha). |
 | `NOINDEXED` | `NOINDEXED` | Puramente documental: dice que el güego no usa las secciones por pantalla (y quita el aviso de que falta `ROOMS`). No cambia el binario. |
 | `FASTNPANT` | `FASTNPANT` | Compila `IF NPANT = N` con una condición propia, más rápida (ver la [sección 10.4](#104-if-npant--n)). |
 

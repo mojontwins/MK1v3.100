@@ -249,6 +249,25 @@
 //#define LINE_OF_TEXT_X		1		// X coordinate.
 //#define LINE_OF_TEXT_ATTR		71		// Attribute
 
+// Game Boy: el marcador va abajo, en la ventana: GB_HUD_ROWS filas de 20
+// caracteres con los textos fijos GB_HUD_LINE0, GB_HUD_LINE1... Los contadores
+// van en (GB_*_X, GB_*_Y), con la y contada desde la primera fila de la
+// ventana. Lo que no tenga coordenadas de Game Boy no se pinta. También
+// GB_OBJECTS_ICON_X/Y, GB_KILLED_X/Y, GB_AMMO_X/Y, GB_TIMER_X/Y, GB_FLAG_X/Y,
+// GB_ITEM_X/Y y GB_LINE_OF_TEXT_X, GB_LINE_OF_TEXT.
+#define GB_HUD_ROWS				2
+#define GB_HUD_LINE0			"  LIFE  ITEMS  KEYS "
+#define GB_HUD_LINE1			"                    "
+#define GB_LIFE_X				3
+#define GB_LIFE_Y				1
+#define GB_OBJECTS_X			9
+#define GB_OBJECTS_Y			1
+#define GB_KEYS_X				15
+#define GB_KEYS_Y				1
+//#define GB_PAL_BG				0xE4	// Paletas (DMG): 2 bits por color, del 0 al 3
+//#define GB_PAL_OBJ0			0xE4	// (0 blanco ... 3 negro). En los sprites el
+//#define GB_PAL_OBJ1			0xE4	// color 0 es transparente.
+
 // Graphic FX, uncomment which applies...
 
 //#define USE_AUTO_SHADOWS				// Automatic shadows made of darker attributes

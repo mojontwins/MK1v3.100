@@ -3,7 +3,7 @@
 
 // gb/mk1gb.h
 // Lo que comparten los ficheros del Game Boy: el banco 0 (gb/home.c, siempre
-// visible), el motor (banco 1) y el código del juego (su banco).
+// visible) y el motor (gb/churromain.c, banco 1).
 //
 // La VRAM:
 //   0x8000-0x87FF  sprites (128 patrones, 8x16: 32 sprites de 16x16)
@@ -42,15 +42,36 @@
 	#define GB_FADE_FRAMES	4			// Frames por paso de los fundidos
 #endif
 
+// El segundo buffer de los sprites (el primero es shadow_OAM, en 0xC000):
+// 160 bytes en 0xDE00, debajo de la pila (que empieza en 0xE000). gbcheck
+// comprueba que la RAM del programa acaba antes (stack=512).
+#define GB_OAM_B			((uint8_t *) 0xDE00)
+
 extern uint8_t gb_pal_bg, gb_pal_obj0, gb_pal_obj1;
+extern uint8_t gb_faded;
+extern uint8_t gb_game_on, gb_wy;
+extern uint8_t *gb_oam;
 
 void zx0_unpack (const uint8_t *src, uint8_t *dst);
 
+// VRAM con la pantalla encendida (gb/vram.s): esperan a que se pueda escribir
+void gb_vram_put (uint8_t *addr, uint8_t v);
+void gb_vram_tile2x2 (uint8_t *addr, uint8_t t);
+
 // Banco 0 (gb/home.c)
 void gb_init (void) NONBANKED;
+void gb_game_screen (uint8_t wy) NONBANKED;
+void gb_set_wy (uint8_t wy) NONBANKED;
+void gb_fixed_screen (void) NONBANKED;
+void gb_oam_clear (void) NONBANKED;
+void gb_oam_commit (uint8_t scx, uint8_t scy) NONBANKED;
 void gb_set_palettes (void) NONBANKED;
 void gb_fade_out (uint8_t to_white) NONBANKED;
 void gb_fade_in (uint8_t from_white) NONBANKED;
 void gb_wait_frames (uint8_t n) NONBANKED;
 void get_resource (uint8_t res, uint16_t dest) NONBANKED;
+uint8_t gb_res_bank (uint8_t res) NONBANKED;
+const uint8_t *gb_res_addr (uint8_t res) NONBANKED;
+uint8_t gb_peek (uint8_t bank, const uint8_t *p) NONBANKED;
+void gb_copy_from_bank (uint8_t bank, const uint8_t *src, uint8_t *dst, uint16_t n) NONBANKED;
 void gb_show_screen (uint8_t res) NONBANKED;

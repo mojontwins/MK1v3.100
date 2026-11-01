@@ -71,6 +71,9 @@ void enter_screen (void) {
 
 void main (void) {
 	// La pila la coloca crt0 (en STACK_ADDR, ver churromain.c).
+	#ifdef GB
+		gb_init ();
+	#endif
 	cortina ();
 	system_init ();
 
@@ -132,11 +135,18 @@ void main (void) {
 					#ifdef HOOK_LEVEL_INTRO
 						hook_level_intro ();
 					#else
+						#ifdef GB
+							gb_game_frame ();
+						#endif
 						clear_gamearea_tiles ();
 						memcpy (level_str, " LEVEL 00 ", 11);
 						level_str [7] = '0' + (level + 1) / 10;
 						level_str [8] = '0' + (level + 1) % 10;
-						print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
+						#ifdef GB
+							print_str (4, (GB_VIEW_H / 16) - 1, 71, level_str);
+						#else
+							print_str (VIEWPORT_X + 10, VIEWPORT_Y + 9, 71, level_str);
+						#endif
 						sp_UpdateNow ();
 						PLAY_SFX (2);
 						espera_activa (100);
@@ -146,7 +156,10 @@ void main (void) {
 				prepare_level ();
 			#endif
 
-			#ifndef DIRECT_TO_PLAY
+			#ifdef GB
+				// La pantalla del juego: tileset, fondo vacío y marcador
+				gb_game_frame ();
+			#elif !defined DIRECT_TO_PLAY
 				// Clear screen and show game frame (salvo en un WARP TO LEVEL
 				// silencioso, que sigue con la pantalla que había)
 				#ifdef COMPRESSED_LEVELS
@@ -511,6 +524,9 @@ void main (void) {
 						pause_screen ();
 						while (!sp_KeyPressed (KEY_H));
 						sp_WaitForNoKey ();
+						#ifdef GB
+							gb_win_close ();
+						#endif
 						redraw_scr ();
 						
 						#ifdef MODE_128K

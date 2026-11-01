@@ -9,7 +9,7 @@
 
 // Sincronía de frames: la ISR cuenta interrupciones en isr_frames y el bucle
 // principal espera a que pasen GAME_FRAME_TICKS antes de seguir.
-unsigned char isr_frames;
+volatile unsigned char isr_frames;
 
 #define sgni(n)			(n < 0 ? -1 : 1)
 #define saturate(n)		(n < 0 ? 0 : n)
@@ -251,7 +251,15 @@ unsigned char objs_old, keys_old, life_old, killed_old;
 
 	// Con niveles, el script del nivel se descomprime aquí (prepare_level).
 	// Como mínimo 32 bytes: un índice vacío.
-	#ifdef MSC_SCRIPTS_AS_RESOURCES
+	// En Game Boy el script se lee de la ROM (msc_bank, msc_script; ver
+	// msc.h) y no hace falta el buffer. msc_empty es un índice vacío, para
+	// los niveles sin script.
+	#ifdef GB
+		const unsigned char *msc_script;
+		unsigned char msc_bank;
+		const unsigned char msc_empty [32] = { 0 };
+	#endif
+	#if defined MSC_SCRIPTS_AS_RESOURCES && !defined GB
 		#if MSC_SCRIPT_MAX_SIZE > 32
 			unsigned char msc_buffer [MSC_SCRIPT_MAX_SIZE];
 		#else
